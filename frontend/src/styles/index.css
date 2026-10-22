@@ -1,0 +1,302 @@
+/* ==========================================================================
+   Learning Room — Design System Tokens & Mode Styles
+   Native CSS for light/dark variables, theme tokens & tactile elements
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* Brand Colors */
+  --color-brand: #635bdb;
+  --color-brand-hover: #5148c8;
+  --color-brand-soft: #eeecff;
+  --color-brand-deep: #39318f;
+
+  /* Accents */
+  --accent-lavender: #a99afb;
+  --accent-sky: #82b8e8;
+  --accent-mint: #8ccfb5;
+  --accent-peach: #f3b69a;
+
+  /* Light Theme Surfaces & Text */
+  --color-background: #f7f6f2;
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f0efea;
+  --color-surface-hover: #eae9e3;
+
+  --color-text-primary: #252522;
+  --color-text-secondary: #6d6c67;
+  --color-text-muted: #92918a;
+
+  --color-border: #e7e5de;
+  --color-border-strong: #d5d2c8;
+
+  --color-success: #248a62;
+  --color-warning: #b97824;
+  --color-danger: #cf4d52;
+  --color-info: #3977b8;
+
+  /* Typography */
+  --font-heading: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-editorial: 'Fraunces', 'Newsreader', Georgia, serif;
+  --font-handwriting: 'Caveat', cursive, sans-serif;
+  --font-cursive: 'Dancing Script', 'Caveat', cursive;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Shadows */
+  --shadow-window: 0 25px 60px -15px rgba(35, 30, 45, 0.14),
+                   0 10px 25px -5px rgba(0, 0, 0, 0.05),
+                   0 0 0 1px rgba(0, 0, 0, 0.05);
+
+  --shadow-sticky: 0 4px 14px rgba(37, 37, 34, 0.08), 0 1px 3px rgba(37, 37, 34, 0.04);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-brand: #a39aff;
+  --color-brand-hover: #b8b1ff;
+  --color-brand-soft: #302d4b;
+  --color-brand-deep: #1f1b3d;
+
+  --color-background: #171815;
+  --color-surface: #20211e;
+  --color-surface-secondary: #292a26;
+  --color-surface-hover: #32332e;
+
+  --color-text-primary: #f2f0e9;
+  --color-text-secondary: #b0afa6;
+  --color-text-muted: #85857d;
+
+  --color-border: #363731;
+  --color-border-strong: #4a4b43;
+
+  --color-success: #79d5ab;
+  --color-warning: #f0c078;
+  --color-danger: #ff8588;
+  --color-info: #8cc4ff;
+
+  --shadow-window: 0 25px 60px -15px rgba(0, 0, 0, 0.55),
+                   0 10px 25px -5px rgba(0, 0, 0, 0.35),
+                   0 0 0 1px rgba(255, 255, 255, 0.08);
+
+  --shadow-sticky: 0 4px 14px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Base resets & typography */
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: clip;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100vw;
+  min-height: 100vh;
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+  transition: background-color 220ms ease, color 220ms ease;
+}
+
+/* Subtle dot grid pattern on background */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(var(--color-border-strong) 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom fonts helper classes */
+.font-heading { font-family: var(--font-heading); }
+.font-body { font-family: var(--font-body); }
+.font-editorial { font-family: var(--font-editorial); }
+.font-handwriting { font-family: var(--font-handwriting); }
+.font-cursive { font-family: var(--font-cursive); }
+.font-mono { font-family: var(--font-mono); }
+
+/* ==========================================================================
+   Tactile & Sketched Shared Styling (Corners, Ruled Sheets, Pins & Ambient Aura)
+   ========================================================================== */
+
+/* Ambient pastel gradient glow behind workspace */
+.ambient-aura {
+  position: absolute;
+  top: -12%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 110%;
+  height: 115%;
+  background: radial-gradient(35% 35% at 20% 30%, rgba(243, 182, 154, 0.45) 0%, transparent 80%),
+              radial-gradient(40% 40% at 75% 25%, rgba(169, 154, 251, 0.45) 0%, transparent 80%),
+              radial-gradient(45% 45% at 50% 15%, rgba(254, 243, 199, 0.6) 0%, transparent 75%),
+              radial-gradient(30% 30% at 65% 80%, rgba(140, 207, 181, 0.25) 0%, transparent 80%);
+  filter: blur(52px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.95;
+}
+
+[data-theme="dark"] .ambient-aura {
+  background: radial-gradient(35% 35% at 20% 30%, rgba(140, 90, 70, 0.35) 0%, transparent 80%),
+              radial-gradient(40% 40% at 75% 25%, rgba(95, 80, 160, 0.4) 0%, transparent 80%),
+              radial-gradient(45% 45% at 50% 15%, rgba(80, 70, 110, 0.35) 0%, transparent 75%);
+  filter: blur(60px);
+  opacity: 0.8;
+}
+
+/* Lined notebook ruled lines */
+.notepad-rule {
+  height: 1px;
+  background-color: #cbd5e1;
+  margin-top: 14px;
+  width: 100%;
+}
+[data-theme="dark"] .notepad-rule {
+  background-color: #475569;
+}
+
+/* Translucent washi tape */
+.washi-tape {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-1.5deg);
+  width: 48px;
+  height: 15px;
+  background-color: rgba(254, 240, 138, 0.65);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+}
+
+/* Folded sticky corner effect */
+.corner-fold {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 0 14px 14px;
+  border-color: transparent transparent #cbd5e1 transparent;
+  pointer-events: none;
+  filter: drop-shadow(-1px -1px 1px rgba(0, 0, 0, 0.12));
+}
+
+/* Canvas background dots */
+.canvas-dots {
+  background-image: radial-gradient(#94a3b8 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.4;
+}
+
+/* Pulse animation for live indicators */
+@keyframes meetPulse {
+  0% { transform: scale(0.95); opacity: 0.85; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.85; }
+}
+
+.animate-pulse-subtle {
+  animation: meetPulse 2.4s ease-in-out infinite;
+}
+
+/* Custom Themed Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-strong);
+  border-radius: 9999px;
+  transition: background-color 150ms ease;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-muted);
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+/* Floating animations for playful doodles & badges */
+@keyframes doodleFloatSlow {
+  0%, 100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -7px;
+  }
+}
+
+@keyframes doodleFloatMedium {
+  0%, 100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -9px;
+  }
+}
+
+@keyframes doodleFloatGentle {
+  0%, 100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -5px;
+  }
+}
+
+.animate-float-slow {
+  animation: doodleFloatSlow 4s ease-in-out infinite;
+}
+
+.animate-float-medium {
+  animation: doodleFloatMedium 3.2s ease-in-out infinite;
+}
+
+.animate-float-gentle {
+  animation: doodleFloatGentle 4.5s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: doodleFloatMedium 3.6s ease-in-out 1.2s infinite;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
