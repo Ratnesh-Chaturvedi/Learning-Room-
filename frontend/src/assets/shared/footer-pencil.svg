@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 94" fill="none">
+  <!-- Hand-drawn Full Purple Pencil with tip aligned to right edge -->
+  <g transform="translate(-12, 41) rotate(22, 120, 30)">
+    <!-- Back Hexagonal End Face -->
+    <polygon
+      points="10,0 3,18 10,36 16,36 9,18 16,0"
+      fill="#6B56E8"
+      stroke="#1E1B4B"
+      stroke-width="2.5"
+      stroke-linejoin="round"
+    />
+
+    <!-- Barrel Top Facet (Light Purple Highlight) -->
+    <polygon
+      points="16,0 150,0 146,12 10,12"
+      fill="#A494FA"
+      stroke="#1E1B4B"
+      stroke-width="2.4"
+      stroke-linejoin="round"
+    />
+
+    <!-- Barrel Middle Facet (Vibrant Purple Base) -->
+    <polygon
+      points="10,12 146,12 146,24 10,24"
+      fill="#8370F5"
+      stroke="#1E1B4B"
+      stroke-width="2.4"
+      stroke-linejoin="round"
+    />
+
+    <!-- Barrel Bottom Facet (Deep Purple Shadow) -->
+    <polygon
+      points="10,24 146,24 150,36 16,36"
+      fill="#6A55E6"
+      stroke="#1E1B4B"
+      stroke-width="2.4"
+      stroke-linejoin="round"
+    />
+
+    <!-- Facet Inner Dividing Lines -->
+    <line x1="10" y1="12" x2="146" y2="12" stroke="#1E1B4B" stroke-width="2.2" stroke-linecap="round" />
+    <line x1="10" y1="24" x2="146" y2="24" stroke="#1E1B4B" stroke-width="2.2" stroke-linecap="round" />
+
+    <!-- Sharpened Wood Cone with Scalloped Edges -->
+    <path
+      d="M 150 0 Q 155 6 146 12 Q 155 18 146 24 Q 155 30 150 36 L 202 18 Z"
+      fill="#FCE7CA"
+      stroke="#1E1B4B"
+      stroke-width="2.5"
+      stroke-linejoin="round"
+    />
+
+    <!-- Wood Shading on Lower Half -->
+    <path
+      d="M 146 24 Q 155 30 150 36 L 202 18 Z"
+      fill="#F2D5AE"
+      stroke="#1E1B4B"
+      stroke-width="1.5"
+      stroke-linejoin="round"
+    />
+
+    <!-- Graphite Lead Tip pointing to bottom-right corner -->
+    <polygon
+      points="184,12 202,18 184,24"
+      fill="#1E293B"
+      stroke="#1E1B4B"
+      stroke-width="2.2"
+      stroke-linejoin="round"
+    />
+
+    <!-- Outer Structural Outlines -->
+    <path
+      d="M 16 0 L 150 0 M 16 36 L 150 36"
+      stroke="#1E1B4B"
+      stroke-width="2.6"
+      stroke-linecap="round"
+    />
+  </g>
+</svg>

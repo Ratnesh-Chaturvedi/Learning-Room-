@@ -1,1 +1,158 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="48" height="46" fill="none" viewBox="0 0 48 46"><path fill="#863bff" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" style="fill:#863bff;fill:color(display-p3 .5252 .23 1);fill-opacity:1"/><mask id="a" width="48" height="46" x="0" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M25.842 44.938c-.664.844-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.183c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.498 0-3.579-1.842-3.579H1.133c-.92 0-1.456-1.04-.92-1.787L9.91.473c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.578 1.842 3.578h11.377c.943 0 1.473 1.088.89 1.832L25.843 44.94z" style="fill:#000;fill-opacity:1"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#ede6ff" rx="5.508" ry="14.704" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -4.47 31.516)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#ede6ff" rx="10.399" ry="29.851" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -39.328 7.883)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#7e14ff" rx="5.508" ry="30.487" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -25.913 -14.639)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -32.644 -3.334)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -34.34 30.47)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#ede6ff" rx="14.072" ry="22.078" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="rotate(93.35 24.506 48.493)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx=".387" cy="8.972" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(39.51 .387 8.972)"/></g><g filter="url(#k)"><ellipse cx="47.523" cy="-6.092" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 47.523 -6.092)"/></g><g filter="url(#l)"><ellipse cx="41.412" cy="6.333" fill="#47bfff" rx="5.971" ry="9.665" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 41.412 6.333)"/></g><g filter="url(#m)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#n)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#o)"><ellipse cx="35.651" cy="29.907" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 35.651 29.907)"/></g><g filter="url(#p)"><ellipse cx="38.418" cy="32.4" fill="#47bfff" rx="5.971" ry="15.297" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 38.418 32.4)"/></g></g><defs><filter id="b" width="60.045" height="41.654" x="-19.77" y="16.149" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-54.613" y="-7.533" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-49.64" y="2.03" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-45.045" y="20.029" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-43.513" y="21.178" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="15.756" y="-17.901" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-27.636" y="-22.853" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="20.116" y="-38.415" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="24.641" y="-11.323" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="8.244" y="-2.416" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="18.713" y="10.588" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter></defs></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="210 110 340 365" width="100%" height="100%">
+  <defs>
+    <!-- Soft Warm Glow Inside Doorway -->
+    <radialGradient id="doorGlow" cx="50%" cy="52%" r="48%">
+      <stop offset="0%" stop-color="#FCE5DC" stop-opacity="0.78"/>
+      <stop offset="65%" stop-color="#EEECFF" stop-opacity="0.38"/>
+      <stop offset="100%" stop-color="#EEECFF" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Subtle Pencil Body Gradient -->
+    <linearGradient id="pencilGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#B3A6FD"/>
+      <stop offset="50%" stop-color="#9A8BF6"/>
+      <stop offset="100%" stop-color="#7F70E5"/>
+    </linearGradient>
+
+    <!-- Warm Orange Door Gradient -->
+    <linearGradient id="doorWood" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDB157"/>
+      <stop offset="100%" stop-color="#F29132"/>
+    </linearGradient>
+
+    <style>
+      .ink-stroke {
+        stroke: #1D1B38;
+        stroke-width: 4.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .ink-thin {
+        stroke: #1D1B38;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .ink-dashed {
+        stroke: #1D1B38;
+        stroke-width: 3.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 6 9;
+        fill: none;
+      }
+    </style>
+  </defs>
+
+  <!-- 1. INTERIOR DOORWAY SOFT GLOW & FLOOR SHADOW (100% Transparent Outer BG) -->
+  <path d="M 282 375 L 282 270 A 78 78 0 0 1 438 270 L 438 395 Z" fill="url(#doorGlow)" />
+  <polygon points="315,392 435,392 435,418 320,418" fill="#E3DFEC" opacity="0.65" />
+
+  <!-- 2. SHARED STUDY TABLE INSIDE THE ARCH -->
+  <g id="study-table">
+    <!-- Back & Front Table Legs -->
+    <rect x="336" y="362" width="8" height="36" rx="3" fill="#D98B43" class="ink-thin" />
+    <rect x="319" y="365" width="9" height="44" rx="3.5" fill="#E89D54" class="ink-thin" />
+    <!-- Tabletop Perspective -->
+    <polygon points="310,358 332,334 405,334 405,360" fill="#F6B26B" class="ink-thin" />
+    <!-- Table Edge Thickness -->
+    <rect x="310" y="358" width="95" height="9" rx="2" fill="#E09145" class="ink-thin" />
+    <!-- Paper Sheet on Table -->
+    <polygon points="348,352 355,341 384,341 388,352" fill="#FFFFFF" stroke="#1D1B38" stroke-width="2.4" stroke-linejoin="round" />
+    <!-- Mini Pencil on Table -->
+    <path d="M 330 351 L 340 341" stroke="#635BDB" stroke-width="4" stroke-linecap="round" />
+    <path d="M 330 351 L 340 341" stroke="#1D1B38" stroke-width="2.2" stroke-linecap="round" />
+  </g>
+
+  <!-- 3. DASHED COLLABORATION LOOPS & SPARKLES -->
+  <g id="magic-trails">
+    <!-- Inner Arch Swirl -->
+    <path d="M 362 325 C 350 295, 392 292, 376 268 C 362 248, 395 238, 412 252" class="ink-dashed" />
+    <path d="M 382 324 C 392 308, 405 300, 416 298" class="ink-dashed" />
+
+    <!-- Top Right Rising Loop Swirl -->
+    <path d="M 424 208 C 435 190, 456 172, 434 156 C 414 142, 404 176, 436 178 C 464 180, 474 162, 488 152" class="ink-dashed" />
+
+    <!-- Right Doorway Swirl -->
+    <path d="M 480 185 C 504 185, 496 212, 480 202 C 466 194, 486 172, 514 168" class="ink-dashed" />
+    <path d="M 476 292 C 512 285, 522 248, 492 232" class="ink-dashed" />
+
+    <!-- 4-Point Sparkle Inside Arch -->
+    <path d="M 345 245 Q 345 262 330 262 Q 345 262 345 279 Q 345 262 360 262 Q 345 262 345 245 Z" fill="#FDE08D" stroke="#E0A938" stroke-width="2" stroke-linejoin="round" />
+
+    <!-- 4-Point Sparkle Top Right -->
+    <path d="M 465 132 Q 465 150 448 150 Q 465 150 465 168 Q 465 150 482 150 Q 465 150 465 132 Z" fill="#FDE08D" stroke="#E0A938" stroke-width="2" stroke-linejoin="round" />
+
+    <!-- 4-Point Sparkle Bold Outlined Right of Door -->
+    <path d="M 495 232 Q 495 246 483 246 Q 495 246 495 260 Q 495 246 507 246 Q 495 246 495 232 Z" fill="#FFFDF7" class="ink-thin" />
+
+    <!-- Small Lavender Diamond Sparkle Top -->
+    <path d="M 405 145 Q 405 154 396 154 Q 405 154 405 163 Q 405 154 414 154 Q 405 154 405 145 Z" fill="#E2DCFF" stroke="#8C7AE6" stroke-width="2" stroke-linejoin="round" />
+
+    <!-- Lavender 5-Point Stars -->
+    <polygon points="330,295 333,302 341,303 335,308 337,316 330,312 323,316 325,308 319,303 327,302" fill="#B8A9F8" stroke="#7866D5" stroke-width="1.8" stroke-linejoin="round" />
+    <polygon points="508,195 512,205 523,206 515,213 517,224 508,218 499,224 501,213 493,206 504,205" fill="#B8A9F8" stroke="#7866D5" stroke-width="2" stroke-linejoin="round" />
+    <polygon points="502,145 505,152 512,153 507,158 508,165 502,161 496,165 497,158 492,153 499,152" fill="#B8A9F8" stroke="#7866D5" stroke-width="1.8" stroke-linejoin="round" />
+  </g>
+
+  <!-- 4. PURPLE PENCIL ARCHWAY -->
+  <g id="pencil-arch">
+    <!-- Main Curved Pencil Body -->
+    <path d="M 248 392
+             L 248 272
+             A 106 106 0 0 1 452 232
+             L 410 255
+             A 58 58 0 0 0 296 272
+             L 296 392
+             Z"
+          fill="url(#pencilGrad)" class="ink-stroke" />
+
+    <!-- Pencil Facet Ridges (Hexagonal Pencil Lines following the Arch) -->
+    <path d="M 263 390 L 263 272 A 91 91 0 0 1 436 239" fill="none" class="ink-thin" />
+    <path d="M 280 390 L 280 272 A 74 74 0 0 1 420 247" fill="none" class="ink-thin" />
+
+    <!-- Shaved Wood Cone at Left Base -->
+    <path d="M 248 392
+             Q 255 384 263 392
+             Q 272 383 280 392
+             Q 288 384 296 392
+             L 272 442
+             Z"
+          fill="#F9DEC2" class="ink-stroke" />
+
+    <!-- Wood Shading on Right Side of Cone -->
+    <path d="M 280 392 Q 288 384 296 392 L 272 442 Z" fill="#E8C09B" />
+    <path d="M 248 392 Q 255 384 263 392 Q 272 383 280 392 Q 288 384 296 392 L 272 442 Z" fill="none" class="ink-stroke" />
+
+    <!-- Graphite Lead Tip -->
+    <path d="M 263 423 Q 272 419 281 423 L 272 442 Z" fill="#1D1B38" class="ink-stroke" />
+  </g>
+
+  <!-- 5. WARM OPEN STUDIO DOOR (Right Pillar) -->
+  <g id="open-door">
+    <!-- Outer Door Frame / Side Depth -->
+    <polygon points="455,212 468,214 468,448 455,450" fill="#E07D24" class="ink-stroke" />
+
+    <!-- Main Door Leaf in Perspective -->
+    <path d="M 396 270
+             C 396 238, 422 216, 455 212
+             L 455 450
+             L 396 426
+             Z"
+          fill="url(#doorWood)" class="ink-stroke" />
+
+    <!-- Upper Recessed Door Panel (Arched) -->
+    <path d="M 407 274
+             C 407 251, 424 235, 445 231
+             L 445 316
+             L 407 315
+             Z"
+          fill="#FCA856" class="ink-thin" />
+
+    <!-- Lower Recessed Door Panel -->
+    <polygon points="407,348 445,355 445,428 407,412" fill="#FCA856" class="ink-thin" />
+
+    <!-- Oval Brass Door Handle -->
+    <ellipse cx="445" cy="336" rx="4.8" ry="7.5" fill="#FDE08D" class="ink-thin" />
+  </g>
+</svg>

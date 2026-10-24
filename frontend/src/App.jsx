@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
+import Dashboard from './pages/Dashboard';
 
 /**
  * Root Application Component
- * Manages global theme, room modal state, and renders top-level pages
+ * Configures React Router routes for landing page (/) and dashboard (/dashboard/*)
+ * and maintains global theme state.
  */
 export default function App() {
   const [theme, setTheme] = useState('light');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState('create'); // 'create' | 'join'
-  const [activeRoomCode, setActiveRoomCode] = useState('');
 
   // Synchronize data-theme on root HTML document
   useEffect(() => {
@@ -20,28 +20,24 @@ export default function App() {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  const handleStartRoom = () => {
-    setModalMode('create');
-    setActiveRoomCode(`LR-${Math.floor(1000 + Math.random() * 9000)}`);
-    setIsModalOpen(true);
-  };
-
-  const handleJoinRoom = (code) => {
-    setModalMode('join');
-    setActiveRoomCode(code || '');
-    setIsModalOpen(true);
-  };
-
   return (
-    <Home
-      theme={theme}
-      onToggleTheme={toggleTheme}
-      isModalOpen={isModalOpen}
-      setIsModalOpen={setIsModalOpen}
-      modalMode={modalMode}
-      activeRoomCode={activeRoomCode}
-      onStartRoom={handleStartRoom}
-      onJoinRoom={handleJoinRoom}
-    />
+    <BrowserRouter>
+      <Routes>
+        {/* Landing / Home Page */}
+        <Route
+          path="/"
+          element={<Home theme={theme} onToggleTheme={toggleTheme} />}
+        />
+
+        {/* Learning Room Dashboard */}
+        <Route
+          path="/dashboard/*"
+          element={<Dashboard theme={theme} onToggleTheme={toggleTheme} />}
+        />
+
+        {/* Fallback route redirects to landing page */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

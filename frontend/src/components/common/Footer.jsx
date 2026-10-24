@@ -5,6 +5,7 @@ import {
   pencilHolder,
   footerPlane,
 } from '../../assets/LandingPage';
+import { learningRoomLogo } from '../../assets';
 
 /**
  * Footer Component
@@ -250,16 +251,13 @@ export default function Footer({ onStartRoom }) {
               </svg>
             </div>
 
-            {/* Logo Brand: 4-pointed sparkle + 'Learning Room.' */}
-            <div className="flex items-center gap-2 mb-3">
-              <svg className="w-6 h-6 text-[#635BDB]" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M12 2L14.2 9.8L22 12L14.2 14.2L12 22L9.8 14.2L2 12L9.8 9.8L12 2Z"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinejoin="round"
-                />
-              </svg>
+            {/* Logo Brand: Learning Room Logo + 'Learning Room.' */}
+            <div className="flex items-center gap-2.5 mb-3">
+              <img
+                src={learningRoomLogo}
+                alt="Learning Room Logo"
+                className="w-7 h-7 object-contain shrink-0 drop-shadow-2xs"
+              />
               <span className="font-heading font-extrabold text-xl text-[var(--color-text-primary)] tracking-tight">
                 Learning Room.
               </span>
