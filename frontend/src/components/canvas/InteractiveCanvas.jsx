@@ -54,24 +54,6 @@ export default function InteractiveCanvas() {
   const [mayaPos, setMayaPos] = useState({ x: 175, y: 240 });
   const [rohanPos, setRohanPos] = useState({ x: 285, y: 95 });
 
-  // Update canvas size and redraw with correct pixel ratio
-  const updateCanvasSize = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-      redrawStrokes(strokes);
-    }
-  };
-
-  useEffect(() => {
-    updateCanvasSize();
-    window.addEventListener('resize', updateCanvasSize);
-    return () => window.removeEventListener('resize', updateCanvasSize);
-  }, [strokes]);
-
   /**
    * Redraw all strokes using destination-out for eraser
    * This guarantees background dots and canvas textures are NEVER erased!
@@ -109,6 +91,24 @@ export default function InteractiveCanvas() {
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
   };
+
+  // Update canvas size and redraw with correct pixel ratio
+  const updateCanvasSize = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      redrawStrokes(strokes);
+    }
+  };
+
+  useEffect(() => {
+    updateCanvasSize();
+    window.addEventListener('resize', updateCanvasSize);
+    return () => window.removeEventListener('resize', updateCanvasSize);
+  }, [strokes]);
 
   // Collaborator cursor animation
   useEffect(() => {

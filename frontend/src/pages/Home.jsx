@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Navbar from '../components/common/Navbar';
 import HeroSection from '../components/hero/HeroSection';
 import FloatingMockup from '../components/showcase/FloatingMockup';
@@ -12,21 +12,28 @@ import RoomModal from '../components/room/RoomModal';
  * HomePage Component
  * Main landing page, live interactive room showcase, features, and explore rooms section
  */
-export default function Home({
-  theme,
-  onToggleTheme,
-  isModalOpen,
-  setIsModalOpen,
-  modalMode,
-  activeRoomCode,
-  onStartRoom,
-  onJoinRoom,
-}) {
+export default function Home({ theme, onToggleTheme }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState('create'); // 'create' | 'join'
+  const [activeRoomCode, setActiveRoomCode] = useState('');
+
+  const handleStartRoom = () => {
+    setModalMode('create');
+    setActiveRoomCode(`LR-${Math.floor(1000 + Math.random() * 9000)}`);
+    setIsModalOpen(true);
+  };
+
+  const handleJoinRoom = (code) => {
+    setModalMode('join');
+    setActiveRoomCode(code || '');
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="flex flex-col min-h-screen w-full max-w-full overflow-x-clip bg-[var(--color-background)] transition-colors duration-200">
       {/* Top Application Navigation */}
       <Navbar
-        onOpenCreateRoom={onStartRoom}
+        onOpenCreateRoom={handleStartRoom}
         theme={theme}
         onToggleTheme={onToggleTheme}
       />
@@ -34,8 +41,8 @@ export default function Home({
       {/* Main Landing Hero */}
       <main className="flex-1 flex flex-col">
         <HeroSection
-          onStartRoom={onStartRoom}
-          onJoinRoom={onJoinRoom}
+          onStartRoom={handleStartRoom}
+          onJoinRoom={handleJoinRoom}
         />
 
         {/* Floating Tactile Window Showcase with Interactive Canvas & Live Chat */}
@@ -48,16 +55,16 @@ export default function Home({
 
         {/* Explore Rooms Showcase Section */}
         <ExploreSection
-          onJoinRoom={onJoinRoom}
-          onStartRoom={onStartRoom}
+          onJoinRoom={handleJoinRoom}
+          onStartRoom={handleStartRoom}
         />
 
         {/* About Learning Room Section */}
-        <AboutSection onStartRoom={onStartRoom} />
+        <AboutSection onStartRoom={handleStartRoom} />
       </main>
 
       {/* Footer Section */}
-      <Footer onStartRoom={onStartRoom} />
+      <Footer onStartRoom={handleStartRoom} />
 
       {/* Persistent Room Creation & Joining Modal */}
       <RoomModal
