@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * RoomModal Component
- * Accessible dialog for creating new collaborative rooms or joining via code
+ * Accessible dialog for creating new collaborative rooms or joining via code.
+ * Directly navigates to live room /room/:roomId on launch.
  */
 export default function RoomModal({ isOpen, onClose, mode = 'create', initialCode = '' }) {
+  const navigate = useNavigate();
   const [roomName, setRoomName] = useState('System Design & Algorithms');
   const [roomCode, setRoomCode] = useState(initialCode || 'LR-8492');
   const [includeMeet, setIncludeMeet] = useState(true);
@@ -21,16 +24,22 @@ export default function RoomModal({ isOpen, onClose, mode = 'create', initialCod
   };
 
   const handleLaunch = (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     setIsLaunching(true);
+
+    // Extract clean room identifier (e.g. 'LR-8492' -> '8492' or fallback '1234')
+    const rawCode = roomCode ? roomCode.trim().replace(/^LR-?/i, '') : '1234';
+    const targetRoomId = rawCode || '1234';
+
     setTimeout(() => {
       setIsLaunching(false);
       setLaunchSuccess(true);
       setTimeout(() => {
         setLaunchSuccess(false);
         onClose();
-      }, 1400);
-    }, 700);
+        navigate(`/room/${targetRoomId}`);
+      }, 500);
+    }, 400);
   };
 
   return (
@@ -142,27 +151,42 @@ export default function RoomModal({ isOpen, onClose, mode = 'create', initialCod
           )}
 
           {/* Action Footer */}
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--color-border)]">
+          <div className="flex items-center justify-between gap-2.5 pt-3 border-t border-[var(--color-border)]">
             <button
               type="button"
-              onClick={onClose}
-              className="rounded-full px-4 py-2 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)] transition-colors"
+              onClick={() => {
+                onClose();
+                navigate('/room/1234');
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-[var(--color-brand)] bg-[var(--color-brand-soft)] hover:opacity-90 transition-all cursor-pointer shadow-2xs"
+              title="Jump directly to demo room 1234"
             >
-              Cancel
+              <span>⚡</span>
+              <span>Test Demo Room (#1234)</span>
             </button>
-            <button
-              type="submit"
-              disabled={isLaunching || (mode === 'join' && !roomCode.trim())}
-              className="rounded-full bg-[var(--color-brand)] hover:bg-[var(--color-brand-hover)] text-white px-5 py-2 text-xs font-semibold shadow-md hover:shadow-lg disabled:opacity-50 transition-all flex items-center gap-1.5"
-            >
-              {isLaunching
-                ? 'Connecting Room...'
-                : launchSuccess
-                ? 'Ready! Launching...'
-                : mode === 'create'
-                ? 'Launch Room →'
-                : 'Enter Room →'}
-            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isLaunching || (mode === 'join' && !roomCode.trim())}
+                className="rounded-full bg-[var(--color-brand)] hover:bg-[var(--color-brand-hover)] text-white px-5 py-2 text-xs font-semibold shadow-md hover:shadow-lg disabled:opacity-50 transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                {isLaunching
+                  ? 'Connecting Room...'
+                  : launchSuccess
+                  ? 'Ready! Launching...'
+                  : mode === 'create'
+                  ? 'Launch Room →'
+                  : 'Enter Room →'}
+              </button>
+            </div>
           </div>
         </form>
       </div>

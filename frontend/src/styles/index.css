@@ -3,6 +3,24 @@
    Native CSS for light/dark variables, theme tokens & tactile elements
    ========================================================================== */
 
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+@theme {
+  --color-brand: #635bdb;
+  --color-brand-hover: #5148c8;
+  --color-brand-soft: #eeecff;
+  --color-brand-deep: #39318f;
+
+  --font-heading: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-editorial: 'Fraunces', 'Newsreader', Georgia, serif;
+  --font-handwriting: 'Caveat', cursive, sans-serif;
+  --font-cursive: 'Dancing Script', 'Caveat', cursive;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
 :root {
   color-scheme: light;
 

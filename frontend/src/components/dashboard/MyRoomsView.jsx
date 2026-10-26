@@ -237,18 +237,18 @@ export default function MyRoomsView({ onOpenRoom, onOpenCreateRoom }) {
         </div>
 
         {/* Action Buttons: "Join a Room" & "Create Room +" */}
-        <div className="flex items-center gap-3 self-start lg:self-center">
+        <div className="flex items-center gap-2.5 sm:gap-3 self-start lg:self-center shrink-0 flex-nowrap">
           <button
             type="button"
             onClick={() => onOpenRoom?.()}
-            className="inline-flex items-center justify-center bg-white dark:bg-[#252833] hover:bg-gray-50 dark:hover:bg-[#2D303D] active:scale-95 text-[#18191F] dark:text-gray-100 border border-[#D5CFCA] dark:border-[#3E4150] font-medium text-sm px-5 py-2.5 rounded-full transition-all cursor-pointer shadow-2xs"
+            className="inline-flex items-center justify-center whitespace-nowrap shrink-0 bg-white dark:bg-[#252833] hover:bg-gray-50 dark:hover:bg-[#2D303D] active:scale-95 text-[#18191F] dark:text-gray-100 border border-[#D5CFCA] dark:border-[#3E4150] font-medium text-sm px-5 py-2.5 rounded-full transition-all cursor-pointer shadow-2xs"
           >
             Join a Room
           </button>
           <button
             type="button"
             onClick={() => onOpenCreateRoom?.()}
-            className="inline-flex items-center justify-center bg-[#543FE3] hover:bg-[#4632D0] active:scale-95 text-white font-medium text-sm px-6 py-2.5 rounded-full shadow-md shadow-indigo-500/25 transition-all cursor-pointer"
+            className="inline-flex items-center justify-center whitespace-nowrap shrink-0 bg-[#543FE3] hover:bg-[#4632D0] active:scale-95 text-white font-medium text-sm px-6 py-2.5 rounded-full shadow-md shadow-indigo-500/25 transition-all cursor-pointer"
           >
             Create Room +
           </button>

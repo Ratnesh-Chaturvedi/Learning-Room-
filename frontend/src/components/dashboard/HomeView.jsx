@@ -166,11 +166,11 @@ export default function HomeView({
             </p>
 
             {/* Floating Action Buttons */}
-            <div className="flex items-center gap-3 pt-2">
+            <div className="flex items-center gap-2.5 sm:gap-3 pt-2 flex-wrap sm:flex-nowrap">
               <button
                 type="button"
                 onClick={() => onOpenJoin?.()}
-                className="inline-flex items-center gap-2 bg-[#543FE3] hover:bg-[#4532CD] active:scale-95 text-white font-medium text-sm px-5 py-2.5 rounded-full shadow-md shadow-indigo-500/20 transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 whitespace-nowrap shrink-0 bg-[#543FE3] hover:bg-[#4532CD] active:scale-95 text-white font-medium text-sm px-5 py-2.5 rounded-full shadow-md shadow-indigo-500/20 transition-all cursor-pointer"
               >
                 <span>Join a Room</span>
                 <span>→</span>
@@ -178,10 +178,18 @@ export default function HomeView({
               <button
                 type="button"
                 onClick={onOpenCreate}
-                className="inline-flex items-center gap-1.5 bg-white dark:bg-[#252833] hover:bg-gray-50 dark:hover:bg-[#2F3240] active:scale-95 text-[#252730] dark:text-[#EDEBF5] border border-[#E0DCD4] dark:border-[#3E4150] font-medium text-sm px-4 py-2.5 rounded-full transition-all cursor-pointer shadow-2xs"
+                className="inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 bg-white dark:bg-[#252833] hover:bg-gray-50 dark:hover:bg-[#2F3240] active:scale-95 text-[#252730] dark:text-[#EDEBF5] border border-[#E0DCD4] dark:border-[#3E4150] font-medium text-sm px-4 py-2.5 rounded-full transition-all cursor-pointer shadow-2xs"
               >
                 <span>Create Room</span>
                 <span className="text-base leading-none font-bold">+</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/room/1234')}
+                className="inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 bg-[#F6F2FF] dark:bg-[#2B2345] hover:bg-[#EFE8FD] dark:hover:bg-[#352B55] active:scale-95 text-[#543FE3] dark:text-[#C7BCFF] border border-[#E0D2FC] dark:border-[#4B3972] font-semibold text-sm px-4 py-2.5 rounded-full transition-all cursor-pointer shadow-2xs"
+                title="Open demo collaborative room 1234"
+              >
+                <span>⚡ Demo Room</span>
               </button>
             </div>
           </div>

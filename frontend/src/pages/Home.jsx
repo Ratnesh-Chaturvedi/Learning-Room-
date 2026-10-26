@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../components/common/Navbar';
 import HeroSection from '../components/hero/HeroSection';
 import FloatingMockup from '../components/showcase/FloatingMockup';
@@ -16,6 +16,16 @@ export default function Home({ theme, onToggleTheme }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create'); // 'create' | 'join'
   const [activeRoomCode, setActiveRoomCode] = useState('');
+
+  // Ensure landing page stays at the top on refresh instead of jumping downwards
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    if (!window.location.hash) {
+      window.scrollTo(0, 0);
+    }
+  }, []);
 
   const handleStartRoom = () => {
     setModalMode('create');
@@ -47,7 +57,7 @@ export default function Home({ theme, onToggleTheme }) {
 
         {/* Floating Tactile Window Showcase with Interactive Canvas & Live Chat */}
         <section className="w-full px-2 sm:px-6 pb-12 sm:pb-16" aria-label="Interactive room showcase">
-          <FloatingMockup />
+          <FloatingMockup theme={theme} />
         </section>
 
         {/* Features Showcase Section */}
