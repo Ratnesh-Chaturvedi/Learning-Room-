@@ -1,4 +1,5 @@
 import React from 'react';
+import { burstLines } from '../../assets';
 
 /**
  * FeaturesSection Component
@@ -399,12 +400,12 @@ export default function FeaturesSection() {
           <div className="absolute -top-10 -right-10 w-36 h-36 bg-rose-300/20 dark:bg-rose-600/15 rounded-full blur-2xl pointer-events-none" />
 
           {/* Radiating burst lines above pill (floating) */}
-          <div className="hidden sm:block absolute right-14 top-2 text-[var(--color-text-primary)] select-none pointer-events-none animate-float-slow">
-            <svg className="w-6 h-5" viewBox="0 0 20 16" fill="none">
-              <line x1="4" y1="14" x2="2" y2="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              <line x1="10" y1="14" x2="10" y2="1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              <line x1="16" y1="14" x2="18" y2="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+          <div className="hidden sm:block absolute right-14 top-2 select-none pointer-events-none animate-float-slow">
+            <img
+              src={burstLines}
+              alt=""
+              className="w-6 h-5 object-contain dark:invert"
+            />
           </div>
 
           <div className="relative z-10">

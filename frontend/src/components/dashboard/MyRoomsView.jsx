@@ -5,6 +5,7 @@ import {
   roomWebdev,
   roomDsa,
   ratneshAvatar,
+  burstLines,
 } from '../../assets';
 
 export default function MyRoomsView({ onOpenRoom, onOpenCreateRoom }) {
@@ -189,26 +190,27 @@ export default function MyRoomsView({ onOpenRoom, onOpenCreateRoom }) {
       {/* ========================================================= */}
       {/* TOP HEADER SECTION (Exact match to screenshot)            */}
       {/* ========================================================= */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
-        <div>
-          {/* 3 Radiating Ink Ticks above "My Rooms" */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-2 sm:pt-3">
+        <div className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1">
+          {/* 3 Radiating burst doodle on top-left corner of "My Rooms" */}
           <div className="relative inline-block">
-            <svg
-              className="w-5 h-5 text-[#18191F] dark:text-[#E2DFD7] -mb-1 ml-0.5"
-              viewBox="0 0 24 24"
-              fill="none"
+            <span
+              className="absolute -top-[18px] sm:-top-5 -left-[19px] sm:-left-[22px] -rotate-45 pointer-events-none select-none animate-float-slow"
+              aria-hidden="true"
             >
-              <line x1="3" y1="18" x2="8" y2="10" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-              <line x1="12" y1="19" x2="12" y2="8" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-              <line x1="21" y1="18" x2="16" y2="10" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-            </svg>
+              <img
+                src={burstLines}
+                alt=""
+                className="w-7 h-5 sm:w-8 sm:h-6 object-contain dark:invert"
+              />
+            </span>
             <h1 className="font-heading font-extrabold text-3xl sm:text-4xl text-[#18191F] dark:text-[#F3F4F6] tracking-tight">
               My Rooms
             </h1>
           </div>
 
           {/* Line 2: "All your shared spaces in one place" (Editorial Italic Serif + Squiggle) */}
-          <div className="relative inline-block mt-1">
+          <div className="relative inline-block">
             <h2 className="font-editorial italic font-medium text-2xl sm:text-3xl lg:text-[34px] text-[#18191F] dark:text-[#FFFFFF] tracking-tight">
               All your shared spaces in one place
             </h2>

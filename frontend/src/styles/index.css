@@ -300,3 +300,9 @@ body::before {
   }
 }
 
+/* Burst lines doodle dark mode adaptation */
+[data-theme="dark"] img[src*="burst-lines"],
+[data-theme="dark"] .burst-lines-icon {
+  filter: brightness(0) invert(1);
+}
+

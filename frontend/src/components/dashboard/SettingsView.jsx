@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ratneshAvatar } from '../../assets';
+import { ratneshAvatar, burstLines } from '../../assets';
 
 export default function SettingsView({ theme = 'light', onToggleTheme }) {
 
@@ -51,21 +51,20 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
       {/* ========================================================= */}
       {/* 1. TOP HEADER SECTION                                     */}
       {/* ========================================================= */}
-      <div className="pt-1">
+      <div className="pt-3 sm:pt-4 flex flex-wrap items-baseline gap-x-3.5 gap-y-1.5">
         {/* Title with the 3 radiating lines precisely aligned on top of "Settings" */}
         <div className="relative inline-block">
-          {/* 3 Radiating ink lines precisely aligned on top-left of Settings text */}
-          <div className="absolute -top-5 -left-1 select-none pointer-events-none">
-            <svg
-              className="w-7 h-7 text-[#18191F] dark:text-[#E2DFD7]"
-              viewBox="0 0 28 28"
-              fill="none"
-            >
-              <line x1="8" y1="18" x2="2" y2="9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <line x1="14" y1="20" x2="10" y2="8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              <line x1="20" y1="21" x2="18" y2="7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
-          </div>
+          {/* 3 Radiating burst doodle on top-left corner of Settings */}
+          <span
+            className="absolute -top-[18px] sm:-top-5 -left-[19px] sm:-left-[22px] -rotate-45 pointer-events-none select-none animate-float-slow"
+            aria-hidden="true"
+          >
+            <img
+              src={burstLines}
+              alt=""
+              className="w-7 h-5 sm:w-8 sm:h-6 object-contain dark:invert"
+            />
+          </span>
 
           <h1 className="font-heading font-extrabold text-3xl sm:text-4xl text-[#18191F] dark:text-[#F3F4F6] tracking-tight">
             Settings
@@ -73,7 +72,7 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
         </div>
 
         {/* Sub-headline: "Customize your studio & preferences" with hand-drawn squiggle */}
-        <div className="relative inline-block mt-1">
+        <div className="relative inline-block">
           <h2 className="font-editorial italic font-medium text-2xl sm:text-3xl lg:text-[34px] text-[#18191F] dark:text-[#FFFFFF] tracking-tight">
             Customize your studio & preferences
           </h2>

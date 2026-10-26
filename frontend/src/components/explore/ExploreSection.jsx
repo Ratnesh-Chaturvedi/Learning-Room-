@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { burstLines } from '../../assets';
 
 /**
  * ExploreSection Component
@@ -44,16 +45,16 @@ export default function ExploreSection({ onJoinRoom, onStartRoom }) {
         {/* Main Headline with 45° anticlockwise burst on text border & sparkles */}
         <h2 className="font-heading text-3xl sm:text-4xl md:text-[44px] font-extrabold tracking-tight text-[var(--color-text-primary)] leading-[1.2] mb-3">
           <span className="relative inline-block">
-            {/* Preexisting 3-line burst on text border angled 45° anticlockwise */}
+            {/* 3-line radiating burst on text border angled 45° anticlockwise */}
             <span
-              className="absolute -top-6 sm:-top-7 -left-3 sm:-left-4 -rotate-45 text-[var(--color-text-primary)] pointer-events-none select-none animate-float-slow"
+              className="absolute -top-[18px] sm:-top-5 -left-[19px] sm:-left-[22px] -rotate-45 pointer-events-none select-none animate-float-slow"
               aria-hidden="true"
             >
-              <svg className="w-7 h-5 sm:w-8 sm:h-6" viewBox="0 0 32 24" fill="none">
-                <line x1="8" y1="20" x2="4" y2="4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-                <line x1="16" y1="22" x2="16" y2="2" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-                <line x1="24" y1="20" x2="28" y2="4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-              </svg>
+              <img
+                src={burstLines}
+                alt=""
+                className="w-7 h-5 sm:w-8 sm:h-6 object-contain dark:invert"
+              />
             </span>
             <span>Find your people,&nbsp;</span>
           </span>
@@ -207,12 +208,12 @@ export default function ExploreSection({ onJoinRoom, onStartRoom }) {
                 <span>DESIGN & BUILD</span>
               </span>
               {/* Corner burst */}
-              <div className="text-[var(--color-text-muted)]">
-                <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none">
-                  <line x1="4" y1="12" x2="2" y2="2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  <line x1="10" y1="12" x2="10" y2="2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  <line x1="16" y1="12" x2="18" y2="2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                </svg>
+              <div className="opacity-60 select-none pointer-events-none">
+                <img
+                  src={burstLines}
+                  alt=""
+                  className="w-3.5 h-3.5 object-contain dark:invert"
+                />
               </div>
             </div>
 

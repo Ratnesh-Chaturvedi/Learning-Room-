@@ -7,6 +7,7 @@ import footerBooks from './shared/footer-books.png';
 import pencilHolder from './shared/pencil-holder.png';
 import aboutUsAvatars from './shared/about-us-avatars.png';
 import learningRoomLogo from './Learning_Room_Logo.svg';
+import burstLines from './shared/burst-lines.svg';
 
 // Dashboard Assets
 import studySunset from './dashboard/study_sunset.png';
@@ -43,6 +44,8 @@ export {
   pencilHolder,
   aboutUsAvatars,
   learningRoomLogo,
+  burstLines,
+  burstLines as radiatingBurst,
 
   // Dashboard
   studySunset,
@@ -82,6 +85,8 @@ export default {
   pencilHolder,
   aboutUsAvatars,
   learningRoomLogo,
+  burstLines,
+  radiatingBurst: burstLines,
 
   // Dashboard
   studySunset,

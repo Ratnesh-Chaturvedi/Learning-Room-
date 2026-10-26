@@ -3,10 +3,7 @@ import { Link } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import { learningRoomLogo } from '../../assets';
 
-/**
- * Navbar Component
- * Navigation header with logo, links, theme switch, smooth mobile drawer from right, and action buttons
- */
+
 export default function Navbar({ onOpenCreateRoom, theme, onToggleTheme }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { burstLines } from '../../assets';
 
 /**
  * TactileStationery Component
@@ -58,12 +59,12 @@ export default function TactileStationery() {
       {/* --- RIGHT SIDE STATIONERY --- */}
 
       {/* 6. Doodle: Radiating Burst Lines at top-right */}
-      <div className="hidden sm:block absolute right-0 -top-4 text-[var(--color-text-primary)] z-10 animate-float-slow">
-        <svg className="w-7 h-5" viewBox="0 0 32 24" fill="none">
-          <line x1="6" y1="20" x2="2" y2="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          <line x1="16" y1="22" x2="16" y2="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          <line x1="26" y1="20" x2="30" y2="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
+      <div className="hidden sm:block absolute right-0 -top-4 z-10 animate-float-slow">
+        <img
+          src={burstLines}
+          alt=""
+          className="w-7 h-5 object-contain dark:invert"
+        />
       </div>
 
       {/* 7. Doodle: "Compact chat" - enlarged, floating, closely pointing directly into the side chat header */}

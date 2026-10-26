@@ -7,6 +7,7 @@ import {
   footerPencil,
   ratneshAvatar,
   aboutUsAvatars,
+  burstLines,
 } from '../../assets';
 
 export default function ActivityView({ onOpenRoom }) {
@@ -20,17 +21,20 @@ export default function ActivityView({ onOpenRoom }) {
       {/* ========================================================= */}
       {/* 1. TOP HEADER & MOTTO ROW                                 */}
       {/* ========================================================= */}
-      <div className="flex items-start justify-between relative pt-1">
+      <div className="flex items-start justify-between relative pt-2 sm:pt-3">
         {/* Left: Radiating rays + Title + Subtitle */}
-        <div className="relative">
-          {/* 3 Radiating hand-drawn ink ticks */}
-          <div className="absolute -top-5 left-0 text-[#1E1F24] dark:text-gray-300 pointer-events-none select-none">
-            <svg className="w-5 h-5 -rotate-12" viewBox="0 0 20 20" fill="none">
-              <line x1="2" y1="4" x2="7" y2="8" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-              <line x1="2" y1="11" x2="8" y2="11" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-              <line x1="3" y1="18" x2="8" y2="14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-            </svg>
-          </div>
+        <div className="relative inline-block">
+          {/* 3-line radiating burst on corner of Activity */}
+          <span
+            className="absolute -top-[18px] sm:-top-5 -left-[19px] sm:-left-[22px] -rotate-45 pointer-events-none select-none animate-float-slow"
+            aria-hidden="true"
+          >
+            <img
+              src={burstLines}
+              alt=""
+              className="w-7 h-5 sm:w-8 sm:h-6 object-contain dark:invert"
+            />
+          </span>
 
           <h1 className="font-heading font-extrabold text-3xl sm:text-4xl text-[#18191F] dark:text-[#F3F4F6] tracking-tight">
             Activity

@@ -5,6 +5,7 @@ import {
   heartIcon,
   aboutUsCollab,
   aboutUsAvatars,
+  burstLines,
 } from '../../assets/LandingPage';
 
 export default function AboutSection({ onStartRoom }) {
@@ -40,14 +41,14 @@ export default function AboutSection({ onStartRoom }) {
           <div className="relative inline-block mb-3.5">
             {/* 3-line radiating burst angled 45° anticlockwise directly above 'About' */}
             <span
-              className="absolute -top-7 sm:-top-8 -left-3 sm:-left-4 -rotate-45 text-[var(--color-text-primary)] pointer-events-none select-none animate-float-slow"
+              className="absolute -top-[18px] sm:-top-5 -left-[19px] sm:-left-[22px] -rotate-45 pointer-events-none select-none animate-float-slow"
               aria-hidden="true"
             >
-              <svg className="w-7 h-5 sm:w-8 sm:h-6" viewBox="0 0 32 24" fill="none">
-                <line x1="8" y1="20" x2="4" y2="4" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-                <line x1="16" y1="22" x2="16" y2="2" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-                <line x1="24" y1="20" x2="28" y2="4" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-              </svg>
+              <img
+                src={burstLines}
+                alt=""
+                className="w-7 h-5 sm:w-8 sm:h-6 object-contain dark:invert"
+              />
             </span>
 
             <h1 className="font-heading text-4xl sm:text-5xl lg:text-[54px] font-extrabold tracking-tight text-[var(--color-text-primary)] leading-[1.12]">
