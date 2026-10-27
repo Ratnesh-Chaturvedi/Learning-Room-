@@ -48,10 +48,12 @@ export default function RoomModal({ isOpen, onClose, mode = 'create', initialCod
       onClick={onClose}
       role="dialog"
       aria-modal="true"
+      data-lenis-prevent
     >
       <div
         className="relative w-full max-w-md rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-2xl p-6 overflow-hidden transition-all duration-200"
         onClick={(e) => e.stopPropagation()}
+        data-lenis-prevent
       >
         {/* Modal Header */}
         <div className="flex items-start justify-between pb-4 border-b border-[var(--color-border)]">

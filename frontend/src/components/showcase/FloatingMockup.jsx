@@ -169,8 +169,8 @@ export default function FloatingMockup({ theme = 'light' }) {
           </nav>
 
           {/* Central Interactive Whiteboard Canvas */}
-          <main className="relative flex-1 h-full overflow-hidden">
-            <div className="w-full h-full relative">
+          <main className="relative flex-1 h-full overflow-hidden" data-lenis-prevent>
+            <div className="w-full h-full relative" data-lenis-prevent>
               <Tldraw user={mockupUser} autoFocus={false} />
             </div>
 

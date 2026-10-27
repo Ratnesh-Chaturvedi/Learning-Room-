@@ -23,6 +23,7 @@ export default function ChatMessageList({
   return (
     <div
       ref={containerRef}
+      data-lenis-prevent
       className={`${customHeightClass} p-3 overflow-y-auto custom-scrollbar space-y-2.5 text-xs bg-[var(--color-surface)]`}
     >
       {messages.map((msg) => (

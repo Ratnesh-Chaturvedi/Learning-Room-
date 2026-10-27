@@ -25,7 +25,15 @@ export default function Dashboard({ theme = 'light', onToggleTheme }) {
   const [activeRoomCode, setActiveRoomCode] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const searchInputRef = useRef(null);
+  const mainScrollRef = useRef(null);
   const location = useLocation();
+
+  // Scroll main content area to top when changing dashboard views
+  useEffect(() => {
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTop = 0;
+    }
+  }, [location.pathname]);
 
   // Determine active tab cleanly from location.pathname
   const getActiveTab = () => {
@@ -233,6 +241,7 @@ export default function Dashboard({ theme = 'light', onToggleTheme }) {
 
         {/* Sidebar panel smoothly sliding from the left */}
         <aside
+          data-lenis-prevent
           className={`fixed top-0 bottom-0 left-0 w-72 max-w-[85vw] bg-[#FAF8F5] dark:bg-[#121316] h-full p-5 flex flex-col justify-between z-10 shadow-2xl border-r border-[#EDE8E1] dark:border-[#26282E] overflow-y-auto overflow-x-hidden select-none transform transition-transform duration-300 ease-in-out ${
             mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
@@ -303,8 +312,11 @@ export default function Dashboard({ theme = 'light', onToggleTheme }) {
 
       {/* ========================================================= */}
       {/* 2. MAIN SCROLLABLE CONTENT AREA (INDEPENDENT SCROLL)     */}
-      {/* ========================================================= */}
-      <div className="flex-1 flex flex-col h-screen overflow-y-auto overflow-x-hidden min-w-0 relative custom-scrollbar">
+      <div
+        ref={mainScrollRef}
+        id="dashboard-main-scroll"
+        className="flex-1 flex flex-col h-screen overflow-y-auto overflow-x-hidden min-w-0 relative custom-scrollbar"
+      >
         {/* STICKY TOP NAVBAR */}
         <header className="px-5 sm:px-6 py-3.5 flex items-center justify-between gap-3 sm:gap-4 border-b border-[#EDE8E1] dark:border-[#26282E]/50 sticky top-0 bg-[#FAF8F5]/90 dark:bg-[#121316]/90 backdrop-blur-md z-30 flex-shrink-0">
           {/* Mobile Menu Hamburger */}

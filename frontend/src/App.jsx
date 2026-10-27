@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import RoomPage from './pages/RoomPage';
+import SmoothScrollProvider from './components/common/SmoothScrollProvider';
 
 /**
  * Root Application Component
@@ -23,7 +24,8 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
+      <SmoothScrollProvider>
+        <Routes>
         {/* Landing / Home Page */}
         <Route
           path="/"
@@ -46,6 +48,7 @@ export default function App() {
         {/* Fallback route redirects to landing page */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </SmoothScrollProvider>
     </BrowserRouter>
   );
 }
