@@ -4,29 +4,10 @@ import {
   footerPencil,
   pencilHolder,
   footerPlane,
+  burstLines,
 } from '../../assets/LandingPage';
 import { learningRoomLogo } from '../../assets';
 
-/**
- * Footer Component
- * Faithful implementation of the provided footer design:
- * 1. Upper Newsletter:
- *    - Radiating 3-line burst doodle above 'Let's keep'
- *    - Headline: "Let's keep learning together." with editorial serif italic and purple wavy scribble underline
- *    - Subtitle description and curved loop arrow pointing to subscription box
- *    - Hand-drawn pill email input with mail icon and deep purple "Subscribe →" button
- *    - Cursive note: "Be a part of our journey!" with double purple underline
- *    - Pinned tilted sticky note: "Learn / Collaborate / Grow / :)" with sparkle star & sketch marks
- * 2. Middle Brand & Links:
- *    - Brand column with 4-point purple sparkle, "Learning Room.", subtext with cursive 'together.', and 5 social icons
- *    - Categorized links for Product, Company, and Resources separated by subtle vertical dividers
- *    - Decorative right illustration with handwritten cursive "Dream bigger. Learn together.",
- *      stacked books (footer-books.png), pencil holder (pencil-holder.png), and radiating ticks
- * 3. Bottom Signature Line:
- *    - footer-pencil.svg on the bottom-left drawing a continuous hand-drawn wavy pencil path across the page
- *    - Copyright notice: "© 2026 Learning Room. All rights reserved. ♡"
- *    - Hand-drawn paper airplane (footerPlane) with dashed looped flight trail on the bottom-right
- */
 export default function Footer({ onStartRoom }) {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
@@ -80,14 +61,14 @@ export default function Footer({ onStartRoom }) {
             
             {/* 3-line radiating burst angled 45° anticlockwise above 'Let's keep' */}
             <span
-              className="absolute -top-7 sm:-top-8 -left-2 sm:-left-3 -rotate-45 text-[var(--color-text-primary)] pointer-events-none select-none animate-float-slow"
+              className="absolute -top-[18px] sm:-top-5 -left-[19px] sm:-left-[22px] -rotate-45 pointer-events-none select-none animate-float-slow"
               aria-hidden="true"
             >
-              <svg className="w-7 h-5 sm:w-8 sm:h-6" viewBox="0 0 32 24" fill="none">
-                <line x1="8" y1="20" x2="4" y2="4" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-                <line x1="16" y1="22" x2="16" y2="2" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-                <line x1="24" y1="20" x2="28" y2="4" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-              </svg>
+              <img
+                src={burstLines}
+                alt=""
+                className="w-7 h-5 sm:w-8 sm:h-6 object-contain dark:invert"
+              />
             </span>
 
             {/* Headline */}
@@ -243,12 +224,12 @@ export default function Footer({ onStartRoom }) {
           <div className="lg:col-span-4 lg:pr-6 lg:border-r lg:border-slate-200/80 dark:lg:border-slate-800 relative">
             
             {/* 3-line radiating burst on top-left of star logo */}
-            <div className="absolute -top-4 -left-2 text-[var(--color-text-primary)] pointer-events-none select-none">
-              <svg className="w-6 h-5 -rotate-12" viewBox="0 0 24 20" fill="none">
-                <line x1="6" y1="16" x2="3" y2="4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-                <line x1="12" y1="18" x2="12" y2="2" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-                <line x1="18" y1="16" x2="21" y2="4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-              </svg>
+            <div className="absolute -top-4 -left-2 pointer-events-none select-none">
+              <img
+                src={burstLines}
+                alt=""
+                className="w-6 h-5 -rotate-12 object-contain dark:invert"
+              />
             </div>
 
             {/* Logo Brand: Learning Room Logo + 'Learning Room.' */}

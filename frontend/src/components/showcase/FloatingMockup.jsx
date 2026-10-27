@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import InteractiveCanvas from '../canvas/InteractiveCanvas';
+import React, { useState, useMemo } from 'react';
+import { Tldraw, atom, createTLCurrentUser } from 'tldraw';
+import 'tldraw/tldraw.css';
 import SideChat from '../chat/SideChat';
 import TactileStationery from './TactileStationery';
 
@@ -8,10 +9,25 @@ import TactileStationery from './TactileStationery';
  * macOS window housing the interactive whiteboard, meet status, and chat panel,
  * accented with an ambient pastel aura and surrounding desk stationery.
  */
-export default function FloatingMockup() {
+export default function FloatingMockup({ theme = 'light' }) {
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [activeLeftTab, setActiveLeftTab] = useState('canvas');
   const [meetConnected, setMeetConnected] = useState(true);
+
+  // Fully isolated user preferences so the landing page canvas is NEVER affected by the room's theme toggle
+  const mockupUser = useMemo(() => {
+    const userPrefs = atom('mockupUserPrefs', {
+      id: 'mockup-preview-user',
+      name: 'Preview User',
+      colorScheme: theme === 'dark' ? 'dark' : 'light',
+    });
+    return createTLCurrentUser({
+      userPreferences: userPrefs,
+      setUserPreferences: (newPrefs) => {
+        userPrefs.set(newPrefs);
+      },
+    });
+  }, [theme]);
 
   return (
     <div className="relative mx-auto w-full max-w-[940px] px-2 sm:px-4 py-8">
@@ -153,8 +169,10 @@ export default function FloatingMockup() {
           </nav>
 
           {/* Central Interactive Whiteboard Canvas */}
-          <main className="relative flex-1 h-full overflow-hidden">
-            <InteractiveCanvas />
+          <main className="relative flex-1 h-full overflow-hidden" data-lenis-prevent>
+            <div className="w-full h-full relative" data-lenis-prevent>
+              <Tldraw user={mockupUser} autoFocus={false} />
+            </div>
 
             {/* Reopen Chat Button when collapsed */}
             {!isChatOpen && (
@@ -176,7 +194,7 @@ export default function FloatingMockup() {
           </main>
 
           {/* Right Side Chat Panel */}
-          <SideChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+          <SideChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} floating={false} />
         </div>
       </div>
     </div>

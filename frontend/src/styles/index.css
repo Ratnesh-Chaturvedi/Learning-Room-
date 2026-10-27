@@ -3,6 +3,24 @@
    Native CSS for light/dark variables, theme tokens & tactile elements
    ========================================================================== */
 
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+@theme {
+  --color-brand: #635bdb;
+  --color-brand-hover: #5148c8;
+  --color-brand-soft: #eeecff;
+  --color-brand-deep: #39318f;
+
+  --font-heading: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-editorial: 'Fraunces', 'Newsreader', Georgia, serif;
+  --font-handwriting: 'Caveat', cursive, sans-serif;
+  --font-cursive: 'Dancing Script', 'Caveat', cursive;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
 :root {
   color-scheme: light;
 
@@ -82,6 +100,29 @@
                    0 0 0 1px rgba(255, 255, 255, 0.08);
 
   --shadow-sticky: 0 4px 14px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* ==========================================================================
+   Lenis Smooth Scrolling Styles
+   ========================================================================== */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
 }
 
 /* Base resets & typography */
@@ -298,5 +339,11 @@ body::before {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Burst lines doodle dark mode adaptation */
+[data-theme="dark"] img[src*="burst-lines"],
+[data-theme="dark"] .burst-lines-icon {
+  filter: brightness(0) invert(1);
 }
 

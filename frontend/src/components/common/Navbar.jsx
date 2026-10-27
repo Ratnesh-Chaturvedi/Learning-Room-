@@ -3,10 +3,7 @@ import { Link } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import { learningRoomLogo } from '../../assets';
 
-/**
- * Navbar Component
- * Navigation header with logo, links, theme switch, smooth mobile drawer from right, and action buttons
- */
+
 export default function Navbar({ onOpenCreateRoom, theme, onToggleTheme }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -23,7 +20,12 @@ export default function Navbar({ onOpenCreateRoom, theme, onToggleTheme }) {
       const id = href.replace('/#', '');
       const element = document.getElementById(id);
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+        if (window.lenis) {
+          window.lenis.scrollTo(element, { offset: -70, duration: 1.2 });
+          window.history.pushState(null, '', `#${id}`);
+        } else {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
       }
     }
   };
@@ -149,7 +151,7 @@ export default function Navbar({ onOpenCreateRoom, theme, onToggleTheme }) {
           }`}
         >
           {/* Scrollable Container */}
-          <div className="flex-1 overflow-y-auto space-y-6 pr-1 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto space-y-6 pr-1 custom-scrollbar" data-lenis-prevent>
             {/* 1. Header with Logo & Close Button */}
             <div className="flex items-center justify-between pb-3.5 border-b border-gray-200/70 dark:border-gray-800">
               <div className="flex items-center gap-2">

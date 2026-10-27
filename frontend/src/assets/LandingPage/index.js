@@ -7,6 +7,7 @@ import footerBooks from './footer-books.png';
 import footerPencil from './footer-pencil.svg';
 import pencilHolder from './pencil-holder.png';
 import footerPlane from './footer-plane.png';
+import burstLines from './burst-lines.svg';
 
 export {
   rocketIcon,
@@ -18,6 +19,7 @@ export {
   footerPencil,
   pencilHolder,
   footerPlane,
+  burstLines,
 };
 
 export default {
@@ -30,4 +32,5 @@ export default {
   footerPencil,
   pencilHolder,
   footerPlane,
+  burstLines,
 };

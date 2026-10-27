@@ -13,6 +13,7 @@ import {
   pencilHolder,
   footerPencil,
   ratneshAvatar,
+  burstLines,
 } from '../../assets';
 
 export default function ExploreView({ onOpenRoom, onOpenCreateRoom }) {
@@ -82,17 +83,21 @@ export default function ExploreView({ onOpenRoom, onOpenCreateRoom }) {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
           {/* Left Headline & Subtitle */}
           <div className="flex-1 space-y-3 relative">
-            {/* 3 Radiating hand-drawn ink ticks above Discover */}
-            <div className="text-[#1E1F24] dark:text-gray-300 pointer-events-none -mb-1">
-              <svg className="w-6 h-6 -rotate-12" viewBox="0 0 20 20" fill="none">
-                <line x1="2" y1="4" x2="7" y2="8" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-                <line x1="2" y1="11" x2="8" y2="11" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-                <line x1="3" y1="18" x2="8" y2="14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-              </svg>
-            </div>
-
             <h1 className="font-heading font-extrabold text-3xl sm:text-4xl lg:text-[42px] text-[#18191F] dark:text-[#F3F4F6] tracking-tight leading-tight">
-              Discover rooms,
+              <span className="relative inline-block">
+                {/* 3-line radiating burst on corner of Discover rooms */}
+                <span
+                  className="absolute -top-[18px] sm:-top-5 -left-[19px] sm:-left-[22px] -rotate-45 pointer-events-none select-none animate-float-slow"
+                  aria-hidden="true"
+                >
+                  <img
+                    src={burstLines}
+                    alt=""
+                    className="w-7 h-5 sm:w-8 sm:h-6 object-contain dark:invert"
+                  />
+                </span>
+                Discover rooms,
+              </span>
               <br />
               <span>explore </span>
               <span className="font-editorial italic font-normal text-3xl sm:text-4xl lg:text-[44px] relative inline-block">

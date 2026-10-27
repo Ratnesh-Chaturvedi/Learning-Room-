@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
+import RoomPage from './pages/RoomPage';
+import SmoothScrollProvider from './components/common/SmoothScrollProvider';
 
 /**
  * Root Application Component
- * Configures React Router routes for landing page (/) and dashboard (/dashboard/*)
- * and maintains global theme state.
+ * Configures React Router routes for landing page (/), dashboard (/dashboard/*),
+ * and live collaborative meeting room (/room/:roomId)
  */
 export default function App() {
   const [theme, setTheme] = useState('light');
@@ -22,7 +24,8 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
+      <SmoothScrollProvider>
+        <Routes>
         {/* Landing / Home Page */}
         <Route
           path="/"
@@ -35,9 +38,17 @@ export default function App() {
           element={<Dashboard theme={theme} onToggleTheme={toggleTheme} />}
         />
 
+        {/* Live Collaborative Meeting Room (Demo ID e.g. /room/1234) */}
+        <Route
+          path="/room/:roomId"
+          element={<RoomPage theme={theme} onToggleTheme={toggleTheme} />}
+        />
+        <Route path="/room" element={<Navigate to="/room/1234" replace />} />
+
         {/* Fallback route redirects to landing page */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </SmoothScrollProvider>
     </BrowserRouter>
   );
 }
