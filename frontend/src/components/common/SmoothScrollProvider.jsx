@@ -450,7 +450,7 @@ class BuiltinLenisEngine {
 /**
  * SmoothScrollProvider Component
  * Initializes and manages Lenis smooth scrolling across the entire app.
- * - Handles route changes (pauses in /room to give tldraw 100% native canvas control)
+ * - Handles route changes (pauses in /room to give Excalidraw 100% native canvas control)
  * - Automatically provides seamless smooth navigation for anchor links (#features, #explore, #about)
  * - Exposes window.lenis and useLenis() context
  */
@@ -521,17 +521,30 @@ export default function SmoothScrollProvider({ children }) {
   }, []);
 
   // Control behavior per route:
-  // When inside a collaborative room (/room/:roomId), pause Lenis
-  // so the tldraw whiteboard canvas has 100% native wheel/touch control.
+  // When inside an application screen (/room/:roomId or /dashboard/*),
+  // stop Lenis and remove global Lenis document classes so the app has 100%
+  // native, uninhibited browser scrolling and canvas responsiveness in all production builds.
   useEffect(() => {
     const isRoomPage = location.pathname.startsWith('/room');
+    const isDashboardPage = location.pathname.startsWith('/dashboard');
+    const isAppPage = isRoomPage || isDashboardPage;
 
-    if (lenisRef.current) {
-      if (isRoomPage) {
+    if (isAppPage) {
+      document.documentElement.classList.add('app-page');
+      document.documentElement.classList.remove(
+        'lenis',
+        'lenis-smooth',
+        'lenis-scrolling',
+        'lenis-stopped'
+      );
+      if (lenisRef.current) {
         lenisRef.current.stop();
-      } else {
+      }
+    } else {
+      document.documentElement.classList.remove('app-page');
+      document.documentElement.classList.add('lenis', 'lenis-smooth');
+      if (lenisRef.current) {
         lenisRef.current.start();
-        // Reset scroll position to top on navigation to a new non-room page
         if (!location.hash) {
           lenisRef.current.scrollTo(0, { immediate: true });
         }

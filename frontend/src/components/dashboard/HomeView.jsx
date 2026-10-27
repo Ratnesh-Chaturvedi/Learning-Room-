@@ -122,13 +122,13 @@ export default function HomeView({
   ];
 
   return (
-    <main className="flex-1 p-5 sm:p-6 lg:p-7 grid grid-cols-1 xl:grid-cols-12 gap-6 max-w-[1560px] mx-auto w-full">
+    <main className="flex-1 p-4 sm:p-6 lg:p-7 grid grid-cols-1 xl:grid-cols-12 gap-6 max-w-[1560px] mx-auto w-full">
       {/* ========================================================= */}
       {/* 1. CENTER / MAIN DASHBOARD AREA (8 Cols on XL)            */}
       {/* ========================================================= */}
       <div className="xl:col-span-8 flex flex-col gap-6">
         {/* HERO / WELCOME BANNER CARD */}
-        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#FFF5ED] via-[#F9F4FE] to-[#F1EAFF] dark:from-[#242129] dark:via-[#22212E] dark:to-[#1C1A2B] border border-[#EFE8DF] dark:border-[#353245] p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xs">
+        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#FFF5ED] via-[#F9F4FE] to-[#F1EAFF] dark:from-[#242129] dark:via-[#22212E] dark:to-[#1C1A2B] border border-[#EFE8DF] dark:border-[#353245] p-5 sm:p-6 md:p-8 flex flex-col lg:flex-row items-center justify-between gap-6 shadow-xs">
           {/* Ambient Soft Glow Backdrop */}
           <div className="absolute top-0 right-1/4 w-72 h-72 rounded-full bg-gradient-to-br from-amber-200/30 to-purple-300/30 dark:from-purple-900/20 dark:to-indigo-900/20 blur-3xl pointer-events-none" />
 
@@ -195,22 +195,24 @@ export default function HomeView({
           </div>
 
           {/* Right Illustration: 4 friends studying + Doodle Quotes */}
-          <div className="relative flex-shrink-0 z-10 w-full max-w-xs sm:max-w-sm md:max-w-[340px] flex justify-center">
+          <div className="relative z-10 w-full max-w-[280px] sm:max-w-[320px] lg:max-w-[340px] shrink min-w-0 flex flex-col items-center mx-auto lg:mx-0 pt-8 sm:pt-10 pb-1">
             {/* Handwritten Doodle above the girl: "Learn. Collaborate. Grow." */}
-            <div className="absolute -top-5 right-2 font-handwriting text-base font-bold text-[#3B3C46] dark:text-[#D4D6E2] leading-tight text-right select-none rotate-[4deg]">
-              Learn.<br />Collaborate.<br />Grow.
+            <div className="absolute top-1 right-2 sm:right-4 font-handwriting text-xs sm:text-sm md:text-base font-bold text-[#3B3C46] dark:text-[#D4D6E2] leading-tight text-right select-none rotate-[2deg] pointer-events-none whitespace-nowrap">
+              <span>Learn.</span><br />
+              <span>Collaborate.</span><br />
+              <span>Grow.</span>
               {/* Hand-drawn curved arrow doodle */}
-              <svg className="w-6 h-6 text-[#3B3C46] dark:text-[#D4D6E2] inline-block ml-1 -mt-1" viewBox="0 0 24 24" fill="none">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#3B3C46] dark:text-[#D4D6E2] inline-block ml-0.5 -mt-0.5" viewBox="0 0 24 24" fill="none">
                 <path d="M4 18 Q 12 12, 18 4 M 14 4 L 18 4 L 18 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
 
             {/* Lightbulb doodle image from assets floating above the boy */}
-            <div className="absolute -top-7 left-5 select-none animate-bounce" style={{ animationDuration: '4s' }}>
+            <div className="absolute top-1 left-2 sm:left-4 select-none animate-bounce pointer-events-none" style={{ animationDuration: '4s' }}>
               <img
                 src={bulbIcon}
                 alt="Idea bulb"
-                className="w-10 h-10 object-contain drop-shadow-xs dark:invert-[0.9]"
+                className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 object-contain drop-shadow-xs dark:invert-[0.9]"
               />
             </div>
 

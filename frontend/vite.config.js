@@ -8,5 +8,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  define: {
+    'process.env.IS_PREACT': JSON.stringify('false'),
+  },
 })
 

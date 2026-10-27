@@ -117,12 +117,19 @@ html.lenis, html.lenis body {
   overscroll-behavior: contain;
 }
 
-.lenis.lenis-stopped {
+/* Only lock overflow when explicitly stopped on landing page, never on dashboard/room */
+html.lenis:not(.app-page).lenis-stopped {
   overflow: hidden;
 }
 
 .lenis.lenis-scrolling iframe {
   pointer-events: none;
+}
+
+/* Ensure dashboard always scrolls smoothly and reliably in all production environments */
+#dashboard-main-scroll {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Base resets & typography */
@@ -346,4 +353,34 @@ body::before {
 [data-theme="dark"] .burst-lines-icon {
   filter: brightness(0) invert(1);
 }
+
+/* Footer Social Icons dark mode adaptation */
+[data-theme="dark"] .footer-social-link,
+.dark .footer-social-link {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .footer-social-link svg,
+.dark .footer-social-link svg {
+  fill: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Dashboard & App scrolling safety rules */
+#dashboard-main-scroll {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior-y: contain;
+}
+
+html.app-page,
+html.app-page body {
+  overflow: hidden !important;
+  height: 100% !important;
+}
+
+html.lenis:not(.app-page).lenis-stopped {
+  overflow: hidden;
+}
+
 

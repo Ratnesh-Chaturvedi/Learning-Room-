@@ -76,11 +76,11 @@ export default function ExploreView({ onOpenRoom, onOpenCreateRoom }) {
       {/* ========================================================= */}
       {/* 1. HERO BANNER: DISCOVER ROOMS, EXPLORE IDEAS             */}
       {/* ========================================================= */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#FFF5ED] via-[#FBF4FC] to-[#F1EAFF] dark:from-[#242129] dark:via-[#22212E] dark:to-[#1C1A2B] border border-[#EFE8DF] dark:border-[#353245] p-6 sm:p-8 flex flex-col gap-6 shadow-xs">
+      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#FFF5ED] via-[#FBF4FC] to-[#F1EAFF] dark:from-[#242129] dark:via-[#22212E] dark:to-[#1C1A2B] border border-[#EFE8DF] dark:border-[#353245] p-5 sm:p-6 md:p-8 flex flex-col gap-6 shadow-xs">
         {/* Soft Ambient Glow */}
         <div className="absolute top-0 right-1/4 w-80 h-80 rounded-full bg-gradient-to-br from-amber-200/30 to-purple-300/30 dark:from-purple-900/20 dark:to-indigo-900/20 blur-3xl pointer-events-none" />
 
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
           {/* Left Headline & Subtitle */}
           <div className="flex-1 space-y-3 relative">
             <h1 className="font-heading font-extrabold text-3xl sm:text-4xl lg:text-[42px] text-[#18191F] dark:text-[#F3F4F6] tracking-tight leading-tight">
@@ -130,18 +130,19 @@ export default function ExploreView({ onOpenRoom, onOpenCreateRoom }) {
           </div>
 
           {/* Right Illustration: 4 Friends Studying + Doodles */}
-          <div className="relative flex-shrink-0 w-full max-w-xs sm:max-w-sm md:max-w-[360px] flex justify-center">
+          <div className="relative z-10 w-full max-w-[280px] sm:max-w-[320px] lg:max-w-[340px] shrink min-w-0 flex flex-col items-center mx-auto lg:mx-0 pt-8 sm:pt-10 pb-1">
             {/* Handwritten "Learn. Share. Grow." above the left boy */}
-            <div className="absolute -top-5 left-2 font-handwriting text-base font-bold text-[#3B3C46] dark:text-[#D4D6E2] leading-tight select-none rotate-[-4deg]">
-              Learn.<br />Share. Grow.
+            <div className="absolute top-1 left-2 sm:left-4 font-handwriting text-xs sm:text-sm md:text-base font-bold text-[#3B3C46] dark:text-[#D4D6E2] leading-tight select-none rotate-[-4deg] pointer-events-none whitespace-nowrap">
+              <span>Learn.</span><br />
+              <span>Share. Grow.</span>
               {/* Hand-drawn curved arrow doodle pointing down */}
-              <svg className="w-5 h-5 text-[#3B3C46] dark:text-[#D4D6E2] inline-block ml-1 -mt-1" viewBox="0 0 24 24" fill="none">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#3B3C46] dark:text-[#D4D6E2] inline-block ml-1 -mt-1" viewBox="0 0 24 24" fill="none">
                 <path d="M4 14 C 10 10, 16 12, 20 8 M 16 6 L 20 8 L 18 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
 
             {/* Floating Purple Graduation Cap above the right girl */}
-            <div className="absolute -top-7 right-4 w-16 h-16 sm:w-20 sm:h-20 select-none animate-float-slow">
+            <div className="absolute top-1 right-2 sm:right-4 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 select-none animate-float-slow pointer-events-none">
               <img
                 src={gradCapPurple}
                 alt="Graduation Cap"
