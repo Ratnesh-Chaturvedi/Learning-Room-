@@ -128,7 +128,7 @@ export default function AboutSection({ onStartRoom }) {
 
           {/* Top-Right Floating Doodles: "Learn. Collaborate. Grow." & Curved Arrow */}
           <div
-            className="flex flex-col absolute -top-8 sm:-top-10 right-2 sm:right-6 items-center z-30 text-center font-handwriting font-bold text-lg sm:text-xl text-[var(--color-text-primary)] select-none pointer-events-none animate-float-medium"
+            className="flex flex-col absolute -top-8 sm:-top-10 right-3 sm:right-6 items-center z-30 text-center font-handwriting font-bold text-base sm:text-xl text-[var(--color-text-primary)] select-none pointer-events-none animate-float-medium"
             aria-hidden="true"
           >
             <div className="rotate-2 leading-tight drop-shadow-2xs">
@@ -138,7 +138,7 @@ export default function AboutSection({ onStartRoom }) {
               <br />
               <span>Grow.</span>
             </div>
-            <svg className="w-7 h-9 text-[var(--color-text-primary)] translate-x-1 mt-0.5" viewBox="0 0 30 38" fill="none">
+            <svg className="w-6 h-8 sm:w-7 sm:h-9 text-[var(--color-text-primary)] translate-x-1 mt-0.5" viewBox="0 0 30 38" fill="none">
               <path d="M 22 2 C 14 14, 12 24, 6 34" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
               <path d="M 14 26 L 5 34 L 5 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>

@@ -1,15 +1,13 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Tldraw, atom, createTLCurrentUser } from 'tldraw';
-import 'tldraw/tldraw.css';
-import { useSyncDemo } from '@tldraw/sync';
+import ExcalidrawCanvas from '../components/canvas/ExcalidrawCanvas';
 import RoomHeader from '../components/room/RoomHeader';
 import SideChat from '../components/chat/SideChat';
 
 /**
  * RoomPage Component
  * Full-screen collaborative whiteboard room with:
- * - Real-time tldraw multiplayer synchronization (@tldraw/sync)
+ * - Real-time Excalidraw multiplayer synchronization
  * - Immersive RoomHeader with meet audio, camera, and controls
  * - Adaptive SideChat (floating draggable on desktop, bottom-sheet drawer on mobile)
  * - Reactive dark / light mode synchronization
@@ -30,37 +28,45 @@ export default function RoomPage({ theme, onToggleTheme }) {
   const [isHandRaised, setIsHandRaised] = useState(false);
   const [activeCallTime, setActiveCallTime] = useState(842); // seconds
 
-  // Tldraw multiplayer sync store connected to this specific room ID
-  const store = useSyncDemo({ roomId: `learning-room-${roomId}` });
+  // Isolated theme state for THIS specific room - changing theme here only alters this room and this canvas!
+  const [roomTheme, setRoomTheme] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`room_theme_${roomId}`);
+      if (saved === 'dark' || saved === 'light') return saved;
+    } catch (e) {}
+    return theme || 'light';
+  });
 
-  // Isolated user state for RoomPage so it does NOT broadcast or contaminate global localStorage
-  const userAtom = useRef(null);
-  if (!userAtom.current) {
-    userAtom.current = atom('roomUserPrefs', {
+  const handleToggleRoomTheme = () => {
+    setRoomTheme((prev) => {
+      const next = prev === 'light' ? 'dark' : 'light';
+      try {
+        localStorage.setItem(`room_theme_${roomId}`, next);
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  // Synchronize document data-theme while active in this room, and restore global site theme when leaving
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', roomTheme);
+    document.documentElement.classList.toggle('dark', roomTheme === 'dark');
+    return () => {
+      const globalTheme = localStorage.getItem('learningroom_theme') || theme || 'light';
+      document.documentElement.setAttribute('data-theme', globalTheme);
+      document.documentElement.classList.toggle('dark', globalTheme === 'dark');
+    };
+  }, [roomTheme, theme]);
+
+  // Current participant profile
+  const currentUser = useMemo(
+    () => ({
       id: `user-${Date.now()}`,
       name: 'Ratnesh Chaturvedi',
-      colorScheme: theme === 'dark' ? 'dark' : 'light',
-    });
-  }
-
-  const roomUser = useMemo(() => {
-    return createTLCurrentUser({
-      userPreferences: userAtom.current,
-      setUserPreferences: (newPrefs) => {
-        userAtom.current.set(newPrefs);
-      },
-    });
-  }, []);
-
-  // Synchronize dark/light mode with roomUser atom (isolated strictly to this room!)
-  useEffect(() => {
-    if (userAtom.current) {
-      userAtom.current.set({
-        ...userAtom.current.get(),
-        colorScheme: theme === 'dark' ? 'dark' : 'light',
-      });
-    }
-  }, [theme]);
+      color: '#635bdb',
+    }),
+    []
+  );
 
   // Floating reaction animations
   const [floatingReactions, setFloatingReactions] = useState([]);
@@ -96,7 +102,10 @@ export default function RoomPage({ theme, onToggleTheme }) {
   };
 
   return (
-    <div className="w-full max-w-full h-screen flex flex-col overflow-hidden bg-[var(--color-background)] select-none text-[var(--color-text-primary)]">
+    <div
+      data-theme={roomTheme}
+      className="w-full max-w-full h-screen flex flex-col overflow-hidden bg-[var(--color-background)] select-none text-[var(--color-text-primary)]"
+    >
       {/* 1. Immersive Top Room Header */}
       <RoomHeader
         roomId={roomId}
@@ -117,8 +126,8 @@ export default function RoomPage({ theme, onToggleTheme }) {
         triggerReaction={triggerReaction}
         isChatOpen={isChatOpen}
         setIsChatOpen={setIsChatOpen}
-        theme={theme}
-        onToggleTheme={onToggleTheme}
+        theme={roomTheme}
+        onToggleTheme={handleToggleRoomTheme}
         onLeaveRoom={() => navigate('/dashboard')}
       />
 
@@ -126,9 +135,10 @@ export default function RoomPage({ theme, onToggleTheme }) {
       <main className="flex-1 relative w-full h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] overflow-hidden">
         <section className="w-full h-full relative overflow-hidden">
           <div className="absolute inset-0">
-            <Tldraw
-              store={store}
-              user={roomUser}
+            <ExcalidrawCanvas
+              roomId={roomId}
+              theme={roomTheme}
+              user={currentUser}
               autoFocus
             />
           </div>

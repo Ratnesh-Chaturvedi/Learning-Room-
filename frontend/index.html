@@ -11,150 +11,19 @@
       href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Dancing+Script:wght@600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600;1,9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500;1,6..72,600;1,6..72,700&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="/loader.css" />
   </head>
   <body>
     <div id="root">
-      <div id="pre-app-loader" style="
-        position: fixed;
-        inset: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background-color: #F7F6F2;
-        color: #252522;
-        font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
-        z-index: 999999;
-        transition: opacity 0.3s ease;
-      ">
-        <style>
-          @media (prefers-color-scheme: dark) {
-            #pre-app-loader {
-              background-color: #171815 !important;
-              color: #F2F0E9 !important;
-            }
-          }
-          @keyframes lr-pulse {
-            0%, 100% { transform: scale(1); opacity: 0.92; }
-            50% { transform: scale(1.06); opacity: 1; }
-          }
-          @keyframes lr-bar {
-            0% { transform: translateX(-100%); }
-            50% { transform: translateX(25%); }
-            100% { transform: translateX(110%); }
-          }
-        </style>
-        <div style="position: relative; width: 68px; height: 68px; margin-bottom: 18px;">
-          <div style="
-            position: absolute;
-            inset: -10px;
-            border-radius: 26px;
-            background: radial-gradient(circle, rgba(99, 91, 219, 0.22) 0%, rgba(99, 91, 219, 0) 70%);
-            animation: lr-pulse 2s ease-in-out infinite;
-          "></div>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="210 110 340 365" width="100%" height="100%" style="
-            display: block;
-            width: 100%;
-            height: 100%;
-            filter: drop-shadow(0 4px 14px rgba(99, 91, 219, 0.25));
-            animation: lr-pulse 2.2s ease-in-out infinite;
-          " aria-label="Learning Room Logo">
-            <defs>
-              <radialGradient id="lr_doorGlow" cx="50%" cy="52%" r="48%">
-                <stop offset="0%" stop-color="#FCE5DC" stop-opacity="0.78"/>
-                <stop offset="65%" stop-color="#EEECFF" stop-opacity="0.38"/>
-                <stop offset="100%" stop-color="#EEECFF" stop-opacity="0"/>
-              </radialGradient>
-              <linearGradient id="lr_pencilGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#B3A6FD"/>
-                <stop offset="50%" stop-color="#9A8BF6"/>
-                <stop offset="100%" stop-color="#7F70E5"/>
-              </linearGradient>
-              <linearGradient id="lr_doorWood" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#FDB157"/>
-                <stop offset="100%" stop-color="#F29132"/>
-              </linearGradient>
-              <style>
-                .lr-stroke { stroke: #1D1B38; stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; }
-                .lr-thin { stroke: #1D1B38; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-                .lr-dash { stroke: #1D1B38; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 6 9; fill: none; }
-              </style>
-            </defs>
-            <path d="M 282 375 L 282 270 A 78 78 0 0 1 438 270 L 438 395 Z" fill="url(#lr_doorGlow)" />
-            <polygon points="315,392 435,392 435,418 320,418" fill="#E3DFEC" opacity="0.65" />
-            <g id="lr-table">
-              <rect x="336" y="362" width="8" height="36" rx="3" fill="#D98B43" class="lr-thin" />
-              <rect x="319" y="365" width="9" height="44" rx="3.5" fill="#E89D54" class="lr-thin" />
-              <polygon points="310,358 332,334 405,334 405,360" fill="#F6B26B" class="lr-thin" />
-              <rect x="310" y="358" width="95" height="9" rx="2" fill="#E09145" class="lr-thin" />
-              <polygon points="348,352 355,341 384,341 388,352" fill="#FFFFFF" stroke="#1D1B38" stroke-width="2.4" stroke-linejoin="round" />
-              <path d="M 330 351 L 340 341" stroke="#635BDB" stroke-width="4" stroke-linecap="round" />
-              <path d="M 330 351 L 340 341" stroke="#1D1B38" stroke-width="2.2" stroke-linecap="round" />
-            </g>
-            <g id="lr-magic">
-              <path d="M 362 325 C 350 295, 392 292, 376 268 C 362 248, 395 238, 412 252" class="lr-dash" />
-              <path d="M 382 324 C 392 308, 405 300, 416 298" class="lr-dash" />
-              <path d="M 424 208 C 435 190, 456 172, 434 156 C 414 142, 404 176, 436 178 C 464 180, 474 162, 488 152" class="lr-dash" />
-              <path d="M 480 185 C 504 185, 496 212, 480 202 C 466 194, 486 172, 514 168" class="lr-dash" />
-              <path d="M 476 292 C 512 285, 522 248, 492 232" class="lr-dash" />
-              <path d="M 345 245 Q 345 262 330 262 Q 345 262 345 279 Q 345 262 360 262 Q 345 262 345 245 Z" fill="#FDE08D" stroke="#E0A938" stroke-width="2" stroke-linejoin="round" />
-              <path d="M 465 132 Q 465 150 448 150 Q 465 150 465 168 Q 465 150 482 150 Q 465 150 465 132 Z" fill="#FDE08D" stroke="#E0A938" stroke-width="2" stroke-linejoin="round" />
-              <path d="M 495 232 Q 495 246 483 246 Q 495 246 495 260 Q 495 246 507 246 Q 495 246 495 232 Z" fill="#FFFDF7" class="lr-thin" />
-              <path d="M 405 145 Q 405 154 396 154 Q 405 154 405 163 Q 405 154 414 154 Q 405 154 405 145 Z" fill="#E2DCFF" stroke="#8C7AE6" stroke-width="2" stroke-linejoin="round" />
-              <polygon points="330,295 333,302 341,303 335,308 337,316 330,312 323,316 325,308 319,303 327,302" fill="#B8A9F8" stroke="#7866D5" stroke-width="1.8" stroke-linejoin="round" />
-              <polygon points="508,195 512,205 523,206 515,213 517,224 508,218 499,224 501,213 493,206 504,205" fill="#B8A9F8" stroke="#7866D5" stroke-width="2" stroke-linejoin="round" />
-              <polygon points="502,145 505,152 512,153 507,158 508,165 502,161 496,165 497,158 492,153 499,152" fill="#B8A9F8" stroke="#7866D5" stroke-width="1.8" stroke-linejoin="round" />
-            </g>
-            <g id="lr-pencil">
-              <path d="M 248 392 L 248 272 A 106 106 0 0 1 452 232 L 410 255 A 58 58 0 0 0 296 272 L 296 392 Z" fill="url(#lr_pencilGrad)" class="lr-stroke" />
-              <path d="M 263 390 L 263 272 A 91 91 0 0 1 436 239" fill="none" class="lr-thin" />
-              <path d="M 280 390 L 280 272 A 74 74 0 0 1 420 247" fill="none" class="lr-thin" />
-              <path d="M 248 392 Q 255 384 263 392 Q 272 383 280 392 Q 288 384 296 392 L 272 442 Z" fill="#F9DEC2" class="lr-stroke" />
-              <path d="M 280 392 Q 288 384 296 392 L 272 442 Z" fill="#E8C09B" />
-              <path d="M 248 392 Q 255 384 263 392 Q 272 383 280 392 Q 288 384 296 392 L 272 442 Z" fill="none" class="lr-stroke" />
-              <path d="M 263 423 Q 272 419 281 423 L 272 442 Z" fill="#1D1B38" class="lr-stroke" />
-            </g>
-            <g id="lr-door">
-              <polygon points="455,212 468,214 468,448 455,450" fill="#E07D24" class="lr-stroke" />
-              <path d="M 396 270 C 396 238, 422 216, 455 212 L 455 450 L 396 426 Z" fill="url(#lr_doorWood)" class="lr-stroke" />
-              <path d="M 407 274 C 407 251, 424 235, 445 231 L 445 316 L 407 315 Z" fill="#FCA856" class="lr-thin" />
-              <polygon points="407,348 445,355 445,428 407,412" fill="#FCA856" class="lr-thin" />
-              <ellipse cx="445" cy="336" rx="4.8" ry="7.5" fill="#FDE08D" class="lr-thin" />
-            </g>
-          </svg>
+      <div id="pre-app-loader">
+        <div class="lr-loader-glow-wrapper">
+          <div class="lr-loader-glow"></div>
+          <img src="/favicon.svg" alt="Learning Room Logo" class="lr-loader-logo" />
         </div>
-        <div style="
-          font-family: 'Fraunces', 'Newsreader', Georgia, serif;
-          font-size: 19px;
-          font-weight: 600;
-          letter-spacing: -0.01em;
-          margin-bottom: 6px;
-        ">
-          Learning Room
-        </div>
-        <div style="
-          font-size: 12px;
-          color: #6D6C67;
-          margin-bottom: 18px;
-          letter-spacing: 0.01em;
-        ">
-          Setting up your collaborative study table...
-        </div>
-        <div style="
-          width: 140px;
-          height: 3.5px;
-          border-radius: 9999px;
-          background: rgba(99, 91, 219, 0.15);
-          overflow: hidden;
-          position: relative;
-        ">
-          <div style="
-            width: 65px;
-            height: 100%;
-            background: #635BDB;
-            border-radius: 9999px;
-            animation: lr-bar 1.3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-          "></div>
+        <div class="lr-loader-title">Learning Room</div>
+        <div class="lr-loader-subtitle">Setting up your collaborative study table...</div>
+        <div class="lr-loader-track">
+          <div class="lr-loader-bar"></div>
         </div>
       </div>
     </div>

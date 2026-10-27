@@ -222,7 +222,10 @@ export default function Dashboard({ theme = 'light', onToggleTheme }) {
   };
 
   return (
-    <div className="h-screen w-full bg-[#FAF8F5] dark:bg-[#121316] text-[#1E1F24] dark:text-[#EBEBF0] flex font-sans transition-colors duration-200 selection:bg-purple-200 overflow-hidden">
+    <div
+      data-lenis-prevent
+      className="h-screen w-full bg-[#FAF8F5] dark:bg-[#121316] text-[#1E1F24] dark:text-[#EBEBF0] flex font-sans transition-colors duration-200 selection:bg-purple-200 overflow-hidden"
+    >
       {/* ========================================================= */}
       {/* MOBILE SIDEBAR DRAWER (SMOOTH SLIDE FROM LEFT)            */}
       {/* ========================================================= */}
@@ -315,7 +318,8 @@ export default function Dashboard({ theme = 'light', onToggleTheme }) {
       <div
         ref={mainScrollRef}
         id="dashboard-main-scroll"
-        className="flex-1 flex flex-col h-screen overflow-y-auto overflow-x-hidden min-w-0 relative custom-scrollbar"
+        data-lenis-prevent
+        className="flex-1 flex flex-col h-screen overflow-y-auto overflow-x-hidden min-w-0 relative custom-scrollbar overscroll-contain"
       >
         {/* STICKY TOP NAVBAR */}
         <header className="px-5 sm:px-6 py-3.5 flex items-center justify-between gap-3 sm:gap-4 border-b border-[#EDE8E1] dark:border-[#26282E]/50 sticky top-0 bg-[#FAF8F5]/90 dark:bg-[#121316]/90 backdrop-blur-md z-30 flex-shrink-0">
