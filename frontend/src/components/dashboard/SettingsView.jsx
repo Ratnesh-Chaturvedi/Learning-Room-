@@ -1,13 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { userApi } from '../../api/user.api';
 import { ratneshAvatar, burstLines } from '../../assets';
 
 export default function SettingsView({ theme = 'light', onToggleTheme }) {
+  const navigate = useNavigate();
+  const { user, updateUser, logout } = useAuth();
 
-  // Profile Form State
-  const [fullName, setFullName] = useState('Ratnesh Chaturvedi');
-  const [username, setUsername] = useState('@ratnesh_learns');
-  const [bio, setBio] = useState('Learner • Dreamer • Builder');
+  // Profile Form State initialized from authenticated user
+  const [fullName, setFullName] = useState(user?.name || '');
+  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || null);
+  const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Sync state if user changes in context
+  useEffect(() => {
+    if (user?.name) setFullName(user.name);
+    if (user?.avatar) setAvatarPreview(user.avatar);
+  }, [user]);
+
+  // File Input Ref for image upload
+  const fileInputRef = useRef(null);
 
   // Theme & Appearance State
   const [selectedTheme, setSelectedTheme] = useState(theme === 'dark' ? 'dark' : 'warm-light');
@@ -15,20 +30,82 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
   const [showSoundEffects, setShowSoundEffects] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
 
-  // Audio & Integration State
+  // Audio & Hardware State
   const [selectedMic, setSelectedMic] = useState('Default Microphone');
   const [selectedCamera, setSelectedCamera] = useState('Camera 2');
   const [roomInvitesNotif, setRoomInvitesNotif] = useState(true);
   const [liveActivityNotif, setLiveActivityNotif] = useState(true);
 
-  // Avatar list for changing avatar
-  const [avatarIndex, setAvatarIndex] = useState(0);
+  // Handle local image file selection
+  const handleImageFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file (PNG, JPG, or WEBP).');
+      return;
+    }
 
-  const handleSave = (e) => {
-    e.preventDefault();
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+    // Limit to 5MB
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image file is too large. Please select an image under 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setAvatarPreview(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveProfile = async (e) => {
+    if (e) e.preventDefault();
+    const trimmedName = fullName.trim();
+    if (!trimmedName) {
+      setErrorMessage('Full name cannot be empty.');
+      return;
+    }
+
+    setIsSaving(true);
+    setErrorMessage('');
+    try {
+      const response = await userApi.updateProfile({
+        name: trimmedName,
+        avatar: avatarPreview || undefined,
+      });
+
+      const updatedData = response.data?.data || response.data?.user || {
+        name: trimmedName,
+        avatar: avatarPreview,
+      };
+
+      // Immediately sync with global AuthContext
+      updateUser({
+        name: trimmedName,
+        avatar: avatarPreview,
+      });
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      console.error('[Settings] Error updating profile:', err);
+      setErrorMessage(err.message || 'Failed to save profile changes.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (window.confirm('Are you sure you want to log out of LearningRoom?')) {
+      try {
+        await logout();
+      } finally {
+        navigate('/login');
+      }
+    }
   };
 
   const handleSelectTheme = (mode) => {
@@ -38,7 +115,6 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
     } else if (mode === 'warm-light' && theme === 'dark') {
       onToggleTheme?.();
     } else if (mode === 'system') {
-      // follow system preference
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if ((prefersDark && theme !== 'dark') || (!prefersDark && theme === 'dark')) {
         onToggleTheme?.();
@@ -47,57 +123,71 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
   };
 
   return (
-    <div className="w-full max-w-[1560px] mx-auto space-y-6 animate-fade-in relative pb-10">
+    <div className="w-full max-w-[1560px] mx-auto space-y-6 animate-fade-in relative pb-10 font-sans select-none">
       {/* ========================================================= */}
       {/* 1. TOP HEADER SECTION                                     */}
       {/* ========================================================= */}
-      <div className="pt-3 sm:pt-4 flex flex-wrap items-baseline gap-x-3.5 gap-y-1.5">
-        {/* Title with the 3 radiating lines precisely aligned on top of "Settings" */}
-        <div className="relative inline-block">
-          {/* 3 Radiating burst doodle on top-left corner of Settings */}
-          <span
-            className="absolute -top-[18px] sm:-top-5 -left-[19px] sm:-left-[22px] -rotate-45 pointer-events-none select-none animate-float-slow"
-            aria-hidden="true"
-          >
-            <img
-              src={burstLines}
-              alt=""
-              className="w-7 h-5 sm:w-8 sm:h-6 object-contain dark:invert"
-            />
-          </span>
+      <div className="pt-3 sm:pt-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1.5">
+          {/* Title with radiating burst doodle */}
+          <div className="relative inline-block">
+            <span
+              className="absolute -top-[18px] sm:-top-5 -left-[19px] sm:-left-[22px] -rotate-45 pointer-events-none select-none animate-float-slow"
+              aria-hidden="true"
+            >
+              <img
+                src={burstLines}
+                alt=""
+                className="w-7 h-5 sm:w-8 sm:h-6 object-contain dark:invert"
+              />
+            </span>
 
-          <h1 className="font-heading font-extrabold text-3xl sm:text-4xl text-[#18191F] dark:text-[#F3F4F6] tracking-tight">
-            Settings
-          </h1>
+            <h1 className="font-heading font-extrabold text-3xl sm:text-4xl text-[#18191F] dark:text-[#F3F4F6] tracking-tight">
+              Settings
+            </h1>
+          </div>
+
+          {/* Sub-headline */}
+          <div className="relative inline-block">
+            <h2 className="font-editorial italic font-medium text-2xl sm:text-3xl lg:text-[34px] text-[#18191F] dark:text-[#FFFFFF] tracking-tight">
+              Customize your studio & preferences
+            </h2>
+            <svg
+              className="absolute -bottom-2 left-0 w-full h-3 text-[#543FE3] overflow-visible"
+              viewBox="0 0 340 12"
+              fill="none"
+            >
+              <path
+                d="M 2 7 Q 60 1, 130 7 T 250 6 T 338 6"
+                stroke="currentColor"
+                strokeWidth="2.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
         </div>
 
-        {/* Sub-headline: "Customize your studio & preferences" with hand-drawn squiggle */}
-        <div className="relative inline-block">
-          <h2 className="font-editorial italic font-medium text-2xl sm:text-3xl lg:text-[34px] text-[#18191F] dark:text-[#FFFFFF] tracking-tight">
-            Customize your studio & preferences
-          </h2>
-          {/* Purple hand-drawn ink squiggle underline */}
-          <svg
-            className="absolute -bottom-2 left-0 w-full h-3 text-[#543FE3] overflow-visible"
-            viewBox="0 0 340 12"
-            fill="none"
-          >
-            <path
-              d="M 2 7 Q 60 1, 130 7 T 250 6 T 338 6"
-              stroke="currentColor"
-              strokeWidth="2.8"
-              strokeLinecap="round"
-            />
+        {/* Top Header Logout Button */}
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+          title="Sign out of your account"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
           </svg>
-        </div>
+          <span>Log Out</span>
+        </button>
       </div>
 
-
       {/* ========================================================= */}
-      {/* 3. MAIN SETTINGS CARDS GRID (RESPONSIVE)                  */}
+      {/* 2. MAIN SETTINGS CARDS GRID (RESPONSIVE)                  */}
       {/* ========================================================= */}
       <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
-        {/* Floating handwritten doodle on the left: "Make it yours! ✨" */}
+        {/* Floating handwritten doodle on the left */}
         <div className="hidden xl:block absolute -left-14 2xl:-left-20 top-24 pointer-events-none select-none z-10">
           <div className="font-handwriting font-bold text-base text-[#18191F] dark:text-gray-200 rotate-[-8deg]">
             Make it<br />yours!
@@ -108,7 +198,7 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
         </div>
 
         {/* --------------------------------------------------------- */}
-        {/* CARD 1: PROFILE INFORMATION                               */}
+        {/* CARD 1: PROFILE INFORMATION & IMAGE UPLOAD                */}
         {/* --------------------------------------------------------- */}
         <div className="lg:col-span-5 xl:col-span-5 bg-white dark:bg-[#1E202B] border border-[#E9E4DB] dark:border-[#2F3140] rounded-2xl p-5 sm:p-6 shadow-2xs flex flex-col justify-between">
           <div>
@@ -117,88 +207,131 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
             </h3>
 
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-              {/* Left Column: Avatar + Change Button */}
+              {/* Left Column: Avatar + Image Upload Button */}
               <div className="flex flex-col items-center shrink-0">
                 <div className="relative">
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1 bg-gradient-to-tr from-[#9E8BFF] to-[#E5D7FC] dark:from-[#543FE3] dark:to-[#8E79FF] shadow-xs">
-                    <img
-                      src={ratneshAvatar}
-                      alt={fullName}
-                      className="w-full h-full rounded-full object-cover ring-2 ring-white dark:ring-[#1E202B]"
-                    />
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1 bg-gradient-to-tr from-[#9E8BFF] to-[#E5D7FC] dark:from-[#543FE3] dark:to-[#8E79FF] shadow-xs overflow-hidden">
+                    {avatarPreview ? (
+                      <img
+                        src={avatarPreview}
+                        alt={fullName}
+                        className="w-full h-full rounded-full object-cover ring-2 ring-white dark:ring-[#1E202B]"
+                      />
+                    ) : (
+                      <img
+                        src={ratneshAvatar}
+                        alt={fullName}
+                        className="w-full h-full rounded-full object-cover ring-2 ring-white dark:ring-[#1E202B]"
+                      />
+                    )}
                   </div>
-                  {/* Online status indicator dot */}
+                  {/* Status indicator dot */}
                   <span className="absolute bottom-1 right-2 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#1E202B]" />
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setAvatarIndex((prev) => (prev + 1) % 3)}
-                  className="mt-3.5 bg-white dark:bg-[#252833] hover:bg-gray-50 dark:hover:bg-[#2D303D] active:scale-95 text-[#18191F] dark:text-gray-100 border border-[#D5CFCA] dark:border-[#3E4150] font-medium text-xs px-3.5 py-1.5 rounded-full transition-all cursor-pointer shadow-2xs"
-                >
-                  Change Avatar
-                </button>
+                {/* Hidden File Input */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageFileSelect}
+                  accept="image/png, image/jpeg, image/webp"
+                  className="hidden"
+                />
+
+                {/* Action Buttons for Avatar */}
+                <div className="flex flex-col items-center gap-1.5 mt-3.5">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="bg-white dark:bg-[#252833] hover:bg-gray-50 dark:hover:bg-[#2D303D] active:scale-95 text-[#18191F] dark:text-gray-100 border border-[#D5CFCA] dark:border-[#3E4150] font-medium text-xs px-3.5 py-1.5 rounded-full transition-all cursor-pointer shadow-2xs flex items-center gap-1.5"
+                  >
+                    <svg className="w-3.5 h-3.5 text-[#543FE3]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <span>Upload Image</span>
+                  </button>
+
+                  {avatarPreview && (
+                    <button
+                      type="button"
+                      onClick={() => setAvatarPreview(null)}
+                      className="text-[11px] text-gray-400 hover:text-rose-500 transition-colors"
+                    >
+                      Reset Photo
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Right Column: Profile Inputs */}
               <div className="w-full flex-1 space-y-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-[#18191F] dark:text-gray-200 mb-1">
-                    Full Name
+                    Display Name
                   </label>
                   <input
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Enter your name"
                     className="w-full bg-[#FAF7F2] dark:bg-[#252834] border border-[#E5DFD6] dark:border-[#383A4A] rounded-xl px-3.5 py-2 text-xs sm:text-sm text-[#18191F] dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-[#543FE3] transition-all"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-[#18191F] dark:text-gray-200 mb-1">
-                    Username
+                    Google Account Email
                   </label>
                   <input
                     type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full bg-[#FAF7F2] dark:bg-[#252834] border border-[#E5DFD6] dark:border-[#383A4A] rounded-xl px-3.5 py-2 text-xs sm:text-sm text-[#18191F] dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-[#543FE3] transition-all"
+                    value={user?.email || 'Authenticated via Google'}
+                    disabled
+                    className="w-full bg-[#F3F0EB] dark:bg-[#1C1E26] border border-[#E5DFD6] dark:border-[#383A4A] rounded-xl px-3.5 py-2 text-xs text-[#707280] dark:text-gray-400 cursor-not-allowed opacity-80"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-[#18191F] dark:text-gray-200 mb-1">
-                    Bio
+                    Learning Bio
                   </label>
                   <input
                     type="text"
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    className="w-full bg-[#FAF7F2] dark:bg-[#252834] border border-[#E5DFD6] dark:border-[#383A4A] rounded-xl px-3.5 py-2 text-xs sm:text-sm text-[#18191F] dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-[#543FE3] transition-all"
+                    defaultValue="Learner • Dreamer • Collaborative Builder"
+                    className="w-full bg-[#FAF7F2] dark:bg-[#252834] border border-[#E5DFD6] dark:border-[#383A4A] rounded-xl px-3.5 py-2 text-xs text-[#18191F] dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-[#543FE3] transition-all"
                   />
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="mt-4 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-medium">
+              {errorMessage}
+            </div>
+          )}
+
           {/* Card 1 Footer: Save Changes Button */}
           <div className="mt-6 flex items-center justify-between pt-4 border-t border-[#F2EDE5] dark:border-[#2D2F3C]">
             {saveSuccess ? (
               <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                ✓ Changes saved!
+                ✓ Changes saved successfully!
               </span>
             ) : (
               <span className="text-[11px] text-[#707280] dark:text-gray-400">
-                Updated profile syncs to all rooms
+                Syncs across all active studio rooms
               </span>
             )}
 
             <button
               type="button"
-              onClick={handleSave}
-              className="bg-[#543FE3] hover:bg-[#4632D0] active:scale-95 text-white font-medium text-xs sm:text-sm px-6 py-2 rounded-full shadow-md shadow-indigo-500/20 transition-all cursor-pointer"
+              onClick={handleSaveProfile}
+              disabled={isSaving}
+              className="bg-[#543FE3] hover:bg-[#4632D0] disabled:opacity-50 active:scale-95 text-white font-medium text-xs sm:text-sm px-6 py-2 rounded-full shadow-md shadow-indigo-500/20 transition-all cursor-pointer"
             >
-              Save Changes
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </div>
@@ -229,7 +362,6 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
                       : 'border-[#EAE1D2] hover:border-[#543FE3]/50'
                   }`}
                 >
-                  {/* Window dots */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
@@ -242,7 +374,6 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
                       </div>
                     )}
                   </div>
-                  {/* Miniature UI sketch */}
                   <div className="flex gap-1.5 my-auto">
                     <div className="w-2 h-7 rounded-xs bg-[#E8DDD0]" />
                     <div className="flex-1 space-y-1">
@@ -269,7 +400,6 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
                       : 'border-[#303240] hover:border-[#543FE3]/50'
                   }`}
                 >
-                  {/* Window dots */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
@@ -282,7 +412,6 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
                       </div>
                     )}
                   </div>
-                  {/* Miniature UI sketch */}
                   <div className="flex gap-1.5 my-auto">
                     <div className="w-2 h-7 rounded-xs bg-[#2A2B36]" />
                     <div className="flex-1 space-y-1">
@@ -309,7 +438,6 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
                       : 'border-[#D8D2C6] dark:border-[#383A4A] hover:border-[#543FE3]/50'
                   }`}
                 >
-                  {/* Window dots */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
@@ -322,7 +450,6 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
                       </div>
                     )}
                   </div>
-                  {/* Miniature UI sketch */}
                   <div className="flex gap-1.5 my-auto">
                     <div className="w-2 h-7 rounded-xs bg-gray-400/50" />
                     <div className="flex-1 space-y-1">
@@ -340,7 +467,6 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
 
             {/* Toggles list */}
             <div className="mt-5 space-y-3 pt-3 border-t border-[#F2EDE5] dark:border-[#2D2F3C]">
-              {/* Toggle 1: Show subtle canvas grid dots */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-[#18191F] dark:text-gray-200 font-medium">
                   Show subtle canvas grid dots
@@ -360,10 +486,9 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
                 </button>
               </div>
 
-              {/* Toggle 2: Show subtle canvas grid dots (or sound effects) */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-[#18191F] dark:text-gray-200 font-medium">
-                  Show subtle canvas grid dots
+                  Sound effects on room interactions
                 </span>
                 <button
                   type="button"
@@ -380,7 +505,6 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
                 </button>
               </div>
 
-              {/* Toggle 3: Reduced motion */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-[#18191F] dark:text-gray-200 font-medium">
                   Reduced motion
@@ -404,22 +528,22 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
         </div>
 
         {/* --------------------------------------------------------- */}
-        {/* CARD 3: CONNECTED INTEGRATIONS & AUDIO                    */}
+        {/* CARD 3: BUILT-IN STUDIO VIDEO, AUDIO & NOTIFICATIONS       */}
         {/* --------------------------------------------------------- */}
         <div className="lg:col-span-3 xl:col-span-3 bg-white dark:bg-[#1E202B] border border-[#E9E4DB] dark:border-[#2F3140] rounded-2xl p-5 sm:p-6 shadow-2xs flex flex-col justify-between space-y-5">
           <div className="space-y-4">
             <h3 className="font-heading font-extrabold text-base sm:text-lg text-[#18191F] dark:text-[#F3F4F6] leading-snug">
-              Connected Integrations & Audio
+              Studio Video & Audio
             </h3>
 
-            {/* Google Meet Account Section */}
+            {/* Built-in Personal WebRTC Video & Audio Engine */}
             <div>
               <div className="text-xs font-semibold text-[#18191F] dark:text-gray-200 mb-1.5">
-                Google Meet Account
+                Real-Time Video Engine
               </div>
               <div className="inline-flex items-center gap-1.5 bg-[#DCFCE7] dark:bg-[#1B3E29] text-[#15803D] dark:text-[#4ADE80] font-semibold text-xs px-3 py-1 rounded-full border border-[#BBF7D0] dark:border-[#2B5E3C]">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Connected</span>
+                <span>Built-in WebRTC Studio</span>
               </div>
             </div>
 
@@ -466,13 +590,12 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
               </div>
             </div>
 
-            {/* Notification Preferences Section */}
+            {/* Notification Preferences */}
             <div className="space-y-3 pt-3 border-t border-[#F2EDE5] dark:border-[#2D2F3C]">
               <div className="text-xs font-semibold text-[#18191F] dark:text-gray-200">
-                Notification Preferences
+                Studio Notifications
               </div>
 
-              {/* Toggle: Room invites */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-[#18191F] dark:text-gray-200 font-medium">
                   Room invites
@@ -492,10 +615,9 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
                 </button>
               </div>
 
-              {/* Toggle: Live activity */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-[#18191F] dark:text-gray-200 font-medium">
-                  Live activity
+                  Live activity alerts
                 </span>
                 <button
                   type="button"

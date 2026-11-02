@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import HeroSection from '../components/hero/HeroSection';
 import FloatingMockup from '../components/showcase/FloatingMockup';
@@ -7,15 +8,20 @@ import ExploreSection from '../components/explore/ExploreSection';
 import AboutSection from '../components/about/AboutSection';
 import Footer from '../components/common/Footer';
 import RoomModal from '../components/room/RoomModal';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * HomePage Component
- * Main landing page, live interactive room showcase, features, and explore rooms section
+ * Main landing page, live interactive room showcase, features, and explore rooms section.
+ * Visible to everyone. When unauthenticated visitors click to create/join rooms,
+ * they are prompted to sign in with Google first.
  */
 export default function Home({ theme, onToggleTheme }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create'); // 'create' | 'join'
   const [activeRoomCode, setActiveRoomCode] = useState('');
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   // Ensure landing page stays at the top on refresh instead of jumping downwards
   useEffect(() => {
@@ -28,12 +34,20 @@ export default function Home({ theme, onToggleTheme }) {
   }, []);
 
   const handleStartRoom = () => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: { pathname: '/dashboard' } } });
+      return;
+    }
     setModalMode('create');
-    setActiveRoomCode(`LR-${Math.floor(1000 + Math.random() * 9000)}`);
+    setActiveRoomCode('');
     setIsModalOpen(true);
   };
 
   const handleJoinRoom = (code) => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: { pathname: code ? `/room/${code}` : '/dashboard' } } });
+      return;
+    }
     setModalMode('join');
     setActiveRoomCode(code || '');
     setIsModalOpen(true);

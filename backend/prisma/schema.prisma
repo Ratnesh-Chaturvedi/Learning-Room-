@@ -1,0 +1,119 @@
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+enum RoomStatus {
+  ACTIVE
+  SCHEDULED
+  ENDED
+}
+
+enum RoomCategory {
+  MEETING
+  STUDY
+  CODING
+  DESIGN
+  SCIENCE
+  LANGUAGES
+  CUSTOM
+}
+
+enum Tool {
+  COMPILER
+  // Add more tools here as needed in the future (e.g. NOTES, TERMINAL, etc.)
+}
+
+// ------------------------------------
+// MODELS
+// ------------------------------------
+
+model User {
+  id        String   @id @default(uuid())
+  googleId  String   @unique // Unique Google OAuth subject ID
+  name      String
+  email     String   @unique
+  avatar    String?
+
+  // Rooms created by this user
+  createdRooms Room[] @relation("RoomCreator")
+
+  // Rooms joined by this user (implicit many-to-many)
+  joinedRooms  Room[] @relation("RoomParticipants")
+
+  // Personal goals and to-dos
+  goals        Goal[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([googleId])
+}
+
+model Room {
+  id               String       @id @default(uuid())
+  roomCode         String       @unique // Unique short code for sharing and joining (e.g. LR-8492)
+  title            String       @default("Untitled Room")
+  description      String?
+  category         RoomCategory @default(MEETING) // Standard standardized category
+  customCategory   String?                     // Custom category name if category == CUSTOM
+  status           RoomStatus   @default(ACTIVE)
+
+  isPrivate        Boolean      @default(false) // Public vs Private room access
+  inviteToken      String?      @unique         // Unique access token for private invite links
+
+  // Creator / Host information
+  creatorId        String
+  creator          User         @relation("RoomCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  // Time & Duration tracking
+  createdAt        DateTime     @default(now()) // Creation time
+  scheduledAt      DateTime?                    // Planned start time if the room is scheduled
+  scheduledEndTime DateTime?                    // Planned end time (room auto-terminates when reached)
+  endedAt          DateTime?                    // Actual termination timestamp
+  duration         Int?                         // Duration in seconds (computed after room ends)
+
+  // Additional tools enabled at room creation (Whiteboard and Chat are standard defaults in every room)
+  tools            Tool[]       @default([])
+
+  // Users who joined this room (automatically maintained via implicit many-to-many relation)
+  participants     User[]       @relation("RoomParticipants")
+
+  updatedAt        DateTime     @updatedAt
+
+  @@index([isPrivate])
+  @@index([inviteToken])
+  @@index([category])
+  @@index([customCategory])
+  @@index([creatorId])
+  @@index([roomCode])
+  @@index([status])
+  @@index([scheduledEndTime])
+}
+
+model Goal {
+  id           String    @id @default(uuid())
+  title        String
+  description  String?
+  completed    Boolean   @default(false)
+  category     String?   @default("GENERAL") // e.g. "STUDY", "DSA", "CODING", "GENERAL"
+  targetCount  Int       @default(1)         // e.g. 5 study sessions, or 1 for standard todo
+  currentCount Int       @default(0)         // Progress counter towards target
+  dueDate      DateTime?
+
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([completed])
+}

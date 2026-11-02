@@ -82,70 +82,66 @@ const DEFAULT_PREVIEW_ELEMENTS = [
 /**
  * ExcalidrawCanvas Component
  * Robust Excalidraw integration with:
- * - Real-time multiplayer synchronization via BroadcastChannel (`excalidraw_room_${roomId}`)
+ * - Real-time multiplayer synchronization via Socket.io and BroadcastChannel
  * - LocalStorage room scene persistence
  * - Live collaborator cursor and user pointer sharing
  * - Reactive dark / light theme mode support
- * - Elegant fallback loading if dependency is being resolved
  */
 export default function ExcalidrawCanvas({
   roomId = 'default',
   theme = 'light',
   user = { id: 'user-1', name: 'Participant', color: '#635bdb' },
+  socket = null,
   isMockup = false,
   autoFocus = true,
 }) {
   const [excalidrawAPI, setExcalidrawAPI] = useState(null);
-  const [initialData, setInitialData] = useState(null);
-
-  const isRemoteUpdateRef = useRef(false);
-  const channelRef = useRef(null);
-  const saveTimeoutRef = useRef(null);
 
   const storageKey = `excalidraw_room_${roomId}`;
   const channelName = `excalidraw_sync_channel_${roomId}`;
 
-  // 2. Load stored room elements or default scene
-  useEffect(() => {
+  // 1. Initialize room elements from localStorage or defaults without extra effect
+  const [initialData] = useState(() => {
     try {
-      const saved = localStorage.getItem(storageKey);
+      const saved = localStorage.getItem(`excalidraw_room_${roomId}`);
       if (saved) {
         const parsed = JSON.parse(saved);
-        setInitialData({
+        return {
           elements: parsed.elements || [],
           appState: {
             viewBackgroundColor: theme === 'dark' ? '#171815' : '#ffffff',
             theme: theme === 'dark' ? 'dark' : 'light',
           },
-        });
-        return;
+        };
       }
-    } catch (e) {
-      // Use defaults
-    }
+    } catch {}
 
     if (isMockup) {
-      setInitialData({
+      return {
         elements: DEFAULT_PREVIEW_ELEMENTS,
         appState: {
           viewBackgroundColor: theme === 'dark' ? '#171815' : '#ffffff',
           theme: theme === 'dark' ? 'dark' : 'light',
         },
-      });
-    } else {
-      setInitialData({
-        elements: [],
-        appState: {
-          viewBackgroundColor: theme === 'dark' ? '#171815' : '#ffffff',
-          theme: theme === 'dark' ? 'dark' : 'light',
-        },
-      });
+      };
     }
-  }, [storageKey, isMockup]);
 
-  // 3. Multi-Tab & Real-Time Sync via BroadcastChannel
+    return {
+      elements: [],
+      appState: {
+        viewBackgroundColor: theme === 'dark' ? '#171815' : '#ffffff',
+        theme: theme === 'dark' ? 'dark' : 'light',
+      },
+    };
+  });
+
+  const isRemoteUpdateRef = useRef(false);
+  const channelRef = useRef(null);
+  const saveTimeoutRef = useRef(null);
+
+  // 2. Multi-Tab & Real-Time Sync via BroadcastChannel
   useEffect(() => {
-    if (isMockup) return; // Mockup preview doesn't need external room sync
+    if (isMockup) return;
 
     try {
       const channel = new BroadcastChannel(channelName);
@@ -157,22 +153,17 @@ export default function ExcalidrawCanvas({
 
         if (data.type === 'SCENE_UPDATE' && data.elements) {
           isRemoteUpdateRef.current = true;
-          // Apply elements only; preserve the local user's own room theme preference
           excalidrawAPI.updateScene({
             elements: data.elements,
           });
 
-          // Also keep local storage updated with the remote state
           try {
             localStorage.setItem(
               storageKey,
               JSON.stringify({ elements: data.elements })
             );
-          } catch (e) {
-            // storage quota
-          }
+          } catch {}
         } else if (data.type === 'POINTER_UPDATE' && data.collaborator) {
-          // Render remote collaborator pointer cursor
           const currentCollaborators = new Map();
           currentCollaborators.set(data.collaborator.id, {
             username: data.collaborator.name,
@@ -197,6 +188,54 @@ export default function ExcalidrawCanvas({
     }
   }, [channelName, excalidrawAPI, isMockup, storageKey]);
 
+  // 3. Real-Time Multiplayer Canvas Sync via Socket.io
+  useEffect(() => {
+    if (!socket || isMockup) return;
+
+    // Fetch initial canvas scene stored in room memory
+    socket.emit('canvas:get-init', { roomId });
+
+    const handleCanvasInit = (data) => {
+      if (data?.elements && Array.isArray(data.elements) && data.elements.length > 0 && excalidrawAPI) {
+        isRemoteUpdateRef.current = true;
+        excalidrawAPI.updateScene({ elements: data.elements });
+      }
+    };
+
+    const handleCanvasUpdate = (data) => {
+      if (data?.elements && Array.isArray(data.elements) && excalidrawAPI) {
+        isRemoteUpdateRef.current = true;
+        excalidrawAPI.updateScene({ elements: data.elements });
+      }
+    };
+
+    const handleCanvasPointer = (data) => {
+      if (data?.collaborator && excalidrawAPI) {
+        const collabMap = new Map();
+        collabMap.set(data.collaborator.id, {
+          username: data.collaborator.name,
+          pointer: data.collaborator.pointer,
+          button: data.collaborator.button,
+          color: {
+            background: data.collaborator.color || '#543FE3',
+            stroke: data.collaborator.color || '#543FE3',
+          },
+        });
+        excalidrawAPI.updateScene({ collaborators: collabMap });
+      }
+    };
+
+    socket.on('canvas:init', handleCanvasInit);
+    socket.on('canvas:update', handleCanvasUpdate);
+    socket.on('canvas:pointer', handleCanvasPointer);
+
+    return () => {
+      socket.off('canvas:init', handleCanvasInit);
+      socket.off('canvas:update', handleCanvasUpdate);
+      socket.off('canvas:pointer', handleCanvasPointer);
+    };
+  }, [socket, roomId, excalidrawAPI, isMockup]);
+
   // 4. Synchronize theme changes into Excalidraw canvas
   useEffect(() => {
     if (excalidrawAPI) {
@@ -212,23 +251,25 @@ export default function ExcalidrawCanvas({
   // 5. Handle local changes & broadcast to room participants
   const handleChange = useCallback(
     (elements, appState, files) => {
-      // If this update was triggered by an incoming remote sync, do not re-broadcast
       if (isRemoteUpdateRef.current) {
         isRemoteUpdateRef.current = false;
         return;
       }
 
-      // Persist to localStorage with a slight debounce
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = setTimeout(() => {
         try {
           localStorage.setItem(storageKey, JSON.stringify({ elements }));
-        } catch (e) {
-          // storage quota
-        }
+        } catch {}
       }, 400);
 
-      // Broadcast changes to all other peers connected to this room (elements only, no theme bleed)
+      if (socket && !isMockup) {
+        socket.emit('canvas:update', {
+          roomId,
+          elements,
+        });
+      }
+
       if (channelRef.current && !isMockup) {
         channelRef.current.postMessage({
           type: 'SCENE_UPDATE',
@@ -236,13 +277,28 @@ export default function ExcalidrawCanvas({
         });
       }
     },
-    [isMockup, storageKey]
+    [isMockup, storageKey, socket, roomId]
   );
 
   // 6. Broadcast local mouse cursor pointer movements to room participants
   const handlePointerUpdate = useCallback(
     (payload) => {
-      if (isMockup || !channelRef.current) return;
+      if (isMockup) return;
+
+      if (socket) {
+        socket.emit('canvas:pointer', {
+          roomId,
+          pointer: payload.pointer,
+          button: payload.button,
+          collaborator: {
+            id: user.id || 'me',
+            name: user.name || 'Participant',
+            color: user.color || '#543FE3',
+          },
+        });
+      }
+
+      if (!channelRef.current) return;
 
       channelRef.current.postMessage({
         type: 'POINTER_UPDATE',
@@ -255,7 +311,7 @@ export default function ExcalidrawCanvas({
         },
       });
     },
-    [isMockup, user]
+    [isMockup, user, socket, roomId]
   );
 
   return (

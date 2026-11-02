@@ -1,75 +1,68 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import RoomCard from '../room/RoomCard';
+import { roomApi } from '../../api/room.api';
 import {
   aboutUsCollab,
   studyPlanNotebook,
   exploreRocket,
-  roomDsa,
-  roomWebdev,
-  roomExams,
-  studySunset,
-  gradCapPurple,
-  footerBooks,
-  pencilHolder,
-  footerPencil,
-  ratneshAvatar,
   burstLines,
 } from '../../assets';
 
 export default function ExploreView({ onOpenRoom, onOpenCreateRoom }) {
-  const [activeCategory, setActiveCategory] = useState('All Rooms');
+  const [activeCategory, setActiveCategory] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [rooms, setRooms] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const categories = [
-    { name: 'All Rooms', icon: '✦', isSparkle: true },
-    { name: 'Coding', icon: '</>' },
-    { name: 'Design', icon: '🎨' },
-    { name: 'Science', icon: '⚗️' },
-    { name: 'Languages', icon: '🌐' },
-    { name: 'Study Sessions', icon: '🎓' },
+    { key: 'ALL', name: 'All Rooms', icon: '✦', isSparkle: true },
+    { key: 'CODING', name: 'Coding', icon: '</>' },
+    { key: 'STUDY', name: 'Study Sessions', icon: '🎓' },
+    { key: 'MEETING', name: 'Meetings', icon: '🤝' },
+    { key: 'DESIGN', name: 'Design', icon: '🎨' },
+    { key: 'SCIENCE', name: 'Science', icon: '⚗️' },
+    { key: 'LANGUAGES', name: 'Languages', icon: '🌐' },
+    { key: 'CUSTOM', name: 'Custom Topics', icon: '⚡' },
   ];
 
-  const trendingRooms = [
-    {
-      id: 'dsa-practice',
-      title: 'DSA Practice Group',
-      subtitle: 'Solve. Discuss. Improve.',
-      status: 'Live',
-      statusType: 'live',
-      thumbnail: roomDsa,
-      members: '24 members',
-      avatarCount: '+6',
-    },
-    {
-      id: 'web-dev-hub',
-      title: 'Web Development Hub',
-      subtitle: 'Build. Share. Learn.',
-      status: 'Live',
-      statusType: 'live',
-      thumbnail: roomWebdev,
-      members: '32 members',
-      avatarCount: '+12',
-    },
-    {
-      id: 'competitive-exams',
-      title: 'Competitive Exams Prep',
-      subtitle: 'Together for a bigger goal.',
-      status: 'Scheduled',
-      statusType: 'scheduled',
-      thumbnail: roomExams,
-      members: '20 members',
-      avatarCount: '+4',
-    },
-    {
-      id: 'languages-circle',
-      title: 'Languages Circle',
-      subtitle: 'Practice. Speak. Connect.',
-      status: 'Live',
-      statusType: 'live',
-      thumbnail: studySunset,
-      members: '28 members',
-      avatarCount: '+7',
-    },
-  ];
+  // Fetch real rooms from backend API
+  useEffect(() => {
+    let isMounted = true;
+    const fetchRooms = async () => {
+      setIsLoading(true);
+      setErrorMessage('');
+      try {
+        const params = {
+          limit: 12,
+        };
+        if (activeCategory !== 'ALL') {
+          params.category = activeCategory;
+        }
+        if (searchQuery.trim()) {
+          params.query = searchQuery.trim();
+        }
+
+        const response = await roomApi.searchRooms(params);
+        if (isMounted) {
+          setRooms(response.data?.rooms || []);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setErrorMessage('Failed to load active rooms. Please check your connection.');
+          setRooms([]);
+        }
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchRooms, 300);
+    return () => {
+      isMounted = false;
+      clearTimeout(debounceTimer);
+    };
+  }, [activeCategory, searchQuery]);
 
   return (
     <div className="w-full max-w-[1560px] mx-auto flex flex-col gap-6 select-none font-sans pb-4">
@@ -81,11 +74,10 @@ export default function ExploreView({ onOpenRoom, onOpenCreateRoom }) {
         <div className="absolute top-0 right-1/4 w-80 h-80 rounded-full bg-gradient-to-br from-amber-200/30 to-purple-300/30 dark:from-purple-900/20 dark:to-indigo-900/20 blur-3xl pointer-events-none" />
 
         <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
-          {/* Left Headline & Subtitle */}
-          <div className="flex-1 space-y-3 relative">
+          {/* Left Headline & Search Input */}
+          <div className="flex-1 space-y-4 relative">
             <h1 className="font-heading font-extrabold text-3xl sm:text-4xl lg:text-[42px] text-[#18191F] dark:text-[#F3F4F6] tracking-tight leading-tight">
               <span className="relative inline-block">
-                {/* 3-line radiating burst on corner of Discover rooms */}
                 <span
                   className="absolute -top-[18px] sm:-top-5 -left-[19px] sm:-left-[22px] -rotate-45 pointer-events-none select-none animate-float-slow"
                   aria-hidden="true"
@@ -99,59 +91,31 @@ export default function ExploreView({ onOpenRoom, onOpenCreateRoom }) {
                 Discover rooms,
               </span>
               <br />
-              <span>explore </span>
-              <span className="font-editorial italic font-normal text-3xl sm:text-4xl lg:text-[44px] relative inline-block">
-                ideas.
-                {/* Purple hand-drawn ink scribble underline */}
-                <svg
-                  className="absolute -bottom-1 left-0 w-full h-3 text-[#6C52EE] overflow-visible"
-                  viewBox="0 0 120 12"
-                  fill="none"
-                >
-                  <path
-                    d="M 2 7 Q 30 1, 60 7 T 118 4"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </span>
+              <span className="text-[#543FE3] dark:text-[#A798FF]">explore ideas</span>
             </h1>
 
-            <p className="text-sm sm:text-base text-[#5A5C66] dark:text-[#A6A8B4] max-w-md pt-1 leading-relaxed">
-              Join amazing learning spaces, meet curious minds, and be a part of something bigger.
+            <p className="text-sm sm:text-base text-[#5A5C66] dark:text-[#A6A8B4] max-w-md leading-relaxed">
+              Find live study rooms, code review sessions, and collaborative whiteboards happening right now.
             </p>
 
-            {/* Sparkle Doodles ✦ ✧ */}
-            <div className="absolute right-4 top-2 text-amber-500 hidden sm:flex items-center gap-1">
-              <span className="text-sm">✦</span>
-              <span className="text-xs">✧</span>
+            {/* Live Search Bar */}
+            <div className="relative max-w-md">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search rooms by title, topic, or code..."
+                className="w-full rounded-full border border-[var(--color-border)] bg-white dark:bg-[#1E2028] py-2.5 pl-10 pr-4 text-xs sm:text-sm text-[var(--color-text-primary)] outline-none focus:border-[#543FE3] focus:ring-2 focus:ring-[#543FE3]/20 shadow-xs transition-all"
+              />
+              <svg className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
             </div>
           </div>
 
-          {/* Right Illustration: 4 Friends Studying + Doodles */}
-          <div className="relative z-10 w-full max-w-[280px] sm:max-w-[320px] lg:max-w-[340px] shrink min-w-0 flex flex-col items-center mx-auto lg:mx-0 pt-8 sm:pt-10 pb-1">
-            {/* Handwritten "Learn. Share. Grow." above the left boy */}
-            <div className="absolute top-1 left-2 sm:left-4 font-handwriting text-xs sm:text-sm md:text-base font-bold text-[#3B3C46] dark:text-[#D4D6E2] leading-tight select-none rotate-[-4deg] pointer-events-none whitespace-nowrap">
-              <span>Learn.</span><br />
-              <span>Share. Grow.</span>
-              {/* Hand-drawn curved arrow doodle pointing down */}
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#3B3C46] dark:text-[#D4D6E2] inline-block ml-1 -mt-1" viewBox="0 0 24 24" fill="none">
-                <path d="M4 14 C 10 10, 16 12, 20 8 M 16 6 L 20 8 L 18 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-
-            {/* Floating Purple Graduation Cap above the right girl */}
-            <div className="absolute top-1 right-2 sm:right-4 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 select-none animate-float-slow pointer-events-none">
-              <img
-                src={gradCapPurple}
-                alt="Graduation Cap"
-                className="w-full h-full object-contain filter drop-shadow-md select-none"
-              />
-              <span className="absolute -top-1 -right-1 text-amber-500 text-xs">✦</span>
-            </div>
-
-            {/* 4 Anime Study Friends Illustration */}
+          {/* Right Illustration */}
+          <div className="relative w-full max-w-[280px] sm:max-w-[320px] lg:max-w-[340px] shrink-0">
             <img
               src={aboutUsCollab}
               alt="Study group collaborating"
@@ -160,16 +124,16 @@ export default function ExploreView({ onOpenRoom, onOpenCreateRoom }) {
           </div>
         </div>
 
-        {/* Category Filter Pills (Aligned horizontally at bottom of banner) */}
-        <div className="flex items-center gap-2.5 overflow-x-auto custom-scrollbar pt-2 relative z-10 flex-wrap">
+        {/* Category Filter Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pt-2 relative z-10 flex-wrap">
           {categories.map((cat) => {
-            const isActive = activeCategory === cat.name;
+            const isActive = activeCategory === cat.key;
             return (
               <button
-                key={cat.name}
+                key={cat.key}
                 type="button"
-                onClick={() => setActiveCategory(cat.name)}
-                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-150 cursor-pointer whitespace-nowrap ${
+                onClick={() => setActiveCategory(cat.key)}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-150 cursor-pointer whitespace-nowrap ${
                   isActive
                     ? 'bg-[#543FE3] text-white shadow-xs'
                     : 'bg-white dark:bg-[#252833] text-[#33353F] dark:text-[#B5B7C2] border border-[#E5E1D8] dark:border-[#383B47] hover:bg-gray-50 dark:hover:bg-[#2C2F3D]'
@@ -188,162 +152,139 @@ export default function ExploreView({ onOpenRoom, onOpenCreateRoom }) {
       </div>
 
       {/* ========================================================= */}
-      {/* 2. MIDDLE ROW: FEATURED ROOM & CREATE YOUR OWN ROOM       */}
+      {/* 2. CREATE YOUR OWN ROOM CARD                              */}
       {/* ========================================================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        {/* CARD 1: FEATURED ROOM (8 of 12 cols on LG) */}
-        <div className="lg:col-span-8 bg-gradient-to-r from-[#FFF5ED] via-[#FDF7F4] to-[#F5EFFE] dark:from-[#26222C] dark:via-[#23202E] dark:to-[#1E1B2D] border border-[#FDE5D2] dark:border-[#383348] rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-5 relative overflow-hidden">
-          {/* Top-Right Hand-drawn Loop Doodle */}
-          <div className="absolute top-2 right-4 text-gray-400 dark:text-gray-600 pointer-events-none select-none">
-            <svg className="w-8 h-8" viewBox="0 0 32 32" fill="none">
-              <path d="M4 12 C 12 4, 24 6, 26 14 C 28 22, 18 26, 12 22 C 8 18, 12 10, 20 8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
-          </div>
-
-          {/* Left Illustration: Spiral Study Plan Notebook with Coffee Cup */}
-          <div className="w-36 h-36 sm:w-44 sm:h-44 flex-shrink-0 relative flex items-center justify-center">
-            <img
-              src={studyPlanNotebook}
-              alt="Study Plan Notebook and coffee"
-              className="w-full h-full object-contain filter drop-shadow-sm select-none"
-            />
-            {/* Hand-drawn Sparkles */}
-            <span className="absolute top-2 left-2 text-amber-500 text-xs">✦</span>
-            <span className="absolute bottom-4 right-2 text-purple-500 text-xs">✧</span>
-          </div>
-
-          {/* Right Details & Join CTA */}
-          <div className="flex-1 space-y-2.5 min-w-0">
-            {/* Featured Room Badge */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#EAE5FC] dark:bg-[#342D59] text-[#543FE3] dark:text-[#B6A8FF]">
-              <span>☆</span>
-              <span>Featured Room</span>
-            </div>
-
-            {/* Room Title with 3 ticks */}
-            <div className="flex items-center gap-2">
-              <h3 className="font-heading font-extrabold text-xl sm:text-2xl text-[#18191F] dark:text-[#F3F4F6] tracking-tight">
-                Build a Study Plan Together
-              </h3>
-              {/* Radiating ticks */}
-              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" viewBox="0 0 16 16" fill="none">
-                <line x1="2" y1="4" x2="8" y2="4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                <line x1="2" y1="8" x2="12" y2="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                <line x1="2" y1="12" x2="8" y2="12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
-            </div>
-
-            <p className="text-xs sm:text-sm text-[#5D5F6B] dark:text-[#A0A2B0]">
-              Plan, discuss and stay on track with your goals.
-            </p>
-
-            {/* Bottom Row: Avatars, Members & Join Button */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-              <div className="flex items-center gap-3">
-                {/* Overlapping User Avatars */}
-                <div className="flex items-center -space-x-1.5">
-                  <img src={ratneshAvatar} alt="user" className="w-6 h-6 rounded-full ring-2 ring-white dark:ring-[#1D1F26] object-cover" />
-                  <div className="w-6 h-6 rounded-full bg-amber-200 ring-2 ring-white dark:ring-[#1D1F26] flex items-center justify-center text-[10px] font-bold text-amber-700">R</div>
-                  <div className="w-6 h-6 rounded-full bg-blue-200 ring-2 ring-white dark:ring-[#1D1F26] flex items-center justify-center text-[10px] font-bold text-blue-700">S</div>
-                  <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 ring-2 ring-white dark:ring-[#1D1F26] flex items-center justify-center text-[9px] font-bold text-gray-600 dark:text-gray-300">+8</div>
-                </div>
-
-                {/* Status Indicator */}
-                <span className="inline-flex items-center gap-1.5 text-xs text-[#5D5F6B] dark:text-[#A0A2B0]">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Live Now • 12 members</span>
-                </span>
-              </div>
-
-              {/* Join Room CTA */}
-              <button
-                type="button"
-                onClick={() => onOpenRoom('STUDY-PLAN')}
-                className="bg-[#543FE3] hover:bg-[#4330C8] active:scale-95 text-white font-medium text-xs sm:text-sm px-5 py-2 rounded-full transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
-              >
-                <span>Join Room</span>
-                <span>→</span>
-              </button>
-            </div>
-          </div>
+      <div className="bg-[#F3EEFE] dark:bg-[#252238] border border-[#E7DDFD] dark:border-[#3A3358] rounded-3xl p-5 sm:p-6 shadow-xs flex items-center justify-between gap-4 relative overflow-hidden">
+        <div className="space-y-2 z-10">
+          <h3 className="font-heading font-extrabold text-xl text-[#18191F] dark:text-white leading-tight">
+            Can't find what you're looking for?
+          </h3>
+          <p className="text-xs sm:text-sm text-[#6F7180] dark:text-[#B5B7C2] max-w-md leading-relaxed">
+            Create your own public or private room in seconds. Invite classmates or let the community join.
+          </p>
+          <button
+            type="button"
+            onClick={onOpenCreateRoom}
+            className="bg-[#543FE3] hover:bg-[#4330C8] text-white active:scale-95 text-xs font-semibold px-5 py-2.5 rounded-full transition-all flex items-center gap-1.5 shadow-sm cursor-pointer mt-2"
+          >
+            <span>Create New Room</span>
+            <span>+</span>
+          </button>
         </div>
 
-        {/* CARD 2: CREATE YOUR OWN ROOM (4 of 12 cols on LG) */}
-        <div className="lg:col-span-4 bg-[#F3EEFE] dark:bg-[#252238] border border-[#E7DDFD] dark:border-[#3A3358] rounded-3xl p-5 sm:p-6 shadow-xs flex items-center justify-between gap-4 relative overflow-hidden">
-          {/* Left Text & CTA */}
-          <div className="space-y-3 z-10">
-            <h3 className="font-heading font-extrabold text-xl text-[#18191F] dark:text-white leading-tight">
-              Create Your
-              <br />
-              Own Room
-            </h3>
+        <div className="w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0 relative hidden sm:flex items-center justify-center">
+          <img
+            src={exploreRocket}
+            alt="Rocket"
+            className="w-full h-full object-contain filter drop-shadow-xs select-none"
+          />
+        </div>
+      </div>
 
-            <p className="text-xs text-[#6F7180] dark:text-[#B5B7C2] max-w-[180px] leading-relaxed">
-              Start a new study room, invite your friends and learn together!
-            </p>
+      {/* ========================================================= */}
+      {/* 3. LIVE EXPLORE ROOMS LISTING                             */}
+      {/* ========================================================= */}
+      <div className="space-y-4 pt-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🔥</span>
+            <h2 className="font-heading font-extrabold text-lg sm:text-xl text-[#18191F] dark:text-[#F3F4F6] tracking-tight">
+              Active Community Rooms
+            </h2>
+          </div>
+          <span className="text-xs text-[var(--color-text-secondary)] font-medium">
+            {rooms.length} room{rooms.length === 1 ? '' : 's'} available
+          </span>
+        </div>
 
+        {/* Loading Skeletons */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((n) => (
+              <div key={n} className="rounded-2xl border border-[var(--color-border)] p-5 space-y-3 animate-pulse bg-[var(--color-surface)]">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-full w-1/3 mt-4" />
+              </div>
+            ))}
+          </div>
+        ) : rooms.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {rooms.map((room) => {
+              const participantCount = room.participants?.length || 0;
+              return (
+                <div
+                  key={room.id}
+                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 flex flex-col justify-between gap-4 shadow-2xs hover:shadow-md hover:border-[#543FE3]/50 transition-all"
+                >
+                  <div className="space-y-2">
+                    {/* Header tags: Category & Privacy */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#EAE5FC] dark:bg-[#342D59] text-[#543FE3] dark:text-[#B6A8FF] uppercase">
+                        {room.category === 'CUSTOM' ? room.customCategory || 'Custom' : room.category}
+                      </span>
+                      <span className="text-[11px] text-[var(--color-text-secondary)] font-mono">
+                        {room.isPrivate ? '🔒 Private' : '🌐 Public'}
+                      </span>
+                    </div>
+
+                    {/* Room Title */}
+                    <h3 className="font-heading font-bold text-base text-[var(--color-text-primary)] line-clamp-1">
+                      {room.title}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2">
+                      {room.description || 'No description provided for this session.'}
+                    </p>
+                  </div>
+
+                  {/* Footer Info & Join Button */}
+                  <div className="pt-2 border-t border-[var(--color-border)]/60 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)]">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>{participantCount} joined</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => onOpenRoom(room.roomCode || room.id)}
+                      className="bg-[#543FE3] hover:bg-[#4330C8] active:scale-95 text-white font-medium text-xs px-4 py-1.5 rounded-full transition-all cursor-pointer shadow-2xs"
+                    >
+                      Join Room →
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* Empty State */
+          <div className="rounded-3xl border border-dashed border-[var(--color-border)] p-12 text-center space-y-4 bg-[var(--color-surface)]">
+            <div className="w-16 h-16 rounded-full bg-[#F3EEFE] dark:bg-[#252238] flex items-center justify-center text-2xl mx-auto">
+              🔭
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-heading font-bold text-base text-[var(--color-text-primary)]">
+                No active rooms found in this category
+              </h3>
+              <p className="text-xs text-[var(--color-text-secondary)] max-w-sm mx-auto">
+                {searchQuery
+                  ? `No rooms matched "${searchQuery}". Try a different keyword.`
+                  : 'Be the pioneer! Start the first collaborative study room for this topic.'}
+              </p>
+            </div>
             <button
               type="button"
               onClick={onOpenCreateRoom}
-              className="bg-white dark:bg-[#322B4D] hover:bg-gray-50 dark:hover:bg-[#3D355C] active:scale-95 text-[#18191F] dark:text-[#F3F4F6] border border-[#DDD5F5] dark:border-[#4B3F70] text-xs font-semibold px-4 py-2 rounded-full transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 bg-[#543FE3] hover:bg-[#4330C8] text-white text-xs font-semibold px-5 py-2.5 rounded-full shadow-sm cursor-pointer"
             >
-              <span>Create Room</span>
-              <span>→</span>
+              <span>Create Room Now</span>
+              <span>+</span>
             </button>
           </div>
-
-          {/* Right Rocket Illustration with Clouds & Sparkles */}
-          <div className="w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0 relative flex items-center justify-center">
-            {/* Sparkles around rocket */}
-            <span className="absolute top-2 left-2 text-purple-400 text-xs">✦</span>
-            <span className="absolute bottom-2 right-1 text-amber-400 text-xs">✧</span>
-            <img
-              src={exploreRocket}
-              alt="Rocket launching"
-              className="w-full h-full object-contain filter drop-shadow-xs select-none group-hover:scale-105 transition-transform"
-            />
-          </div>
-        </div>
+        )}
       </div>
-
-      {/* ========================================================= */}
-      {/* 3. TRENDING ROOMS SECTION                                 */}
-      {/* ========================================================= */}
-      <div className="space-y-3.5 pt-2">
-        {/* Header with Crown Doodle */}
-        <div className="flex items-center gap-2 relative">
-          <span className="text-lg">🔥</span>
-          <h2 className="font-heading font-extrabold text-lg sm:text-xl text-[#18191F] dark:text-[#F3F4F6] tracking-tight">
-            Trending Rooms
-          </h2>
-
-          {/* Hand-drawn Crown Doodle 👑 */}
-          <div className="text-amber-500 select-none ml-1">
-            <svg className="w-5 h-5 -rotate-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 18 L5 8 L10 13 L14 6 L19 13 L21 8 L23 18 Z" />
-            </svg>
-          </div>
-        </div>
-
-        {/* 4 Cards Grid powered by unified RoomCard */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {trendingRooms.map((room) => (
-            <RoomCard
-              key={room.id}
-              variant="grid"
-              title={room.title}
-              subtitle={room.subtitle}
-              thumbnail={room.thumbnail}
-              status={room.statusType}
-              members={room.members}
-              avatarCount={room.avatarCount}
-              onJoin={() => onOpenRoom?.(room.id)}
-            />
-          ))}
-        </div>
-      </div>
-
- 
     </div>
   );
 }

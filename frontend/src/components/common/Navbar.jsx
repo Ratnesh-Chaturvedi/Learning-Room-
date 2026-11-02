@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import { learningRoomLogo } from '../../assets';
-
+import { useAuth } from '../../context/AuthContext';
 
 export default function Navbar({ onOpenCreateRoom, theme, onToggleTheme }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
 
   // Actual navigation sections matching the landing page content
   const navLinks = [
@@ -28,6 +30,14 @@ export default function Navbar({ onOpenCreateRoom, theme, onToggleTheme }) {
         }
       }
     }
+  };
+
+  const handleCreateRoomClick = () => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: { pathname: '/dashboard' } } });
+      return;
+    }
+    onOpenCreateRoom?.();
   };
 
   // Close mobile drawer on Escape key
@@ -57,9 +67,9 @@ export default function Navbar({ onOpenCreateRoom, theme, onToggleTheme }) {
     <>
       <header className="sticky top-0 z-40 w-full px-4 sm:px-8 py-2.5 sm:py-3.5 backdrop-blur-md bg-[var(--color-background)]/90 border-b border-[var(--color-border)]/70 transition-colors duration-200">
         <nav className="mx-auto flex max-w-[1240px] items-center justify-between">
-          {/* Brand Logo with tight line gap */}
-          <a
-            href="#home"
+          {/* Brand Logo */}
+          <Link
+            to="/"
             className="flex items-center gap-2 sm:gap-2.5 font-heading text-base sm:text-xl font-extrabold tracking-tight text-[var(--color-text-primary)] hover:opacity-90 transition-opacity shrink-0 select-none"
             aria-label="Learning Room Home"
           >
@@ -74,9 +84,9 @@ export default function Navbar({ onOpenCreateRoom, theme, onToggleTheme }) {
                 Room<span className="text-[var(--color-brand)] text-lg sm:text-2xl leading-none ml-0.5">.</span>
               </span>
             </div>
-          </a>
+          </Link>
 
-          {/* Desktop Center Navigation Links (Features, Explore, About Us) */}
+          {/* Desktop Center Navigation Links */}
           <div className="hidden md:flex items-center gap-8 font-medium text-sm text-[var(--color-text-secondary)]">
             {navLinks.map((item) => (
               <a
@@ -92,25 +102,54 @@ export default function Navbar({ onOpenCreateRoom, theme, onToggleTheme }) {
 
           {/* Right Action Controls */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Theme Toggle (Always visible) */}
+            {/* Theme Toggle */}
             <ThemeToggle theme={theme} onToggleTheme={onToggleTheme} />
 
             {/* Desktop Action Buttons */}
             <div className="hidden md:flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={onOpenCreateRoom}
-                className="inline-flex items-center justify-center rounded-full bg-[#39318F] hover:bg-[#5148C8] text-white px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold shadow-sm hover:shadow transition-all duration-150 active:scale-[0.98] cursor-pointer"
-              >
-                Create a Room
-              </button>
+              {isAuthenticated ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleCreateRoomClick}
+                    className="inline-flex items-center justify-center rounded-full bg-[#39318F] hover:bg-[#5148C8] text-white px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold shadow-sm hover:shadow transition-all duration-150 active:scale-[0.98] cursor-pointer"
+                  >
+                    Create Room
+                  </button>
 
-              <Link
-                to="/dashboard"
-                className="inline-flex items-center justify-center rounded-full bg-[#F3EEFE] hover:bg-[#E7DFFD] dark:bg-[#2A2440] dark:hover:bg-[#362E52] text-[#543FE3] dark:text-[#C5BAFF] border border-[#DDD4FA] dark:border-[#4B3E70] px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold shadow-2xs hover:shadow-xs transition-all duration-150 active:scale-[0.98] cursor-pointer"
-              >
-                Dashboard
-              </Link>
+                  <Link
+                    to="/dashboard"
+                    className="inline-flex items-center justify-center rounded-full bg-[#F3EEFE] hover:bg-[#E7DFFD] dark:bg-[#2A2440] dark:hover:bg-[#362E52] text-[#543FE3] dark:text-[#C5BAFF] border border-[#DDD4FA] dark:border-[#4B3E70] px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold shadow-2xs hover:shadow-xs transition-all duration-150 active:scale-[0.98] cursor-pointer"
+                  >
+                    Dashboard
+                  </Link>
+
+                  {/* User Profile Avatar & Sign Out */}
+                  <div className="flex items-center gap-2 pl-1 border-l border-[var(--color-border)]">
+                    <img
+                      src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=96&auto=format&fit=crop&q=80'}
+                      alt={user?.name || 'User'}
+                      className="w-8 h-8 rounded-full object-cover border border-[#543FE3]"
+                      title={user?.name}
+                    />
+                    <button
+                      type="button"
+                      onClick={logout}
+                      className="text-xs font-semibold text-[var(--color-text-secondary)] hover:text-red-500 transition-colors cursor-pointer"
+                      title="Sign Out"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  className="inline-flex items-center justify-center rounded-full bg-[#39318F] hover:bg-[#5148C8] text-white px-5 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold shadow-sm hover:shadow transition-all duration-150 active:scale-[0.98] cursor-pointer"
+                >
+                  Sign In
+                </Link>
+              )}
             </div>
 
             {/* Mobile Hamburger Button */}
@@ -130,13 +169,12 @@ export default function Navbar({ onOpenCreateRoom, theme, onToggleTheme }) {
         </nav>
       </header>
 
-      {/* Smooth Mobile Slide-over Drawer (From Right Side) */}
+      {/* Smooth Mobile Slide-over Drawer */}
       <div
         className={`fixed inset-0 z-50 md:hidden transition-visibility duration-300 ${
           mobileMenuOpen ? 'pointer-events-auto visible' : 'pointer-events-none invisible'
         }`}
       >
-        {/* Backdrop with smooth fade */}
         <div
           className={`fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity duration-300 ease-in-out ${
             mobileMenuOpen ? 'opacity-100' : 'opacity-0'
@@ -144,15 +182,12 @@ export default function Navbar({ onOpenCreateRoom, theme, onToggleTheme }) {
           onClick={() => setMobileMenuOpen(false)}
         />
 
-        {/* Slide-over panel with smooth right-to-left slide */}
         <div
           className={`fixed inset-y-0 right-0 w-full max-w-[295px] bg-[#FFFDF9] dark:bg-[#181920] shadow-2xl border-l border-[#EDE8E0] dark:border-[#2C2E3B] flex flex-col justify-between p-5 z-50 transform transition-transform duration-300 ease-in-out ${
             mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
-          {/* Scrollable Container */}
           <div className="flex-1 overflow-y-auto space-y-6 pr-1 custom-scrollbar" data-lenis-prevent>
-            {/* 1. Header with Logo & Close Button */}
             <div className="flex items-center justify-between pb-3.5 border-b border-gray-200/70 dark:border-gray-800">
               <div className="flex items-center gap-2">
                 <img
@@ -175,7 +210,7 @@ export default function Navbar({ onOpenCreateRoom, theme, onToggleTheme }) {
               </button>
             </div>
 
-            {/* 2. Navigation Links (Features, Explore, About Us) */}
+            {/* Navigation Links */}
             <div className="space-y-1">
               <div className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-2">
                 Navigation
@@ -195,34 +230,56 @@ export default function Navbar({ onOpenCreateRoom, theme, onToggleTheme }) {
               ))}
             </div>
 
-            {/* 3. Action Buttons (Positioned BELOW the Navigation) */}
+            {/* Action Buttons */}
             <div className="pt-4 border-t border-gray-200/70 dark:border-gray-800 space-y-2.5">
               <div className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1.5">
                 Quick Actions
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onOpenCreateRoom?.();
-                }}
-                className="w-full inline-flex items-center justify-center rounded-full bg-[#39318F] hover:bg-[#5148C8] active:scale-95 text-white py-2.5 text-sm font-semibold shadow-sm transition-all cursor-pointer"
-              >
-                Create a Room
-              </button>
+              {isAuthenticated ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleCreateRoomClick();
+                    }}
+                    className="w-full inline-flex items-center justify-center rounded-full bg-[#39318F] hover:bg-[#5148C8] active:scale-95 text-white py-2.5 text-sm font-semibold shadow-sm transition-all cursor-pointer"
+                  >
+                    Create a Room
+                  </button>
 
-              <Link
-                to="/dashboard"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full inline-flex items-center justify-center rounded-full bg-[#F3EEFE] hover:bg-[#E7DFFD] dark:bg-[#2A2440] dark:hover:bg-[#362E52] active:scale-95 text-[#543FE3] dark:text-[#C5BAFF] border border-[#DDD4FA] dark:border-[#4B3E70] py-2.5 text-sm font-bold shadow-2xs transition-all cursor-pointer"
-              >
-                Dashboard
-              </Link>
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full inline-flex items-center justify-center rounded-full bg-[#F3EEFE] hover:bg-[#E7DFFD] dark:bg-[#2A2440] dark:hover:bg-[#362E52] active:scale-95 text-[#543FE3] dark:text-[#C5BAFF] border border-[#DDD4FA] dark:border-[#4B3E70] py-2.5 text-sm font-bold shadow-2xs transition-all cursor-pointer"
+                  >
+                    Dashboard
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      logout();
+                    }}
+                    className="w-full py-2 text-center text-xs font-semibold text-red-500 hover:underline cursor-pointer"
+                  >
+                    Sign Out ({user?.name})
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full inline-flex items-center justify-center rounded-full bg-[#39318F] hover:bg-[#5148C8] active:scale-95 text-white py-2.5 text-sm font-semibold shadow-sm transition-all cursor-pointer"
+                >
+                  Sign In
+                </Link>
+              )}
             </div>
           </div>
 
-          {/* 4. Bottom Footer with Visual Mode Theme Toggle */}
           <div className="pt-4 mt-4 border-t border-gray-200/70 dark:border-gray-800 flex items-center justify-between">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
               Visual Mode

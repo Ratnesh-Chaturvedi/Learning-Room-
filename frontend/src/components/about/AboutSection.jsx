@@ -6,7 +6,7 @@ import {
   aboutUsCollab,
   aboutUsAvatars,
   burstLines,
-} from '../../assets/LandingPage';
+} from '../../assets';
 
 export default function AboutSection({ onStartRoom }) {
   const handleScrollToMission = (e) => {
