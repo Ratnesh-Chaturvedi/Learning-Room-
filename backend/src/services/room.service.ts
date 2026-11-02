@@ -243,8 +243,8 @@ export class RoomService {
       });
 
       customCategories = customDbRooms
-        .map((r) => r.customCategory)
-        .filter((c): c is string => Boolean(c));
+        .map((r: { customCategory: string | null }) => r.customCategory)
+        .filter((c: string | null): c is string => Boolean(c));
     } catch {
       // Fallback if DB is temporarily unreachable
     }
@@ -330,7 +330,7 @@ export class RoomService {
 
     // Check Private Room Access
     const isHost = room.creatorId === userId;
-    const isAlreadyParticipant = room.participants.some((p) => p.id === userId);
+    const isAlreadyParticipant = room.participants.some((p: { id: string }) => p.id === userId);
     const hasValidInvite = Boolean(room.inviteToken && inviteToken && room.inviteToken === inviteToken);
 
     if (room.isPrivate && !isHost && !isAlreadyParticipant && !hasValidInvite) {

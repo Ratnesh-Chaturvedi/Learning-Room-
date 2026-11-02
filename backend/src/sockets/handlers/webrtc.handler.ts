@@ -61,7 +61,7 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
           hostCreatorId = room.creatorId;
           isPrivate = room.isPrivate;
           isHost = room.creatorId === userId;
-          isAlreadyParticipant = room.participants.some((p) => p.id === userId);
+          isAlreadyParticipant = room.participants.some((p: { id: string }) => p.id === userId);
           hasValidInvite = Boolean(
             room.inviteToken && inviteToken && room.inviteToken === inviteToken
           );
