@@ -251,7 +251,7 @@ export default function RoomModal({ isOpen, onClose, mode = 'create', initialCod
                 )}
               </div>
 
-              {/* Privacy Toggle (Public vs Private with Google Meet Knock) */}
+              {/* Privacy Toggle (Public vs Private with Host Knock Approval) */}
               <div className="rounded-2xl border border-[var(--color-border)] p-3.5 bg-[var(--color-surface-secondary)] space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">

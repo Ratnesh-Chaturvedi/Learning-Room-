@@ -202,7 +202,7 @@ class BuiltinLenisEngine {
     const { element: container, prevent } = this.findScrollContainer(active || e.target);
     if (prevent) return;
 
-    let delta = 0;
+    let delta;
     const viewH = container ? container.clientHeight : window.innerHeight;
 
     switch (e.key) {

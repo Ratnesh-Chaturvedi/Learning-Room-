@@ -1,16 +1,21 @@
 import React from 'react';
+import { useTheme } from '../../context/ThemeContext';
 
 /**
  * ThemeToggle Component
- * Pill capsule dual-state theme toggle with moon and sun icons matching the dashboard design
+ * Pill capsule dual-state theme toggle with moon and sun icons.
+ * Consumes ThemeContext directly to avoid prop-drilling, with backwards-compatible props fallback.
  */
-export default function ThemeToggle({ theme, onToggleTheme }) {
+export default function ThemeToggle({ theme: propTheme, onToggleTheme: propToggle }) {
+  const context = useTheme();
+  const theme = propTheme || context?.theme || 'light';
+  const handleToggle = propToggle || context?.toggleTheme;
   const isDark = theme === 'dark';
 
   return (
     <button
       type="button"
-      onClick={onToggleTheme}
+      onClick={handleToggle}
       className="flex items-center bg-[#EAE6DF] dark:bg-[#282A33] rounded-full p-0.5 border border-[#DFDAD0] dark:border-[#383A46] shadow-2xs hover:border-[#CEC7BC] dark:hover:border-[#4A4D5C] transition-all cursor-pointer select-none"
       aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
       title={`Switch to ${isDark ? 'light' : 'dark'} mode`}

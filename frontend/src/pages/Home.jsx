@@ -9,6 +9,7 @@ import AboutSection from '../components/about/AboutSection';
 import Footer from '../components/common/Footer';
 import RoomModal from '../components/room/RoomModal';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 /**
  * HomePage Component
@@ -16,7 +17,10 @@ import { useAuth } from '../context/AuthContext';
  * Visible to everyone. When unauthenticated visitors click to create/join rooms,
  * they are prompted to sign in with Google first.
  */
-export default function Home({ theme, onToggleTheme }) {
+export default function Home({ theme: propTheme, onToggleTheme: propToggle } = {}) {
+  const { theme: contextTheme, toggleTheme: contextToggle } = useTheme();
+  const theme = propTheme || contextTheme;
+  const onToggleTheme = propToggle || contextToggle;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create'); // 'create' | 'join'
   const [activeRoomCode, setActiveRoomCode] = useState('');

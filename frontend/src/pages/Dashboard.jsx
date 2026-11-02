@@ -12,6 +12,8 @@ import ActivityView from '../components/dashboard/ActivityView';
 import ExploreView from '../components/dashboard/ExploreView';
 import MyRoomsView from '../components/dashboard/MyRoomsView';
 import SettingsView from '../components/dashboard/SettingsView';
+import ThemeToggle from '../components/common/ThemeToggle';
+import { useTheme } from '../context/ThemeContext';
 
 /**
  * Dashboard Component
@@ -20,7 +22,10 @@ import SettingsView from '../components/dashboard/SettingsView';
  * - Smooth slide-over drawer from the left on mobile devices
  * - Brand logo click showing the dashboard home
  */
-export default function Dashboard({ theme = 'light', onToggleTheme }) {
+export default function Dashboard({ theme: propTheme, onToggleTheme: propToggle } = {}) {
+  const { theme: contextTheme, toggleTheme: contextToggle } = useTheme();
+  const theme = propTheme || contextTheme;
+  const onToggleTheme = propToggle || contextToggle;
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('join'); // 'join' | 'create'
@@ -359,37 +364,7 @@ export default function Dashboard({ theme = 'light', onToggleTheme }) {
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
 
             {/* Theme Toggle Pill Capsule */}
-            <button
-              type="button"
-              onClick={onToggleTheme}
-              className="flex items-center bg-[#EAE6DF] dark:bg-[#282A33] rounded-full p-0.5 border border-[#DFDAD0] dark:border-[#383A46] transition-colors cursor-pointer"
-              title="Switch Theme"
-              aria-label="Switch Theme"
-            >
-              <div
-                className={`flex items-center justify-center w-6 h-6 rounded-full transition-all ${
-                  theme === 'dark'
-                    ? 'bg-[#543FE3] text-amber-200 shadow-xs'
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}
-              >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-                </svg>
-              </div>
-              <div
-                className={`flex items-center justify-center w-6 h-6 rounded-full transition-all ${
-                  theme === 'light'
-                    ? 'bg-white text-amber-500 shadow-xs'
-                    : 'text-gray-400'
-                }`}
-              >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="4" />
-                  <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-                </svg>
-              </div>
-            </button>
+            <ThemeToggle />
 
             {/* User Avatar Circle - Click to open Settings */}
             <button

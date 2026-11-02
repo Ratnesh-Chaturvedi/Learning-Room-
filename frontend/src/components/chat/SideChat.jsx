@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useRoom } from '../../context/RoomContext';
 import ChatMessageList from './ChatMessageList';
 import ChatInputForm from './ChatInputForm';
 
@@ -9,14 +10,16 @@ import ChatInputForm from './ChatInputForm';
  * 2. Desktop Floating Popup Mode (>= 640px, floating=true): 120fps GPU translate3d draggable window.
  * 3. Docked Mode (floating=false): Pinned sidebar inside mockups and panels.
  */
-export default function SideChat({
-  isOpen,
-  onClose,
-  floating = true,
-  externalMessages = null,
-  onSendExternalMessage = null,
-  onlineCount = 1,
-}) {
+export default function SideChat(props = {}) {
+  const room = useRoom() || {};
+
+  const isOpen = props.isOpen ?? room.isChatOpen;
+  const onClose = props.onClose ?? (() => room.setIsChatOpen?.(false));
+  const floating = props.floating ?? true;
+  const externalMessages = props.externalMessages ?? room.chatMessages ?? null;
+  const onSendExternalMessage = props.onSendExternalMessage ?? room.handleSendChatMessage ?? null;
+  const onlineCount = props.onlineCount ?? ((room.peers?.length || 0) + 1);
+
   const [internalMessages, setInternalMessages] = useState([
     {
       id: 1,
@@ -166,7 +169,7 @@ export default function SideChat({
         const replies = [
           'Got it! Just checked the canvas update.',
           'Awesome! Let me sketch the next connecting node.',
-          'Looks great! Should we link Google Meet audio as well?',
+          'Looks great! Turning on my camera and mic now.',
           'Super clean diagram! Moving the weekly study note up.',
           'Nice! The new shapes and syncing look slick.',
         ];

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { authApi } from '../api/auth.api';
 
 const AuthContext = createContext(null);
@@ -100,7 +100,7 @@ export const AuthProvider = ({ children }) => {
   }, [saveSession]);
 
   // Google One-Tap / ID Token login
-  const loginWithGoogle = async (idToken) => {
+  const loginWithGoogle = useCallback(async (idToken) => {
     setIsLoading(true);
     try {
       const response = await authApi.googleLogin(idToken);
@@ -110,10 +110,10 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [saveSession]);
 
   // Local / Developer login (authenticates dev user with real signed JWT from backend)
-  const loginDevUser = async (userNum = 1) => {
+  const loginDevUser = useCallback(async (userNum = 1) => {
     setIsLoading(true);
     try {
       const response = await authApi.devLogin(userNum);
@@ -137,7 +137,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [saveSession]);
 
   const updateUser = useCallback((updatedFields) => {
     setUser((prev) => {
@@ -149,7 +149,7 @@ export const AuthProvider = ({ children }) => {
     });
   }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await authApi.logout();
     } catch {
@@ -157,18 +157,21 @@ export const AuthProvider = ({ children }) => {
     } finally {
       saveSession(null, null);
     }
-  };
+  }, [saveSession]);
 
-  const value = {
-    user,
-    token,
-    isAuthenticated: Boolean(token && user),
-    isLoading,
-    loginWithGoogle,
-    loginDevUser,
-    logout,
-    updateUser,
-  };
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      isAuthenticated: Boolean(token && user),
+      isLoading,
+      loginWithGoogle,
+      loginDevUser,
+      logout,
+      updateUser,
+    }),
+    [user, token, isLoading, loginWithGoogle, loginDevUser, logout, updateUser]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
@@ -182,4 +185,3 @@ export const useAuth = () => {
 };
 
 export default AuthContext;
-

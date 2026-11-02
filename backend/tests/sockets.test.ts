@@ -113,7 +113,8 @@ async function runSocketVerification() {
   // Clean up
   client1.disconnect();
   await new Promise<void>((resolve) => server.close(() => resolve()));
-  console.log("\n🎉 ALL WEBRTC, MEDIA, AND CHAT VERIFICATIONS PASSED SUCCESSFULLY!");
+  console.log("🎉 ALL WEBRTC, MEDIA, AND CHAT VERIFICATIONS PASSED SUCCESSFULLY!");
+  process.exit(0);
 }
 
 runSocketVerification().catch((err) => {

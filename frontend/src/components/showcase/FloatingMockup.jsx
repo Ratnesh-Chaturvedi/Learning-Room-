@@ -32,21 +32,21 @@ export default function FloatingMockup({ theme = 'light' }) {
             <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#27c93f] border border-[#1aab29]" />
           </div>
 
-          {/* Google Meet Live Badge */}
+          {/* Live Audio & Video Status Badge */}
           <div
             onClick={() => setMeetConnected((prev) => !prev)}
             role="button"
             tabIndex={0}
             className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[11px] sm:text-xs font-semibold cursor-pointer hover:opacity-90 transition-opacity"
-            title="Click to toggle Google Meet status"
+            title="Click to toggle audio/video status"
           >
             <span
               className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
                 meetConnected ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'
               }`}
             />
-            <span className="hidden sm:inline">{meetConnected ? 'Google Meet Connected' : 'Google Meet Muted'}</span>
-            <span className="sm:hidden">{meetConnected ? 'Meet Live' : 'Muted'}</span>
+            <span className="hidden sm:inline">{meetConnected ? 'Audio & Video Connected' : 'Audio & Video Muted'}</span>
+            <span className="sm:hidden">{meetConnected ? 'Live Media' : 'Muted'}</span>
           </div>
 
           {/* Right Header Actions */}

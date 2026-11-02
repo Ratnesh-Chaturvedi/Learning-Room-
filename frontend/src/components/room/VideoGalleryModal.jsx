@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useRoom } from '../../context/RoomContext';
 
 /**
  * Single Video Tile Component managing stream binding and video/audio playback
@@ -13,6 +14,7 @@ function PeerVideoTile({ peer, stream, isLocal = false, isAudioMuted = false, is
   }, [stream]);
 
   const hasVideoTrack = stream && stream.getVideoTracks().some((t) => t.enabled && t.readyState === 'live') && !isVideoOff;
+
 
   return (
     <div className="relative rounded-2xl overflow-hidden bg-[#1E1F26] border border-[#2D303D] aspect-video flex items-center justify-center shadow-lg group">
@@ -90,26 +92,26 @@ function PeerVideoTile({ peer, stream, isLocal = false, isAudioMuted = false, is
  * Floating real-time video gallery popup displaying faces, live camera streams,
  * and audio status of all participants in the room.
  */
-export default function VideoGalleryModal({
-  isOpen,
-  onClose,
-  currentUser,
-  peers = [],
-  localStream,
-  remoteStreams = {},
-  isMuted,
-  onToggleMute,
-  isVideoOn,
-  onToggleVideo,
-}) {
+export default function VideoGalleryModal(props = {}) {
+  const room = useRoom() || {};
+
+  const isOpen = props.isOpen ?? room.isVideoGalleryOpen;
+  const onClose = props.onClose ?? (() => room.setIsVideoGalleryOpen?.(false));
+  const currentUser = props.currentUser ?? room.currentUser;
+  const peers = props.peers ?? room.peers ?? [];
+  const localStream = props.localStream ?? room.localStream;
+  const remoteStreams = props.remoteStreams ?? room.remoteStreams ?? {};
+  const isMuted = props.isMuted ?? room.isMuted;
+  const onToggleMute = props.onToggleMute ?? room.handleToggleMute;
+  const isVideoOn = props.isVideoOn ?? room.isVideoOn;
+  const onToggleVideo = props.onToggleVideo ?? room.handleToggleVideo;
+
   const [isMinimized, setIsMinimized] = useState(false);
   const [position, setPosition] = useState({ x: 20, y: 76 });
   const isDragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
 
   const totalParticipants = peers.length + 1;
-
-  if (!isOpen) return null;
 
   const handleMouseDown = (e) => {
     // Only drag from header handle
@@ -142,6 +144,8 @@ export default function VideoGalleryModal({
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, []);
+
+  if (!isOpen) return null;
 
   return (
     <div

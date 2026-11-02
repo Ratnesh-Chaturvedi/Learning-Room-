@@ -142,7 +142,7 @@ async function runKnockVerification() {
   inviteClient.disconnect();
   await new Promise<void>((r) => server.close(() => r()));
 
-  console.log("\n🎉 FULL GOOGLE MEET PRIVATE ROOM KNOCK & ADMISSION FLOW PASSED SUCCESSFULLY!");
+  console.log("\n🎉 FULL PRIVATE ROOM KNOCK & ADMISSION FLOW PASSED SUCCESSFULLY!");
   process.exit(0);
 }
 

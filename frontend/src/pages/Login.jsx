@@ -4,13 +4,25 @@ import { useAuth } from '../context/AuthContext';
 import { learningRoomLogo } from '../assets';
 import ThemeToggle from '../components/common/ThemeToggle';
 
-export default function Login({ theme = 'light', onToggleTheme }) {
+export default function Login() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const errorParam = urlParams.get('error');
+      if (errorParam) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return decodeURIComponent(errorParam);
+      }
+    } catch {
+      // Ignore URL parsing errors
+    }
+    return '';
+  });
 
   // Target destination after successful login
   const from = location.state?.from?.pathname || '/dashboard';
@@ -21,16 +33,6 @@ export default function Login({ theme = 'light', onToggleTheme }) {
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, from]);
-
-  // Capture URL error from Google callback redirect
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const errorParam = urlParams.get('error');
-    if (errorParam) {
-      setErrorMessage(decodeURIComponent(errorParam));
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, []);
 
   // Handle Google OAuth via Backend OAuth 2.0 Flow
   const handleGoogleSignIn = () => {
@@ -58,7 +60,7 @@ export default function Login({ theme = 'light', onToggleTheme }) {
             <span className="ml-1 text-[var(--color-brand)]">Room.</span>
           </div>
         </Link>
-        <ThemeToggle theme={theme} onToggleTheme={onToggleTheme} />
+        <ThemeToggle />
       </header>
 
       {/* Main Login Card */}

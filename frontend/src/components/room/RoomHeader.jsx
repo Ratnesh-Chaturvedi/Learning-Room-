@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useRoom } from '../../context/RoomContext';
+import { useTheme } from '../../context/ThemeContext';
 import { learningRoomLogo } from '../../assets';
 
 /**
@@ -15,34 +17,37 @@ import { learningRoomLogo } from '../../assets';
  * - Dark / Light theme toggle
  * - Responsive mobile drawer menu for compact screens
  */
-export default function RoomHeader({
-  roomId,
-  roomTitle,
-  setRoomTitle,
-  isEditingTitle,
-  setIsEditingTitle,
-  copiedLink,
-  handleCopyInvite,
-  isMuted,
-  setIsMuted,
-  isVideoOn,
-  setIsVideoOn,
-  isHandRaised,
-  setIsHandRaised,
-  activeCallTime,
-  formatCallTime,
-  triggerReaction,
-  isChatOpen,
-  setIsChatOpen,
-  unreadChatCount = 0,
-  peers = [],
-  currentUser = null,
-  isVideoGalleryOpen = false,
-  onToggleVideoGallery = null,
-  theme,
-  onToggleTheme,
-  onLeaveRoom,
-}) {
+export default function RoomHeader(props = {}) {
+  const room = useRoom() || {};
+  const themeContext = useTheme() || {};
+
+  const roomId = props.roomId ?? room.roomId;
+  const roomTitle = props.roomTitle ?? room.roomTitle;
+  const setRoomTitle = props.setRoomTitle ?? room.setRoomTitle;
+  const isEditingTitle = props.isEditingTitle ?? room.isEditingTitle;
+  const setIsEditingTitle = props.setIsEditingTitle ?? room.setIsEditingTitle;
+  const copiedLink = props.copiedLink ?? room.copiedLink;
+  const handleCopyInvite = props.handleCopyInvite ?? room.handleCopyInvite;
+  const isMuted = props.isMuted ?? room.isMuted;
+  const setIsMuted = props.setIsMuted ?? room.handleToggleMute;
+  const isVideoOn = props.isVideoOn ?? room.isVideoOn;
+  const setIsVideoOn = props.setIsVideoOn ?? room.handleToggleVideo;
+  const isHandRaised = props.isHandRaised ?? room.isHandRaised;
+  const setIsHandRaised = props.setIsHandRaised ?? room.handleToggleHand;
+  const activeCallTime = props.activeCallTime ?? room.activeCallTime ?? 0;
+  const formatCallTime = props.formatCallTime ?? room.formatCallTime;
+  const triggerReaction = props.triggerReaction ?? room.triggerReaction;
+  const isChatOpen = props.isChatOpen ?? room.isChatOpen;
+  const setIsChatOpen = props.setIsChatOpen ?? room.setIsChatOpen;
+  const unreadChatCount = props.unreadChatCount ?? room.chatMessages?.length ?? 0;
+  const peers = props.peers ?? room.peers ?? [];
+  const currentUser = props.currentUser ?? room.currentUser;
+  const isVideoGalleryOpen = props.isVideoGalleryOpen ?? room.isVideoGalleryOpen;
+  const onToggleVideoGallery = props.onToggleVideoGallery ?? (() => room.setIsVideoGalleryOpen?.((prev) => !prev));
+  const theme = props.theme ?? room.roomTheme ?? themeContext.theme;
+  const onToggleTheme = props.onToggleTheme ?? room.handleToggleRoomTheme ?? themeContext.toggleTheme;
+  const onLeaveRoom = props.onLeaveRoom ?? room.handleLeaveRoom;
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const totalConnected = (peers?.length || 0) + 1;
 

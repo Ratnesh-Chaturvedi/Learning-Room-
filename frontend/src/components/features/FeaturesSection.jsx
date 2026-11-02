@@ -247,7 +247,7 @@ export default function FeaturesSection() {
         </div>
 
         {/* ===================================================================
-            CARD 3: Google Meet Integration (Emerald & Mint Glow)
+            CARD 3: Integrated Video & Voice Calls (Emerald & Mint Glow)
             =================================================================== */}
         <div className="relative group rounded-2xl bg-gradient-to-br from-[#ecfdf5] via-[#ffffff] to-[#d1fae5]/50 dark:from-[#064e3b]/70 dark:via-[#18231c] dark:to-[#121c16] border border-emerald-200/70 dark:border-emerald-900/40 hover:border-emerald-300 dark:hover:border-emerald-700/60 p-5 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-visible">
           {/* Subtle Ambient Radial Wash */}
@@ -263,7 +263,7 @@ export default function FeaturesSection() {
 
           <div className="relative z-10">
             <h3 className="font-heading text-lg font-bold text-[var(--color-text-primary)] mb-4">
-              Google Meet Integration
+              Integrated HD Video & Voice
             </h3>
 
             {/* Inner Mockup Window */}
