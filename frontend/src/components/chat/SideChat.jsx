@@ -9,8 +9,15 @@ import ChatInputForm from './ChatInputForm';
  * 2. Desktop Floating Popup Mode (>= 640px, floating=true): 120fps GPU translate3d draggable window.
  * 3. Docked Mode (floating=false): Pinned sidebar inside mockups and panels.
  */
-export default function SideChat({ isOpen, onClose, floating = true }) {
-  const [messages, setMessages] = useState([
+export default function SideChat({
+  isOpen,
+  onClose,
+  floating = true,
+  externalMessages = null,
+  onSendExternalMessage = null,
+  onlineCount = 1,
+}) {
+  const [internalMessages, setInternalMessages] = useState([
     {
       id: 1,
       sender: 'Maya',
@@ -37,12 +44,15 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
     },
   ]);
 
+  const messages = externalMessages !== null ? externalMessages : internalMessages;
+  const setMessages = setInternalMessages;
+
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Responsive mobile screen detection (updates dynamically on window resize or orientation)
+  // Responsive mobile screen detection
   const [isMobile, setIsMobile] = useState(() => {
     return typeof window !== 'undefined' ? window.innerWidth < 640 : false;
   });
@@ -78,7 +88,7 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Smooth window-level drag listeners (Active only on desktop floating mode)
+  // Smooth window-level drag listeners
   useEffect(() => {
     if (!floating || isMobile) return;
 
@@ -98,11 +108,9 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
     };
 
     const onPointerUp = () => {
-      if (isDraggingRef.current) {
-        isDraggingRef.current = false;
-        setIsDragging(false);
-        if (rafId.current) cancelAnimationFrame(rafId.current);
-      }
+      isDraggingRef.current = false;
+      setIsDragging(false);
+      if (rafId.current) cancelAnimationFrame(rafId.current);
     };
 
     if (isDragging) {
@@ -133,6 +141,12 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
     e.preventDefault();
     if (!inputText.trim()) return;
 
+    if (onSendExternalMessage) {
+      onSendExternalMessage(inputText.trim());
+      setInputText('');
+      return;
+    }
+
     const userMsg = {
       id: Date.now(),
       sender: 'You',
@@ -145,7 +159,6 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
 
-    // Simulated collaborative peer responses
     setTimeout(() => {
       setIsTyping(true);
       setTimeout(() => {
@@ -190,26 +203,21 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
 
   if (!isOpen && floating) return null;
 
-  // =========================================================================
-  // MODE 1: MOBILE BOTTOM SHEET MODAL DRAWER (< 640px)
-  // Guaranteed 100% visible, touch-friendly, scrollable, with backdrop
-  // =========================================================================
+  const displayOnline = onlineCount || 1;
+
+  // MODE 1: MOBILE BOTTOM SHEET (< 640px)
   if (floating && isMobile) {
     return (
       <div className="fixed inset-0 z-[100000] flex flex-col justify-end pointer-events-none animate-in fade-in duration-200">
-        {/* Touch-to-dismiss Backdrop */}
         <div
           onClick={onClose}
           className="fixed inset-0 bg-black/50 backdrop-blur-2xs pointer-events-auto transition-opacity"
           aria-hidden="true"
         />
 
-        {/* Slide-up Bottom Sheet Modal */}
         <div className="relative w-full max-h-[82vh] flex flex-col bg-[var(--color-surface)] border-t border-[var(--color-border)] rounded-t-3xl shadow-3xl pointer-events-auto z-[100001] animate-in slide-in-from-bottom duration-300 overflow-hidden pb-1">
-          {/* Pull Handle Bar */}
           <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto my-2.5 shrink-0" />
 
-          {/* Header */}
           <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-surface-secondary)]/90 shrink-0">
             <div className="flex items-center gap-2">
               <span className="font-heading font-bold text-sm text-[var(--color-text-primary)]">
@@ -217,7 +225,7 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
               </span>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                3 online
+                {displayOnline} online
               </span>
             </div>
             <button
@@ -230,7 +238,6 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
             </button>
           </div>
 
-          {/* Message Stream */}
           <ChatMessageList
             messages={messages}
             isTyping={isTyping}
@@ -238,7 +245,6 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
             customHeightClass="h-[260px] max-h-[45vh] flex-1"
           />
 
-          {/* Message Input Form */}
           <ChatInputForm
             inputText={inputText}
             setInputText={setInputText}
@@ -249,10 +255,7 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
     );
   }
 
-  // =========================================================================
-  // MODE 2: DESKTOP FLOATING DRAGGABLE OVERLAY (>= 640px)
-  // Does not squeeze canvas; GPU hardware-accelerated translate3d dragging
-  // =========================================================================
+  // MODE 2: DESKTOP FLOATING DRAGGABLE OVERLAY
   if (floating) {
     return (
       <>
@@ -278,7 +281,6 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
               transition: isDragging ? 'none' : 'transform 0.15s ease, box-shadow 0.15s ease',
             }}
           >
-            {/* Draggable Header Title Bar */}
             <div
               onPointerDown={handleHeaderPointerDown}
               className={`flex items-center justify-between px-3.5 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-secondary)]/90 select-none touch-none ${
@@ -295,7 +297,7 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
                 </span>
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  3 online
+                  {displayOnline} online
                 </span>
               </div>
 
@@ -319,7 +321,6 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
               </div>
             </div>
 
-            {/* Collapsible Chat Body */}
             {!isMinimized && (
               <>
                 <ChatMessageList
@@ -341,9 +342,7 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
     );
   }
 
-  // =========================================================================
-  // MODE 3: DOCKED SIDE PANE (Used in Fixed Showcase Mockup on Landing Page)
-  // =========================================================================
+  // MODE 3: DOCKED SIDE PANE
   return (
     <aside
       className={`absolute inset-y-0 right-0 sm:w-72 md:relative flex flex-col border-l border-[var(--color-border)] bg-[var(--color-surface-secondary)] z-30 shrink-0 shadow-2xl md:shadow-none transition-all duration-300 ease-in-out ${
@@ -355,7 +354,6 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
       aria-hidden={!isOpen}
     >
       <div className="w-full sm:w-72 md:w-80 flex flex-col h-full min-w-[280px] md:min-w-[320px]">
-        {/* Header */}
         <div className="flex items-center justify-between px-3.5 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
           <div className="flex items-center gap-2">
             <span className="font-heading font-bold text-sm text-[var(--color-text-primary)]">
@@ -363,7 +361,7 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
             </span>
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              3 online
+              {displayOnline} online
             </span>
           </div>
           <button
@@ -381,7 +379,6 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
           </button>
         </div>
 
-        {/* Message Stream */}
         <ChatMessageList
           messages={messages}
           isTyping={isTyping}
@@ -389,7 +386,6 @@ export default function SideChat({ isOpen, onClose, floating = true }) {
           customHeightClass="flex-1 max-h-none"
         />
 
-        {/* Input Form */}
         <ChatInputForm
           inputText={inputText}
           setInputText={setInputText}

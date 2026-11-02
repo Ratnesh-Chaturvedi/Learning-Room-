@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   footerPencil,
   ratneshAvatar,
@@ -20,6 +21,7 @@ import SettingsView from '../components/dashboard/SettingsView';
  * - Brand logo click showing the dashboard home
  */
 export default function Dashboard({ theme = 'light', onToggleTheme }) {
+  const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('join'); // 'join' | 'create'
   const [activeRoomCode, setActiveRoomCode] = useState('');
@@ -27,6 +29,7 @@ export default function Dashboard({ theme = 'light', onToggleTheme }) {
   const searchInputRef = useRef(null);
   const mainScrollRef = useRef(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Scroll main content area to top when changing dashboard views
   useEffect(() => {
@@ -92,10 +95,6 @@ export default function Dashboard({ theme = 'light', onToggleTheme }) {
     setModalMode('create');
     setActiveRoomCode(`LR-${Math.floor(1000 + Math.random() * 9000)}`);
     setIsModalOpen(true);
-  };
-
-  const handleOpenMeet = () => {
-    window.open('https://meet.google.com/new', '_blank', 'noopener,noreferrer');
   };
 
   const navItems = [
@@ -356,22 +355,8 @@ export default function Dashboard({ theme = 'light', onToggleTheme }) {
             </span>
           </div>
 
-          {/* Right Header Controls: Notification, Theme Toggle, User Avatar */}
+          {/* Right Header Controls: Theme Toggle, User Avatar */}
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            {/* Notification Bell */}
-            <button
-              type="button"
-              className="relative p-2 rounded-full hover:bg-[#EFECE6] dark:hover:bg-[#23252E] text-gray-600 dark:text-gray-300 transition-colors cursor-pointer"
-              title="Notifications"
-              aria-label="Notifications"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-              </svg>
-              {/* Red notification dot */}
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#E5484D] ring-2 ring-white dark:ring-[#121316]" />
-            </button>
 
             {/* Theme Toggle Pill Capsule */}
             <button
@@ -406,14 +391,26 @@ export default function Dashboard({ theme = 'light', onToggleTheme }) {
               </div>
             </button>
 
-            {/* User Avatar Circle */}
-            <div className="relative">
-              <img
-                src={ratneshAvatar}
-                alt="Ratnesh Chaturvedi"
-                className="w-9 h-9 rounded-full object-cover ring-2 ring-purple-300 dark:ring-purple-700 shadow-2xs"
-              />
-            </div>
+            {/* User Avatar Circle - Click to open Settings */}
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard/settings')}
+              className="relative rounded-full ring-2 ring-purple-300 dark:ring-purple-700 hover:ring-[#543FE3] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#543FE3]"
+              title="Go to Settings"
+              aria-label="Go to Settings"
+            >
+              {user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user?.name || 'User'}
+                  className="w-9 h-9 rounded-full object-cover shadow-2xs"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-[#543FE3] text-white font-bold flex items-center justify-center text-xs shadow-2xs">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </div>
+              )}
+            </button>
           </div>
         </header>
 
@@ -434,7 +431,7 @@ export default function Dashboard({ theme = 'light', onToggleTheme }) {
           </div>
         ) : activeTab === 'Activity' ? (
           <div className="flex-1 p-5 sm:p-6 lg:p-7">
-            <ActivityView onOpenRoom={handleOpenJoin} />
+            <ActivityView onOpenRoom={handleOpenJoin} onOpenCreateRoom={handleOpenCreate} />
           </div>
         ) : activeTab === 'Settings' ? (
           <div className="flex-1 p-5 sm:p-6 lg:p-7">
@@ -444,7 +441,6 @@ export default function Dashboard({ theme = 'light', onToggleTheme }) {
           <HomeView
             onOpenJoin={handleOpenJoin}
             onOpenCreate={handleOpenCreate}
-            onOpenMeet={handleOpenMeet}
           />
         )}
       </div>

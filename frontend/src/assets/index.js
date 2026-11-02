@@ -32,7 +32,9 @@ import exploreRocket from './explore/rocket.png';
 
 // Landing Page Specific Assets
 import heroImage from './hero.png';
-import { rocketIcon, eyeIcon, heartIcon } from './LandingPage';
+import eyeIcon from './shared/eye.png';
+import heartIcon from './shared/heart.png';
+const rocketIcon = exploreRocket;
 
 export {
   // Shared

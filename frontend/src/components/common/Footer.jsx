@@ -5,8 +5,9 @@ import {
   pencilHolder,
   footerPlane,
   burstLines,
-} from '../../assets/LandingPage';
-import { learningRoomLogo } from '../../assets';
+  learningRoomLogo,
+} from '../../assets';
+
 
 export default function Footer({ onStartRoom }) {
   const [email, setEmail] = useState('');

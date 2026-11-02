@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/common/ProtectedRoute';
 import Home from './pages/Home';
+import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import RoomPage from './pages/RoomPage';
 import SmoothScrollProvider from './components/common/SmoothScrollProvider';
@@ -25,8 +28,9 @@ try {
 
 /**
  * Root Application Component
- * Configures React Router routes for landing page (/), dashboard (/dashboard/*),
- * and live collaborative meeting room (/room/:roomId)
+ * Configures React Router routes with authentication guards:
+ * - Public: Landing page (/) & Login page (/login)
+ * - Protected: Dashboard (/dashboard/*) & Live Room (/room/:roomId)
  */
 export default function App() {
   const [theme, setTheme] = useState(getInitialTheme);
@@ -52,31 +56,47 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <SmoothScrollProvider>
-        <Routes>
-        {/* Landing / Home Page */}
-        <Route
-          path="/"
-          element={<Home theme={theme} onToggleTheme={toggleTheme} />}
-        />
+      <AuthProvider>
+        <SmoothScrollProvider>
+          <Routes>
+            {/* Public Landing / Home Page */}
+            <Route
+              path="/"
+              element={<Home theme={theme} onToggleTheme={toggleTheme} />}
+            />
 
-        {/* Learning Room Dashboard */}
-        <Route
-          path="/dashboard/*"
-          element={<Dashboard theme={theme} onToggleTheme={toggleTheme} />}
-        />
+            {/* Public Login Page */}
+            <Route
+              path="/login"
+              element={<Login theme={theme} onToggleTheme={toggleTheme} />}
+            />
 
-        {/* Live Collaborative Meeting Room (Demo ID e.g. /room/1234) */}
-        <Route
-          path="/room/:roomId"
-          element={<RoomPage theme={theme} onToggleTheme={toggleTheme} />}
-        />
-        <Route path="/room" element={<Navigate to="/room/1234" replace />} />
+            {/* Protected Learning Room Dashboard */}
+            <Route
+              path="/dashboard/*"
+              element={
+                <ProtectedRoute>
+                  <Dashboard theme={theme} onToggleTheme={toggleTheme} />
+                </ProtectedRoute>
+              }
+            />
 
-        {/* Fallback route redirects to landing page */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-      </SmoothScrollProvider>
+            {/* Protected Live Collaborative Room */}
+            <Route
+              path="/room/:roomId"
+              element={
+                <ProtectedRoute>
+                  <RoomPage theme={theme} onToggleTheme={toggleTheme} />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/room" element={<Navigate to="/dashboard" replace />} />
+
+            {/* Fallback route redirects to landing page */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </SmoothScrollProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

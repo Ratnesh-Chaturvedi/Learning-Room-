@@ -1,20 +1,219 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { userApi } from '../../api/user.api';
+import GoalsWidget from './GoalsWidget';
 import {
   goldMedal,
   whiteboardPreview,
-  footerBooks,
-  pencilHolder,
-  footerPencil,
-  ratneshAvatar,
-  aboutUsAvatars,
   burstLines,
+  ratneshAvatar,
 } from '../../assets';
 
-export default function ActivityView({ onOpenRoom }) {
+export default function ActivityView({ onOpenRoom, onOpenCreateRoom }) {
+  const { user } = useAuth();
+
   const [activeFilter, setActiveFilter] = useState('Full History');
   const [timeFilter, setTimeFilter] = useState('This week');
+  const [showTimeDropdown, setShowTimeDropdown] = useState(false);
+  const [rooms, setRooms] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const filterButtons = ['Full History', 'Stats', 'Badges', 'Resources'];
+  const filterButtons = ['Full History', 'Created', 'Joined', 'Completed'];
+
+  // Fetch real rooms and activity data
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchActivityData = async () => {
+      setIsLoading(true);
+      setErrorMessage('');
+      try {
+        const response = await userApi.getMyRooms();
+        if (isMounted) {
+          const userRooms = response.data?.rooms || [];
+          setRooms(userRooms);
+        }
+      } catch (err) {
+        if (isMounted) {
+          console.error('[Activity] Error fetching activity data:', err);
+          setErrorMessage(err.message || 'Unable to load real activity data.');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchActivityData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Filtered rooms based on user selection
+  const filteredRooms = useMemo(() => {
+    if (activeFilter === 'Created') {
+      return rooms.filter((r) => r.creatorId === user?.id);
+    }
+    if (activeFilter === 'Joined') {
+      return rooms.filter((r) => r.creatorId !== user?.id);
+    }
+    if (activeFilter === 'Completed') {
+      return rooms.filter((r) => r.status === 'ENDED');
+    }
+    return rooms;
+  }, [rooms, activeFilter, user?.id]);
+
+  // Upcoming scheduled rooms
+  const upcomingRooms = useMemo(() => {
+    return rooms
+      .filter((r) => r.status === 'SCHEDULED')
+      .sort((a, b) => new Date(a.scheduledAt || a.createdAt) - new Date(b.scheduledAt || b.createdAt));
+  }, [rooms]);
+
+  // Derived real metrics
+  const completedRooms = useMemo(() => {
+    return rooms.filter((r) => r.status === 'ENDED');
+  }, [rooms]);
+
+  const createdRooms = useMemo(() => {
+    return rooms.filter((r) => r.creatorId === user?.id);
+  }, [rooms, user?.id]);
+
+  // Total collaboration/study duration in seconds
+  const totalDurationSeconds = useMemo(() => {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    return rooms.reduce((acc, r) => {
+      // If time filter is 'This week', skip older rooms
+      if (timeFilter === 'This week') {
+        const roomDate = new Date(r.createdAt);
+        if (roomDate < oneWeekAgo) return acc;
+      }
+
+      if (r.duration && r.duration > 0) {
+        return acc + r.duration;
+      }
+      if (r.endedAt && r.createdAt) {
+        const diff = Math.max(0, Math.floor((new Date(r.endedAt) - new Date(r.createdAt)) / 1000));
+        return acc + diff;
+      }
+      return acc;
+    }, 0);
+  }, [rooms, timeFilter]);
+
+  // Human readable study duration
+  const formattedStudyTime = useMemo(() => {
+    const hours = Math.floor(totalDurationSeconds / 3600);
+    const minutes = Math.floor((totalDurationSeconds % 3600) / 60);
+
+    if (hours > 0) {
+      return `${hours}h ${minutes > 0 ? `${minutes}m` : ''}`.trim();
+    }
+    if (minutes > 0) {
+      return `${minutes}m`;
+    }
+    return totalDurationSeconds > 0 ? `${totalDurationSeconds}s` : '0h';
+  }, [totalDurationSeconds]);
+
+  // Calculate unique days with room activity for streak
+  const streakDays = useMemo(() => {
+    const uniqueDays = new Set();
+    rooms.forEach((r) => {
+      const dateStr = new Date(r.createdAt).toISOString().split('T')[0];
+      uniqueDays.add(dateStr);
+    });
+    return uniqueDays.size;
+  }, [rooms]);
+
+  // Unique peer collaborators
+  const uniquePeersCount = useMemo(() => {
+    const peerIds = new Set();
+    rooms.forEach((r) => {
+      if (r.creatorId && r.creatorId !== user?.id) {
+        peerIds.add(r.creatorId);
+      }
+      if (Array.isArray(r.participants)) {
+        r.participants.forEach((p) => {
+          if (p.id && p.id !== user?.id) {
+            peerIds.add(p.id);
+          }
+        });
+      }
+    });
+    return peerIds.size;
+  }, [rooms, user?.id]);
+
+  // Helper for relative time
+  const formatTimeAgo = (dateStr) => {
+    if (!dateStr) return 'Recently';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffSec = Math.max(0, Math.floor((now - date) / 1000));
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+
+    if (diffDay > 30) return date.toLocaleDateString();
+    if (diffDay > 0) return `${diffDay}d ago`;
+    if (diffHour > 0) return `${diffHour}h ago`;
+    if (diffMin > 0) return `${diffMin}m ago`;
+    return 'Just now';
+  };
+
+  // Helper for scheduled date format
+  const formatScheduledDate = (dateStr) => {
+    if (!dateStr) return 'Soon';
+    const d = new Date(dateStr);
+    return d.toLocaleString([], {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  // Dynamic achievement badges based on real activity
+  const achievements = [
+    {
+      id: 'first-room',
+      title: 'First Step',
+      desc: 'Joined or created your first study room',
+      unlocked: rooms.length >= 1,
+      color: '#6C52EE',
+      bgColor: '#EAE5FC',
+    },
+    {
+      id: 'room-host',
+      title: 'Room Host',
+      desc: 'Created and hosted a collaborative room',
+      unlocked: createdRooms.length >= 1,
+      color: '#2563EB',
+      bgColor: '#E5EFFD',
+    },
+    {
+      id: 'active-learner',
+      title: 'Active Learner',
+      desc: 'Completed at least 2 learning rooms',
+      unlocked: completedRooms.length >= 2,
+      color: '#EA580C',
+      bgColor: '#FFF5ED',
+    },
+    {
+      id: 'collaborator',
+      title: 'Collaborator',
+      desc: 'Studied with 3+ unique peers',
+      unlocked: uniquePeersCount >= 3,
+      color: '#10B981',
+      bgColor: '#ECFDF5',
+    },
+  ];
+
+  const userName = user?.name ? user.name.split(' ')[0] : 'Collaborator';
 
   return (
     <div className="w-full max-w-[1560px] mx-auto flex flex-col gap-6 select-none font-sans pb-4">
@@ -24,7 +223,6 @@ export default function ActivityView({ onOpenRoom }) {
       <div className="flex items-start justify-between relative pt-2 sm:pt-3">
         {/* Left: Radiating rays + Title + Subtitle */}
         <div className="relative inline-block">
-          {/* 3-line radiating burst on corner of Activity */}
           <span
             className="absolute -top-[18px] sm:-top-5 -left-[19px] sm:-left-[22px] -rotate-45 pointer-events-none select-none animate-float-slow"
             aria-hidden="true"
@@ -40,16 +238,15 @@ export default function ActivityView({ onOpenRoom }) {
             Activity
           </h1>
           <p className="text-sm sm:text-base text-[#5E606D] dark:text-[#A0A2B0] mt-1">
-            Track your progress & keep moving forward!
+            Track your real progress & keep moving forward!
           </p>
         </div>
 
-        {/* Right: Floating handwritten quote "Learn. Collaborate. Grow." with curved arrow */}
+        {/* Right: Floating handwritten quote */}
         <div className="hidden xl:flex items-center gap-2 font-handwriting text-base font-bold text-[#3B3C46] dark:text-[#D4D6E2] pr-6 select-none">
           <div className="text-right leading-tight">
             Learn.<br />Collaborate.<br />Grow.
           </div>
-          {/* Curved hand-drawn ink arrow pointing down towards the right card */}
           <svg className="w-7 h-7 text-[#3B3C46] dark:text-[#D4D6E2] -mt-1" viewBox="0 0 32 32" fill="none">
             <path d="M4 10 C 14 6, 22 14, 26 24 M 20 24 L 26 24 L 26 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -71,24 +268,22 @@ export default function ActivityView({ onOpenRoom }) {
               <div className="text-sm sm:text-base text-[#18191F] dark:text-[#F3F4F6] font-medium leading-tight">
                 <span>Welcome to your Activity hub,</span>
                 <span className="font-heading font-extrabold text-[#18191F] dark:text-white block sm:inline sm:ml-1">
-                  Ratnesh!
+                  {userName}!
                 </span>
               </div>
-              {/* Hand-drawn Sparkles Doodle ✦ ✧ */}
               <div className="flex items-center gap-0.5 text-amber-500 flex-shrink-0">
                 <span className="text-base">✦</span>
                 <span className="text-xs">✧</span>
               </div>
             </div>
 
-            {/* Center: Gold Medal with Purple Ribbons */}
+            {/* Center: Gold Medal */}
             <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 relative">
               <img
                 src={goldMedal}
                 alt="Achievement Medal"
                 className="w-full h-full object-contain filter drop-shadow-sm select-none"
               />
-              {/* Radiating sketch marks around medal */}
               <span className="absolute -top-1 -right-1 text-amber-500 text-xs">✦</span>
               <span className="absolute -bottom-1 -left-1 text-purple-500 text-xs">✧</span>
             </div>
@@ -118,7 +313,7 @@ export default function ActivityView({ onOpenRoom }) {
           {/* SUB-GRID: ACTIVITY FEED (LEFT) + MY STATS & JOURNEY (RIGHT) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
             {/* --------------------------------------------------- */}
-            {/* SUB-COLUMN 1: ACTIVITY FEED                         */}
+            {/* SUB-COLUMN 1: REAL ACTIVITY FEED                    */}
             {/* --------------------------------------------------- */}
             <div className="flex flex-col gap-3">
               {/* Heading */}
@@ -127,126 +322,131 @@ export default function ActivityView({ onOpenRoom }) {
                   <h2 className="font-heading font-extrabold text-base sm:text-lg text-[#18191F] dark:text-[#F3F4F6]">
                     Activity Feed
                   </h2>
-                  {/* Purple hand-drawn scribble underline */}
                   <svg className="absolute -bottom-1 left-0 w-full h-2 text-[#3A3B45] dark:text-gray-400" viewBox="0 0 100 8" fill="none">
                     <path d="M 2 4 Q 30 1, 60 5 T 98 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                 </div>
-                <button
-                  type="button"
-                  className="text-xs font-semibold text-[#543FE3] dark:text-[#A798FF] hover:underline flex items-center gap-1"
-                >
-                  View all →
-                </button>
+                <span className="text-xs font-semibold text-[#717382] dark:text-[#9A9CA8]">
+                  {filteredRooms.length} {filteredRooms.length === 1 ? 'event' : 'events'}
+                </span>
               </div>
 
-              {/* Timeline Container with 4 Items */}
-              <div className="relative pl-6 space-y-3 before:absolute before:left-3 before:top-4 before:bottom-4 before:w-0.5 before:bg-[#EAE5DE] dark:before:bg-[#2E313D] flex-1 flex flex-col justify-between">
-                {/* Item 1 */}
-                <div className="relative group">
-                  <div className="absolute -left-6 top-3.5 w-6 h-6 rounded-full bg-[#EAE5FC] dark:bg-[#342D59] text-[#543FE3] dark:text-[#B6A8FF] flex items-center justify-center text-xs font-extrabold ring-4 ring-[#FAF8F5] dark:ring-[#121316]">
-                    1
+              {/* Timeline Container */}
+              <div className="bg-white dark:bg-[#1D1F26] border border-[#EAE5DE] dark:border-[#2D303A] rounded-3xl p-4 sm:p-5 shadow-xs flex-1 flex flex-col justify-between">
+                {isLoading ? (
+                  <div className="py-12 flex flex-col items-center justify-center text-center gap-2">
+                    <div className="w-7 h-7 border-2 border-[#543FE3] border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs text-[#717382] dark:text-[#9A9CA8]">Loading your activity...</span>
                   </div>
-                  <div className="bg-white dark:bg-[#1D1F26] border border-[#EAE5DE] dark:border-[#2D303A] rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-xs hover:border-[#6C52EE]/40 transition-all">
-                    <div className="space-y-1 min-w-0">
-                      <h4 className="font-bold text-xs sm:text-sm text-[#18191F] dark:text-[#F3F4F6] truncate">
-                        Joined DSA Practice Group
+                ) : errorMessage ? (
+                  <div className="py-8 text-center text-xs text-rose-500 font-medium">
+                    {errorMessage}
+                  </div>
+                ) : filteredRooms.length === 0 ? (
+                  <div className="py-10 px-4 text-center flex flex-col items-center justify-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-950/40 text-[#543FE3] dark:text-[#B6A8FF] flex items-center justify-center text-xl">
+                      🚀
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-[#18191F] dark:text-[#F3F4F6]">
+                        No activity recorded yet
                       </h4>
-                      <div className="flex items-center gap-2 text-[11px] sm:text-xs">
-                        <span className="text-[#717382] dark:text-[#9193A1]">10m ago</span>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                          Live participation
-                        </span>
-                      </div>
+                      <p className="text-xs text-[#717382] dark:text-[#9A9CA8] mt-1 max-w-[260px] mx-auto">
+                        {activeFilter === 'Full History'
+                          ? 'Start or join a study room to begin tracking your collaborative sessions!'
+                          : `No rooms found under "${activeFilter}".`}
+                      </p>
                     </div>
-
-                    {/* Overlapping User Avatars */}
-                    <div className="flex items-center -space-x-1.5 flex-shrink-0">
-                      <img src={ratneshAvatar} alt="user" className="w-6 h-6 rounded-full ring-2 ring-white dark:ring-[#1D1F26] object-cover" />
-                      <div className="w-6 h-6 rounded-full bg-amber-200 ring-2 ring-white dark:ring-[#1D1F26] flex items-center justify-center text-[10px] font-bold text-amber-700">R</div>
-                      <div className="w-6 h-6 rounded-full bg-blue-200 ring-2 ring-white dark:ring-[#1D1F26] flex items-center justify-center text-[10px] font-bold text-blue-700">S</div>
-                      <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 ring-2 ring-white dark:ring-[#1D1F26] flex items-center justify-center text-[9px] font-bold text-gray-600 dark:text-gray-300">+2</div>
-                    </div>
+                    {onOpenCreateRoom && (
+                      <button
+                        type="button"
+                        onClick={onOpenCreateRoom}
+                        className="mt-2 px-4 py-2 rounded-full bg-[#543FE3] hover:bg-[#432ec4] text-white text-xs font-semibold transition-all shadow-xs"
+                      >
+                        Create a Study Room
+                      </button>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  <div className="relative pl-6 space-y-3.5 before:absolute before:left-3 before:top-4 before:bottom-4 before:w-0.5 before:bg-[#EAE5DE] dark:before:bg-[#2E313D]">
+                    {filteredRooms.slice(0, 5).map((room, index) => {
+                      const isCreator = room.creatorId === user?.id;
+                      const participantsList = Array.isArray(room.participants) ? room.participants : [];
 
-                {/* Item 2 */}
-                <div className="relative group">
-                  <div className="absolute -left-6 top-3.5 w-6 h-6 rounded-full bg-[#EAE5FC] dark:bg-[#342D59] text-[#543FE3] dark:text-[#B6A8FF] flex items-center justify-center text-xs font-extrabold ring-4 ring-[#FAF8F5] dark:ring-[#121316]">
-                    2
-                  </div>
-                  <div className="bg-white dark:bg-[#1D1F26] border border-[#EAE5DE] dark:border-[#2D303A] rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-xs hover:border-[#6C52EE]/40 transition-all">
-                    <div className="space-y-1 min-w-0">
-                      <h4 className="font-bold text-xs sm:text-sm text-[#18191F] dark:text-[#F3F4F6] truncate">
-                        Completed System Design Quiz Ch. 4
-                      </h4>
-                      <div className="text-[11px] sm:text-xs text-[#717382] dark:text-[#9193A1]">
-                        2 hours ago
-                      </div>
-                    </div>
+                      return (
+                        <div
+                          key={room.id}
+                          className="relative group cursor-pointer"
+                          onClick={() => onOpenRoom && onOpenRoom(room.roomCode || room.id)}
+                        >
+                          {/* Number Badge on Timeline */}
+                          <div className="absolute -left-6 top-3.5 w-6 h-6 rounded-full bg-[#EAE5FC] dark:bg-[#342D59] text-[#543FE3] dark:text-[#B6A8FF] flex items-center justify-center text-xs font-extrabold ring-4 ring-[#FAF8F5] dark:ring-[#121316]">
+                            {index + 1}
+                          </div>
 
-                    {/* Medal Badge Pill */}
-                    <div className="flex-shrink-0 bg-[#FFF5ED] dark:bg-[#2D231E] border border-[#FDE5D2] dark:border-[#4B362C] px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-amber-800 dark:text-amber-200 shadow-2xs">
-                      <svg className="w-4 h-4 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="8" r="6" />
-                        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-                      </svg>
-                      <span className="text-[11px] font-bold">Ch. 4 Completed!</span>
-                    </div>
-                  </div>
-                </div>
+                          <div className="bg-[#FAF9F6] dark:bg-[#242732] border border-[#EAE5DE] dark:border-[#2D303A] rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-2xs hover:border-[#6C52EE]/60 hover:shadow-xs transition-all">
+                            <div className="space-y-1 min-w-0 flex-1">
+                              <h4 className="font-bold text-xs sm:text-sm text-[#18191F] dark:text-[#F3F4F6] truncate">
+                                {isCreator ? `Created ${room.title}` : `Joined ${room.title}`}
+                              </h4>
+                              <div className="flex items-center gap-2 text-[11px] sm:text-xs flex-wrap">
+                                <span className="text-[#717382] dark:text-[#9193A1]">
+                                  {formatTimeAgo(room.createdAt)}
+                                </span>
 
-                {/* Item 3 */}
-                <div className="relative group">
-                  <div className="absolute -left-6 top-3.5 w-6 h-6 rounded-full bg-[#EAE5FC] dark:bg-[#342D59] text-[#543FE3] dark:text-[#B6A8FF] flex items-center justify-center text-xs font-extrabold ring-4 ring-[#FAF8F5] dark:ring-[#121316]">
-                    3
-                  </div>
-                  <div className="bg-white dark:bg-[#1D1F26] border border-[#EAE5DE] dark:border-[#2D303A] rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-xs hover:border-[#6C52EE]/40 transition-all">
-                    <div className="space-y-1 min-w-0">
-                      <h4 className="font-bold text-xs sm:text-sm text-[#18191F] dark:text-[#F3F4F6] truncate">
-                        Saved a draft on the Shared Whiteboard
-                      </h4>
-                      <div className="text-[11px] sm:text-xs text-[#717382] dark:text-[#9193A1]">
-                        1 day ago
-                      </div>
-                    </div>
+                                {room.status === 'ACTIVE' && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    Live session
+                                  </span>
+                                )}
 
-                    {/* Whiteboard Preview Thumbnail */}
-                    <div className="w-16 h-11 rounded-lg border border-[#E5E1D8] dark:border-[#383B47] overflow-hidden flex-shrink-0 bg-white shadow-2xs">
-                      <img
-                        src={whiteboardPreview}
-                        alt="Whiteboard wireframe sketch preview"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
-                </div>
+                                {room.status === 'SCHEDULED' && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40">
+                                    📅 {formatScheduledDate(room.scheduledAt)}
+                                  </span>
+                                )}
 
-                {/* Item 4 */}
-                <div className="relative group">
-                  <div className="absolute -left-6 top-3.5 w-6 h-6 rounded-full bg-[#EAE5FC] dark:bg-[#342D59] text-[#543FE3] dark:text-[#B6A8FF] flex items-center justify-center text-xs font-extrabold ring-4 ring-[#FAF8F5] dark:ring-[#121316]">
-                    4
-                  </div>
-                  <div className="bg-white dark:bg-[#1D1F26] border border-[#EAE5DE] dark:border-[#2D303A] rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-xs hover:border-[#6C52EE]/40 transition-all">
-                    <div className="space-y-1 min-w-0">
-                      <h4 className="font-bold text-xs sm:text-sm text-[#18191F] dark:text-[#F3F4F6] truncate">
-                        Had a Google Meet with 4 Friends
-                      </h4>
-                      <div className="text-[11px] sm:text-xs text-[#717382] dark:text-[#9193A1]">
-                        2 days ago
-                      </div>
-                    </div>
+                                {room.status === 'ENDED' && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800/40">
+                                    ✓ Completed {room.duration ? `(${Math.floor(room.duration / 60)}m)` : ''}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
 
-                    {/* Overlapping User Avatars */}
-                    <div className="flex items-center -space-x-1.5 flex-shrink-0">
-                      <img src={ratneshAvatar} alt="user" className="w-6 h-6 rounded-full ring-2 ring-white dark:ring-[#1D1F26] object-cover" />
-                      <div className="w-6 h-6 rounded-full bg-purple-200 ring-2 ring-white dark:ring-[#1D1F26] flex items-center justify-center text-[10px] font-bold text-purple-700">M</div>
-                      <div className="w-6 h-6 rounded-full bg-emerald-200 ring-2 ring-white dark:ring-[#1D1F26] flex items-center justify-center text-[10px] font-bold text-emerald-700">T</div>
-                      <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 ring-2 ring-white dark:ring-[#1D1F26] flex items-center justify-center text-[9px] font-bold text-gray-600 dark:text-gray-300">+2</div>
-                    </div>
+                            {/* Participant Avatars */}
+                            <div className="flex items-center -space-x-1.5 flex-shrink-0">
+                              {participantsList.slice(0, 3).map((p, pIdx) => (
+                                <div
+                                  key={p.id || pIdx}
+                                  className="w-6 h-6 rounded-full bg-[#543FE3] text-white ring-2 ring-white dark:ring-[#242732] flex items-center justify-center text-[10px] font-bold overflow-hidden"
+                                  title={p.name || 'Participant'}
+                                >
+                                  {p.avatar ? (
+                                    <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
+                                  ) : (
+                                    (p.name ? p.name.charAt(0).toUpperCase() : 'U')
+                                  )}
+                                </div>
+                              ))}
+                              {participantsList.length === 0 && (
+                                <div className="w-6 h-6 rounded-full bg-[#543FE3] text-white ring-2 ring-white dark:ring-[#242732] flex items-center justify-center text-[10px] font-bold">
+                                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                                </div>
+                              )}
+                              {participantsList.length > 3 && (
+                                <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 ring-2 ring-white dark:ring-[#242732] flex items-center justify-center text-[9px] font-bold text-gray-600 dark:text-gray-300">
+                                  +{participantsList.length - 3}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -259,7 +459,6 @@ export default function ActivityView({ onOpenRoom }) {
                 <h2 className="font-heading font-extrabold text-base sm:text-lg text-[#18191F] dark:text-[#F3F4F6]">
                   My Stats & Journey
                 </h2>
-                {/* Purple hand-drawn scribble underline */}
                 <svg className="absolute -bottom-1 left-0 w-full h-2 text-[#3A3B45] dark:text-gray-400" viewBox="0 0 120 8" fill="none">
                   <path d="M 2 4 Q 35 1, 70 5 T 118 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
@@ -268,26 +467,51 @@ export default function ActivityView({ onOpenRoom }) {
               {/* Stats Card */}
               <div className="bg-white dark:bg-[#1D1F26] border border-[#EAE5DE] dark:border-[#2D303A] rounded-3xl p-5 shadow-xs flex flex-col justify-between gap-4 flex-1">
                 {/* Study Time Header with Dropdown */}
-                <div className="space-y-0.5">
+                <div className="space-y-0.5 relative">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-[#717382] dark:text-[#9A9CA8]">
-                      Study Time
+                      Study & Collaboration Time
                     </span>
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-[#F3EEFE] dark:bg-[#2A2445] text-[#543FE3] dark:text-[#C5BAFF] border border-[#E5DBFD] dark:border-[#3D3466]"
-                    >
-                      <span>{timeFilter}</span>
-                      <span>⌵</span>
-                    </button>
+
+                    {/* Time Filter Dropdown Toggle */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowTimeDropdown((prev) => !prev)}
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-[#F3EEFE] dark:bg-[#2A2445] text-[#543FE3] dark:text-[#C5BAFF] border border-[#E5DBFD] dark:border-[#3D3466] cursor-pointer"
+                      >
+                        <span>{timeFilter}</span>
+                        <span className="text-[10px]">⌵</span>
+                      </button>
+
+                      {showTimeDropdown && (
+                        <div className="absolute right-0 mt-1 w-28 bg-white dark:bg-[#252833] rounded-xl shadow-lg border border-[#E5E1D8] dark:border-[#383B47] py-1 z-20">
+                          {['This week', 'All time'].map((tf) => (
+                            <button
+                              key={tf}
+                              type="button"
+                              onClick={() => {
+                                setTimeFilter(tf);
+                                setShowTimeDropdown(false);
+                              }}
+                              className={`w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-gray-50 dark:hover:bg-[#2C2F3D] ${
+                                timeFilter === tf ? 'text-[#543FE3] font-bold' : 'text-[#33353F] dark:text-[#B5B7C2]'
+                              }`}
+                            >
+                              {tf}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex items-baseline gap-1.5 pt-1">
                     <span className="font-heading font-extrabold text-3xl text-[#18191F] dark:text-[#F3F4F6]">
-                      24h
+                      {formattedStudyTime}
                     </span>
                     <span className="text-xs text-[#717382] dark:text-[#9A9CA8]">
-                      this week
+                      {timeFilter.toLowerCase()}
                     </span>
                   </div>
                 </div>
@@ -322,16 +546,16 @@ export default function ActivityView({ onOpenRoom }) {
                       Completed Rooms
                     </div>
                     <div className="font-heading font-extrabold text-2xl text-[#18191F] dark:text-[#F3F4F6] mt-0.5">
-                      12
+                      {completedRooms.length}
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-[#717382] dark:text-[#9A9CA8]">
-                      Current Streak
+                      Active Days Streak
                     </div>
                     <div className="font-heading font-extrabold text-2xl text-[#18191F] dark:text-[#F3F4F6] mt-0.5 flex items-center gap-1">
                       <span>🔥</span>
-                      <span>5 Days</span>
+                      <span>{streakDays} {streakDays === 1 ? 'Day' : 'Days'}</span>
                     </div>
                   </div>
                 </div>
@@ -342,68 +566,47 @@ export default function ActivityView({ onOpenRoom }) {
                     <span className="text-xs font-bold text-[#18191F] dark:text-[#F3F4F6]">
                       My Achievements
                     </span>
-                    <span className="text-[11px] font-semibold text-[#543FE3] dark:text-[#A798FF] hover:underline cursor-pointer">
-                      Unlockable
+                    <span className="text-[11px] font-semibold text-[#543FE3] dark:text-[#A798FF]">
+                      {achievements.filter((a) => a.unlocked).length} / {achievements.length} Unlocked
                     </span>
                   </div>
 
                   {/* 4 Ribbon Badges Row */}
                   <div className="grid grid-cols-4 gap-2 text-center items-center">
-                    {/* Badge 1: Lavender Ribbon */}
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-12 relative flex items-center justify-center">
-                        <svg viewBox="0 0 40 48" className="w-full h-full drop-shadow-2xs" fill="none">
-                          <path d="M 20 4 C 28 4, 34 10, 34 18 C 34 26, 28 32, 20 32 C 12 32, 6 26, 6 18 C 6 10, 12 4, 20 4 Z" fill="#EAE5FC" stroke="#6C52EE" strokeWidth="2" />
-                          <polygon points="12,30 8,46 16,40 20,44 20,30" fill="#6C52EE" opacity="0.8" />
-                          <polygon points="28,30 32,46 24,40 20,44 20,30" fill="#6C52EE" opacity="0.8" />
-                        </svg>
-                        <svg className="w-4 h-4 text-[#6C52EE] absolute top-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                          <circle cx="9" cy="7" r="4" />
-                        </svg>
-                      </div>
-                    </div>
+                    {achievements.map((badge) => (
+                      <div
+                        key={badge.id}
+                        className={`flex flex-col items-center transition-opacity ${badge.unlocked ? 'opacity-100' : 'opacity-40'}`}
+                        title={`${badge.title}: ${badge.desc} (${badge.unlocked ? 'Unlocked!' : 'Locked'})`}
+                      >
+                        <div className="w-10 h-12 relative flex items-center justify-center">
+                          <svg viewBox="0 0 40 48" className="w-full h-full drop-shadow-2xs" fill="none">
+                            <path
+                              d="M 20 4 C 28 4, 34 10, 34 18 C 34 26, 28 32, 20 32 C 12 32, 6 26, 6 18 C 6 10, 12 4, 20 4 Z"
+                              fill={badge.unlocked ? badge.bgColor : '#F3F4F6'}
+                              stroke={badge.unlocked ? badge.color : '#9CA3AF'}
+                              strokeWidth="2"
+                            />
+                            <polygon points="12,30 8,46 16,40 20,44 20,30" fill={badge.unlocked ? badge.color : '#9CA3AF'} opacity="0.8" />
+                            <polygon points="28,30 32,46 24,40 20,44 20,30" fill={badge.unlocked ? badge.color : '#9CA3AF'} opacity="0.8" />
+                          </svg>
 
-                    {/* Badge 2: Blue Ribbon */}
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-12 relative flex items-center justify-center">
-                        <svg viewBox="0 0 40 48" className="w-full h-full drop-shadow-2xs" fill="none">
-                          <path d="M 20 4 C 28 4, 34 10, 34 18 C 34 26, 28 32, 20 32 C 12 32, 6 26, 6 18 C 6 10, 12 4, 20 4 Z" fill="#E5EFFD" stroke="#2563EB" strokeWidth="2" />
-                          <polygon points="12,30 8,46 16,40 20,44 20,30" fill="#2563EB" opacity="0.8" />
-                          <polygon points="28,30 32,46 24,40 20,44 20,30" fill="#2563EB" opacity="0.8" />
-                        </svg>
-                        <span className="absolute top-2.5 text-[7px] font-extrabold text-[#2563EB] tracking-tighter">
-                          LEAD
+                          {badge.unlocked ? (
+                            <span className="absolute top-2.5 text-xs font-extrabold text-amber-500">
+                              ★
+                            </span>
+                          ) : (
+                            <svg className="w-3.5 h-3.5 text-gray-500 absolute top-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className="text-[10px] font-bold text-[#18191F] dark:text-[#F3F4F6] truncate max-w-full mt-1">
+                          {badge.title}
                         </span>
                       </div>
-                    </div>
-
-                    {/* Badge 3: Gold Star Ribbon */}
-                    <div className="flex flex-col items-center">
-                      <div className="w-10 h-12 relative flex items-center justify-center">
-                        <svg viewBox="0 0 40 48" className="w-full h-full drop-shadow-2xs" fill="none">
-                          <path d="M 20 4 C 28 4, 34 10, 34 18 C 34 26, 28 32, 20 32 C 12 32, 6 26, 6 18 C 6 10, 12 4, 20 4 Z" fill="#FFF5ED" stroke="#EA580C" strokeWidth="2" />
-                          <polygon points="12,30 8,46 16,40 20,44 20,30" fill="#EA580C" opacity="0.8" />
-                          <polygon points="28,30 32,46 24,40 20,44 20,30" fill="#EA580C" opacity="0.8" />
-                        </svg>
-                        <span className="absolute top-2.5 text-amber-500 text-xs">★</span>
-                      </div>
-                    </div>
-
-                    {/* Badge 4: Locked Gray Ribbon */}
-                    <div className="flex flex-col items-center opacity-50">
-                      <div className="w-10 h-12 relative flex items-center justify-center">
-                        <svg viewBox="0 0 40 48" className="w-full h-full drop-shadow-2xs" fill="none">
-                          <path d="M 20 4 C 28 4, 34 10, 34 18 C 34 26, 28 32, 20 32 C 12 32, 6 26, 6 18 C 6 10, 12 4, 20 4 Z" fill="#F3F4F6" stroke="#9CA3AF" strokeWidth="2" />
-                          <polygon points="12,30 8,46 16,40 20,44 20,30" fill="#9CA3AF" opacity="0.8" />
-                          <polygon points="28,30 32,46 24,40 20,44 20,30" fill="#9CA3AF" opacity="0.8" />
-                        </svg>
-                        <svg className="w-3.5 h-3.5 text-gray-500 absolute top-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -415,116 +618,52 @@ export default function ActivityView({ onOpenRoom }) {
         {/* RIGHT AREA: MILESTONES & GOALS + UPCOMING (4 COLS)     */}
         {/* ------------------------------------------------------- */}
         <div className="xl:col-span-4 flex flex-col gap-5">
-          {/* CARD 1: MILESTONES & GOALS */}
-          <div className="bg-white dark:bg-[#1D1F26] border border-[#EAE5DE] dark:border-[#2D303A] rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
-            <h3 className="font-heading font-extrabold text-base sm:text-lg text-[#18191F] dark:text-[#F3F4F6]">
-              Milestones & Goals
-            </h3>
+          {/* USER CUSTOM MILESTONES & GOALS WIDGET */}
+          <GoalsWidget variant="milestones" onOpenCreateRoom={onOpenCreateRoom} />
 
-            {/* Goal 1 */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-[#18191F] dark:text-[#F3F4F6]">DSA Mastery</span>
-                <span className="font-bold text-[#18191F] dark:text-[#F3F4F6]">78%</span>
-              </div>
-              <div className="text-[11px] text-[#717382] dark:text-[#9A9CA8]">78% completed</div>
-              <div className="w-full h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                <div className="h-full rounded-full bg-[#543FE3]" style={{ width: '78%' }} />
-              </div>
-            </div>
-
-            {/* Goal 2 */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-[11px] text-[#717382] dark:text-[#9A9CA8]">78% completed</span>
-                <span className="font-bold text-[#18191F] dark:text-[#F3F4F6]">78%</span>
-              </div>
-              <div className="w-full h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                <div className="h-full rounded-full bg-[#543FE3]" style={{ width: '78%' }} />
-              </div>
-            </div>
-
-            {/* Goal 3 */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-[#18191F] dark:text-[#F3F4F6]">DSA Mastery</span>
-                <span className="font-bold text-[#18191F] dark:text-[#F3F4F6]">78%</span>
-              </div>
-              <div className="text-[11px] text-[#717382] dark:text-[#9A9CA8]">80% completed</div>
-              <div className="w-full h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                <div className="h-full rounded-full bg-[#543FE3]" style={{ width: '80%' }} />
-              </div>
-            </div>
-
-            {/* Goal 4 */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-[11px] text-[#717382] dark:text-[#9A9CA8]">68% completed</span>
-                <span className="font-bold text-[#18191F] dark:text-[#F3F4F6]">30%</span>
-              </div>
-              <div className="w-full h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                <div className="h-full rounded-full bg-[#543FE3]" style={{ width: '30%' }} />
-              </div>
-            </div>
-
-            {/* Add Milestones Button */}
-            <button
-              type="button"
-              className="w-full py-2.5 rounded-full border border-[#D5D0C6] dark:border-[#3D404E] text-xs font-semibold text-[#18191F] dark:text-[#F3F4F6] hover:bg-gray-50 dark:hover:bg-[#252833] transition-colors mt-2"
-            >
-              Add Milestones
-            </button>
-          </div>
-
-          {/* CARD 2: UPCOMING */}
+          {/* CARD 2: REAL UPCOMING SESSIONS */}
           <div className="bg-white dark:bg-[#1D1F26] border border-[#EAE5DE] dark:border-[#2D303A] rounded-3xl p-5 sm:p-6 shadow-xs space-y-3.5">
             <h3 className="font-heading font-extrabold text-base sm:text-lg text-[#18191F] dark:text-[#F3F4F6]">
-              Upcoming
+              Upcoming Sessions
             </h3>
 
-            {/* Timeline Items */}
-            <div className="relative pl-5 space-y-3.5 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#EAE5DE] dark:before:bg-[#2E313D]">
-              {/* Item 1 */}
-              <div className="relative">
-                <div className="absolute -left-5 top-0.5 w-4 h-4 rounded-full bg-[#543FE3] text-white flex items-center justify-center text-[10px] font-bold">
-                  ✓
-                </div>
-                <div className="font-bold text-xs text-[#18191F] dark:text-[#F3F4F6]">
-                  Web Dev meet tomorrow
-                </div>
-                <div className="text-[11px] text-[#717382] dark:text-[#9A9CA8]">
-                  1 day ago
-                </div>
+            {upcomingRooms.length === 0 ? (
+              <div className="py-6 text-center text-xs text-[#717382] dark:text-[#9A9CA8] space-y-2">
+                <p>No upcoming scheduled sessions.</p>
+                {onOpenCreateRoom && (
+                  <button
+                    type="button"
+                    onClick={onOpenCreateRoom}
+                    className="text-xs font-bold text-[#543FE3] dark:text-[#A798FF] hover:underline"
+                  >
+                    Schedule a room now →
+                  </button>
+                )}
               </div>
-
-              {/* Item 2 */}
-              <div className="relative">
-                <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600" />
-                <div className="font-bold text-xs text-[#18191F] dark:text-[#F3F4F6]">
-                  Web Dev meet tomorrow
-                </div>
-                <div className="text-[11px] text-[#717382] dark:text-[#9A9CA8]">
-                  2 hours ago
-                </div>
+            ) : (
+              <div className="relative pl-5 space-y-3.5 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#EAE5DE] dark:before:bg-[#2E313D]">
+                {upcomingRooms.slice(0, 4).map((room) => (
+                  <div
+                    key={room.id}
+                    className="relative cursor-pointer group"
+                    onClick={() => onOpenRoom && onOpenRoom(room.roomCode || room.id)}
+                  >
+                    <div className="absolute -left-5 top-0.5 w-4 h-4 rounded-full bg-[#543FE3] text-white flex items-center justify-center text-[10px] font-bold">
+                      📅
+                    </div>
+                    <div className="font-bold text-xs text-[#18191F] dark:text-[#F3F4F6] group-hover:text-[#543FE3] transition-colors truncate">
+                      {room.title}
+                    </div>
+                    <div className="text-[11px] text-[#717382] dark:text-[#9A9CA8]">
+                      {formatScheduledDate(room.scheduledAt)}
+                    </div>
+                  </div>
+                ))}
               </div>
-
-              {/* Item 3 */}
-              <div className="relative">
-                <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600" />
-                <div className="font-bold text-xs text-[#18191F] dark:text-[#F3F4F6]">
-                  Web Dev meet tomorrow
-                </div>
-                <div className="text-[11px] text-[#717382] dark:text-[#9A9CA8]">
-                  2 days ago
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
-
-     
-     
     </div>
   );
 }

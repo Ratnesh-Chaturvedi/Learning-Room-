@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { learningRoomLogo, ratneshAvatar } from '../../assets';
+import { learningRoomLogo } from '../../assets';
 
 /**
  * RoomHeader Component
@@ -8,10 +8,10 @@ import { learningRoomLogo, ratneshAvatar } from '../../assets';
  * - Editable Room Title
  * - 1-click #roomId invite link copy
  * - Live meet audio indicator & call timer
- * - Connected collaborators presence
- * - Mic, Camera, and Hand raise controls
- * - Quick emoji reactions
- * - Live chat toggle button with unread count
+ * - Dynamic connected collaborators presence (real peers & avatars)
+ * - Mic, Camera, and Floating Video Gallery toggles
+ * - Quick emoji reactions & hand raise
+ * - Live chat toggle button with dynamic message count
  * - Dark / Light theme toggle
  * - Responsive mobile drawer menu for compact screens
  */
@@ -34,11 +34,17 @@ export default function RoomHeader({
   triggerReaction,
   isChatOpen,
   setIsChatOpen,
+  unreadChatCount = 0,
+  peers = [],
+  currentUser = null,
+  isVideoGalleryOpen = false,
+  onToggleVideoGallery = null,
   theme,
   onToggleTheme,
   onLeaveRoom,
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const totalConnected = (peers?.length || 0) + 1;
 
   return (
     <header className="h-14 sm:h-16 px-2 sm:px-4 md:px-5 border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md flex items-center justify-between gap-1.5 sm:gap-3 shrink-0 z-40 shadow-xs max-w-full overflow-visible">
@@ -110,41 +116,66 @@ export default function RoomHeader({
         </div>
       </div>
 
-      {/* Center: Live Call Badge + Connected Collaborators (Large screens only) */}
+      {/* Center: Live Call Badge + Real Connected Collaborators (Large screens only) */}
       <div className="hidden lg:flex items-center gap-3 shrink-0">
         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-2xs">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Live Audio</span>
+          <span>Live Audio & Video</span>
           <span className="font-mono text-[11px] opacity-75">• {formatCallTime(activeCallTime)}</span>
         </div>
 
-        {/* Collaborator Avatars */}
-        <div className="flex items-center -space-x-1.5">
-          <img
-            src={ratneshAvatar}
-            alt="You"
-            className="w-6 h-6 rounded-full object-cover ring-2 ring-[var(--color-surface)] shadow-xs"
-            title="You (Host)"
-          />
-          <img
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=96&h=96&fit=crop&crop=faces&q=80"
-            alt="Maya"
-            className="w-6 h-6 rounded-full object-cover ring-2 ring-[var(--color-surface)] shadow-xs"
-            title="Maya (Sketching)"
-          />
-          <img
-            src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop&crop=faces&q=80"
-            alt="Rohan"
-            className="w-6 h-6 rounded-full object-cover ring-2 ring-[var(--color-surface)] shadow-xs"
-            title="Rohan (Active)"
-          />
-          <span className="w-6 h-6 rounded-full bg-[var(--color-brand)] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[var(--color-surface)]">
-            +1
-          </span>
+        {/* Real Dynamic Collaborator Avatars */}
+        <div
+          className="flex items-center -space-x-1.5"
+          title={`${totalConnected} participant${totalConnected > 1 ? 's' : ''} in room`}
+        >
+          {/* Current User */}
+          {currentUser?.avatar ? (
+            <img
+              src={currentUser.avatar}
+              alt={currentUser?.name || 'You'}
+              className="w-6 h-6 rounded-full object-cover ring-2 ring-[var(--color-surface)] shadow-xs"
+              title={`${currentUser?.name || 'You'} (You)`}
+            />
+          ) : (
+            <div
+              className="w-6 h-6 rounded-full bg-[#543FE3] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[var(--color-surface)] shadow-xs"
+              title={`${currentUser?.name || 'You'} (You)`}
+            >
+              {(currentUser?.name || 'Y').charAt(0).toUpperCase()}
+            </div>
+          )}
+
+          {/* Remote Connected Peers */}
+          {peers.slice(0, 3).map((peer) =>
+            peer.avatar ? (
+              <img
+                key={peer.socketId}
+                src={peer.avatar}
+                alt={peer.name}
+                className="w-6 h-6 rounded-full object-cover ring-2 ring-[var(--color-surface)] shadow-xs"
+                title={`${peer.name}${peer.isAudioMuted ? ' (Muted)' : ' (Active)'}`}
+              />
+            ) : (
+              <div
+                key={peer.socketId}
+                className="w-6 h-6 rounded-full bg-[#3B82F6] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[var(--color-surface)] shadow-xs"
+                title={`${peer.name}${peer.isAudioMuted ? ' (Muted)' : ' (Active)'}`}
+              >
+                {(peer.name || 'C').charAt(0).toUpperCase()}
+              </div>
+            )
+          )}
+
+          {peers.length > 3 && (
+            <span className="w-6 h-6 rounded-full bg-[var(--color-brand)] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[var(--color-surface)]">
+              +{peers.length - 3}
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Right: Controls & Leave Room */}
+      {/* Right: Controls, Video Gallery, Chat & Leave Room */}
       <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         {/* Microphone Mute Toggle */}
         <button
@@ -178,7 +209,12 @@ export default function RoomHeader({
         {/* Camera Video Toggle */}
         <button
           type="button"
-          onClick={() => setIsVideoOn((prev) => !prev)}
+          onClick={() => {
+            setIsVideoOn((prev) => !prev);
+            if (onToggleVideoGallery && !isVideoGalleryOpen) {
+              onToggleVideoGallery();
+            }
+          }}
           className={`p-1.5 sm:p-2 rounded-full transition-all cursor-pointer ${
             !isVideoOn
               ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/80 dark:text-rose-400'
@@ -199,6 +235,27 @@ export default function RoomHeader({
             </svg>
           )}
         </button>
+
+        {/* Dedicated Video Grid Popup Toggle */}
+        {onToggleVideoGallery && (
+          <button
+            type="button"
+            onClick={onToggleVideoGallery}
+            className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              isVideoGalleryOpen
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-[var(--color-surface-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]'
+            }`}
+            title={isVideoGalleryOpen ? 'Hide Video Popup' : 'Show Video Popup (Faces & Webcams)'}
+          >
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+              <line x1="8" y1="21" x2="16" y2="21" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+            </svg>
+            <span className="hidden xl:inline">Video Grid</span>
+          </button>
+        )}
 
         {/* Hand Raise Reaction (Desktop & Tablet) */}
         <button
@@ -247,9 +304,11 @@ export default function RoomHeader({
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
           <span className="hidden md:inline">Chat</span>
-          <span className={`w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center ${isChatOpen ? 'bg-white text-[var(--color-brand)]' : 'bg-[var(--color-brand)] text-white'}`}>
-            3
-          </span>
+          {unreadChatCount > 0 && (
+            <span className={`w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center ${isChatOpen ? 'bg-white text-[var(--color-brand)]' : 'bg-[var(--color-brand)] text-white'}`}>
+              {unreadChatCount}
+            </span>
+          )}
         </button>
 
         {/* Theme Toggle (Desktop & Tablet) */}
@@ -293,6 +352,24 @@ export default function RoomHeader({
           {/* Mobile Dropdown Popup */}
           {isMobileMenuOpen && (
             <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl p-2 z-50 flex flex-col gap-1.5 animate-in fade-in zoom-in-95">
+              {/* Video Grid Toggle on Mobile */}
+              {onToggleVideoGallery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onToggleVideoGallery();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)]"
+                >
+                  <span className="flex items-center gap-2">
+                    <span>📹</span>
+                    <span>Video Gallery</span>
+                  </span>
+                  {isVideoGalleryOpen && <span className="text-[10px] text-emerald-600 font-bold">Open</span>}
+                </button>
+              )}
+
               {/* Hand Raise */}
               <button
                 type="button"
