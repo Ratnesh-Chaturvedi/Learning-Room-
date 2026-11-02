@@ -30,6 +30,11 @@ app.get("/", (_req: Request, res: Response) => {
     message: "Learning Room API Server is running",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
+    env: {
+      nodeEnv: env.NODE_ENV,
+      databaseConfigured: Boolean(env.DATABASE_URL),
+      googleAuthConfigured: Boolean(env.GOOGLE_CLIENT_ID),
+    },
   });
 });
 
@@ -38,6 +43,11 @@ app.get("/health", (_req: Request, res: Response) => {
     status: "ok",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
+    env: {
+      nodeEnv: env.NODE_ENV,
+      databaseConfigured: Boolean(env.DATABASE_URL),
+      googleAuthConfigured: Boolean(env.GOOGLE_CLIENT_ID),
+    },
   });
 });
 
