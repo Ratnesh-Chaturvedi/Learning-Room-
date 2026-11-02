@@ -11,7 +11,24 @@ const app: Application = express();
 // Global Middlewares
 app.use(
   cors({
-    origin: env.CLIENT_URL,
+    origin: (requestOrigin, callback) => {
+      if (!requestOrigin) return callback(null, true);
+      const allowedOrigins = [
+        env.CLIENT_URL,
+        "http://localhost:3000",
+        "http://localhost:5173",
+      ].filter(Boolean);
+
+      if (
+        allowedOrigins.includes(requestOrigin) ||
+        requestOrigin.endsWith(".vercel.app") ||
+        requestOrigin.includes("localhost") ||
+        requestOrigin.includes("127.0.0.1")
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, requestOrigin);
+    },
     credentials: true,
   })
 );

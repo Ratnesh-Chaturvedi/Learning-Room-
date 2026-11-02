@@ -18,9 +18,13 @@ export default function RoomPage({ theme, onToggleTheme }) {
 
   // Socket instance created once on mount
   const socket = useMemo(() => {
-    const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+    const rawSocketUrl =
+      import.meta.env.VITE_SOCKET_URL ||
+      (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/v1\/?$/, '') : '') ||
+      'http://localhost:5000';
+    const socketUrl = rawSocketUrl.replace(/\/+$/, '');
     return io(socketUrl, {
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
     });
   }, []);
   const socketRef = useRef(socket);

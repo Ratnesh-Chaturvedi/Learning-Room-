@@ -11,7 +11,9 @@ const server = http.createServer(app);
 // Initialize Socket.io with production CORS & WebRTC transport settings
 export const io = new SocketIOServer(server, {
   cors: {
-    origin: env.CLIENT_URL,
+    origin: (requestOrigin, callback) => {
+      callback(null, true);
+    },
     credentials: true,
   },
   pingTimeout: 60000,
