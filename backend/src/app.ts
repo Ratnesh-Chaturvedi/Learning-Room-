@@ -51,12 +51,10 @@ const sendHealthCheck = (_req: Request, res: Response) => {
     message: "Learning Room API Server is running",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    platform: process.platform,
     env: {
       nodeEnv: env.NODE_ENV,
       databaseConfigured: Boolean(env.DATABASE_URL),
       googleAuthConfigured: Boolean(env.GOOGLE_CLIENT_ID),
-      isServerless: Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME),
     },
   });
 };
