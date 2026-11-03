@@ -8,6 +8,9 @@ import { ApiError } from "./utils/apiError.ts";
 
 const app: Application = express();
 
+// Trust reverse proxies (essential for Vercel, Render, Cloudflare, load balancers)
+app.set("trust proxy", true);
+
 // Global Middlewares
 app.use(
   cors({
@@ -36,36 +39,34 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
 
-if (env.NODE_ENV === "development") {
+if (env.NODE_ENV === "development" && !process.env.VERCEL) {
   app.use(morgan("dev"));
 }
 
-// Health Check Endpoint
-app.get("/", (_req: Request, res: Response) => {
+// Health Check Endpoints (Handles /, /health, /api, /api/health)
+const sendHealthCheck = (_req: Request, res: Response) => {
   res.status(200).json({
+    status: "ok",
     success: true,
     message: "Learning Room API Server is running",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
+    platform: process.platform,
     env: {
       nodeEnv: env.NODE_ENV,
       databaseConfigured: Boolean(env.DATABASE_URL),
       googleAuthConfigured: Boolean(env.GOOGLE_CLIENT_ID),
+      isServerless: Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME),
     },
   });
-});
+};
 
-app.get("/health", (_req: Request, res: Response) => {
-  res.status(200).json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    env: {
-      nodeEnv: env.NODE_ENV,
-      databaseConfigured: Boolean(env.DATABASE_URL),
-      googleAuthConfigured: Boolean(env.GOOGLE_CLIENT_ID),
-    },
-  });
+app.get("/", sendHealthCheck);
+app.get("/health", sendHealthCheck);
+app.get("/api", sendHealthCheck);
+app.get("/api/health", sendHealthCheck);
+app.get("/ping", (_req: Request, res: Response) => {
+  res.status(200).send("pong");
 });
 
 // API Routes

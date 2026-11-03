@@ -3,17 +3,36 @@ import fs from "node:fs";
 import dotenv from "dotenv";
 import { z } from "zod";
 
-// 1. Multi-Environment Discovery (Works from root, backend/, Docker, or CI/CD)
-const candidatePaths = [
-  path.resolve(process.cwd(), ".env"),
-  path.resolve(process.cwd(), "backend/.env"),
-  path.resolve(import.meta.dirname, "../../.env"),
-];
+// 1. Multi-Environment Discovery (Works from root, backend/, Docker, or Vercel serverless)
+const candidatePaths: string[] = [];
+
+try {
+  candidatePaths.push(path.resolve(process.cwd(), ".env"));
+  candidatePaths.push(path.resolve(process.cwd(), "backend/.env"));
+
+  let baseDir: string | undefined;
+  if (typeof import.meta !== "undefined" && typeof (import.meta as { dirname?: string }).dirname === "string") {
+    baseDir = (import.meta as { dirname?: string }).dirname;
+  } else if (typeof __dirname === "string") {
+    baseDir = __dirname;
+  }
+
+  if (baseDir) {
+    candidatePaths.push(path.resolve(baseDir, ".env"));
+    candidatePaths.push(path.resolve(baseDir, "../../.env"));
+  }
+} catch {
+  // Graceful fallback if filesystem metadata is inaccessible
+}
 
 for (const envPath of candidatePaths) {
-  if (fs.existsSync(envPath)) {
-    dotenv.config({ path: envPath });
-    break;
+  try {
+    if (fs.existsSync(envPath)) {
+      dotenv.config({ path: envPath });
+      break;
+    }
+  } catch {
+    // Gracefully ignore filesystem access restrictions
   }
 }
 
