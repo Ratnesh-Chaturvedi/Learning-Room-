@@ -8,7 +8,7 @@ import { ApiError } from "./utils/apiError.ts";
 
 const app: Application = express();
 
-// Trust reverse proxies (essential for Vercel, Render, Cloudflare, load balancers)
+// Trust reverse proxies
 app.set("trust proxy", true);
 
 // Global Middlewares
@@ -24,7 +24,6 @@ app.use(
 
       if (
         allowedOrigins.includes(requestOrigin) ||
-        requestOrigin.endsWith(".vercel.app") ||
         requestOrigin.includes("localhost") ||
         requestOrigin.includes("127.0.0.1")
       ) {
@@ -39,35 +38,29 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
 
-if (env.NODE_ENV === "development" && !process.env.VERCEL) {
+if (env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-// Health Check Endpoints (Handles /, /health, /api, /api/health)
-const sendHealthCheck = (_req: Request, res: Response) => {
+// Health Check Endpoints
+app.get("/", (_req: Request, res: Response) => {
   res.status(200).json({
     status: "ok",
-    success: true,
     message: "Learning Room API Server is running",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    env: {
-      nodeEnv: env.NODE_ENV,
-      databaseConfigured: Boolean(env.DATABASE_URL),
-      googleAuthConfigured: Boolean(env.GOOGLE_CLIENT_ID),
-    },
   });
-};
-
-app.get("/", sendHealthCheck);
-app.get("/health", sendHealthCheck);
-app.get("/api", sendHealthCheck);
-app.get("/api/health", sendHealthCheck);
-app.get("/ping", (_req: Request, res: Response) => {
-  res.status(200).send("pong");
 });
 
-// API Routes
+app.get("/health", (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
+
+// API v1 Routes
 app.use("/api/v1", v1Routes);
 
 // Centralized 404 Route Handler
