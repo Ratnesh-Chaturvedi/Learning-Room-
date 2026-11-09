@@ -19,7 +19,12 @@ export const broadcastRoomTerminated = (
   endedAt: Date = new Date(),
   duration?: number | null
 ) => {
+  // 1. Mark in-memory state as ended so future join attempts are instantly rejected
+  roomStateManager.markRoomEnded(roomId);
+  roomStateManager.markRoomEnded(roomCode);
+
   if (!socketServerInstance) return;
+  const io = socketServerInstance;
 
   const payload = {
     roomId,
@@ -29,13 +34,17 @@ export const broadcastRoomTerminated = (
     duration,
   };
 
-  // Broadcast to both ID and Code room channels
-  socketServerInstance.to(roomId).emit("room:terminated", payload);
-  socketServerInstance.to(roomCode).emit("room:terminated", payload);
+  const targetRooms = Array.from(
+    new Set([roomId, roomId.toUpperCase(), roomCode, roomCode.toUpperCase()].filter(Boolean))
+  );
 
-  // Evict all socket connections from the room
-  socketServerInstance.in(roomId).socketsLeave(roomId);
-  socketServerInstance.in(roomCode).socketsLeave(roomCode);
+  targetRooms.forEach((r) => {
+    io.to(r).emit("room:terminated", payload);
+    io.to(r).emit("webrtc:peer-left", { socketId: "all", reason });
+    if (typeof io.in(r)?.socketsLeave === "function") {
+      io.in(r).socketsLeave(r);
+    }
+  });
 
   console.log(`[Room Lifecycle] Room ${roomCode} (${roomId}) terminated: ${reason}`);
 };
@@ -115,3 +124,9 @@ export const startRoomExpirationWatcher = (intervalMs: number = 30000) => {
   return watcherInterval;
 };
 
+export const stopRoomExpirationWatcher = () => {
+  if (watcherInterval) {
+    clearInterval(watcherInterval);
+    watcherInterval = null;
+  }
+};

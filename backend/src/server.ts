@@ -23,6 +23,18 @@ export const io = new SocketIOServer(server, {
 // Initialize WebRTC, Media, and Live Chat handlers
 initSocketServer(io);
 
+// Handle server startup errors
+server.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(
+      `❌ Port ${env.PORT} is already in use by another process. Please stop the existing process or choose another port.`
+    );
+  } else {
+    console.error("❌ Server error:", err);
+  }
+  process.exit(1);
+});
+
 // Start Server
 server.listen(env.PORT, () => {
   console.log(`🚀 Server running in ${env.NODE_ENV} mode on http://localhost:${env.PORT}`);

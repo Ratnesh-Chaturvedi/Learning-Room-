@@ -22,8 +22,9 @@ export interface RoomMeta {
   id: string;
   roomCode?: string;
   isPrivate: boolean;
-  creatorId: string;
+  creatorId?: string | null;
   inviteToken?: string | null;
+  status?: "ACTIVE" | "SCHEDULED" | "ENDED";
 }
 
 /**
@@ -37,6 +38,7 @@ export interface PeerUser {
   isAudioMuted: boolean;
   isVideoOff: boolean;
   isHandRaised: boolean;
+  isScreenSharing?: boolean;
   joinedAt: string;
 }
 
@@ -122,4 +124,16 @@ export interface EmojiReactionPayload {
   roomId: string;
   emoji: string;
   startX?: number;
+}
+
+export interface KickPeerPayload {
+  roomId: string;
+  targetSocketId: string;
+  targetUserId?: string;
+  reason?: string;
+}
+
+export interface ToggleScreenSharePayload {
+  roomId: string;
+  isScreenSharing: boolean;
 }

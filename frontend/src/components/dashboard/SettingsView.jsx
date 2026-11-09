@@ -11,6 +11,7 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
   // Profile Form State initialized from authenticated user
   const [fullName, setFullName] = useState(user?.name || '');
   const [avatarPreview, setAvatarPreview] = useState(user?.avatar || null);
+  const [selectedFile, setSelectedFile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -52,6 +53,8 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
       return;
     }
 
+    setSelectedFile(file);
+
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
@@ -72,22 +75,35 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
     setIsSaving(true);
     setErrorMessage('');
     try {
-      const response = await userApi.updateProfile({
-        name: trimmedName,
-        avatar: avatarPreview || undefined,
-      });
+      let response;
 
-      const updatedData = response.data?.data || response.data?.user || {
-        name: trimmedName,
-        avatar: avatarPreview,
-      };
+      if (selectedFile) {
+        // Send as multipart form data with the image file
+        const formData = new FormData();
+        formData.append('name', trimmedName);
+        formData.append('avatar', selectedFile);
+        response = await userApi.updateProfile(formData);
+      } else {
+        // Send JSON payload
+        response = await userApi.updateProfile({
+          name: trimmedName,
+          avatar: avatarPreview,
+        });
+      }
+
+      // apiClient interceptor unwraps response to response.data directly
+      const updatedUser = response?.data || response?.user || response;
+      const savedAvatar = updatedUser?.avatar ?? avatarPreview;
+      const savedName = updatedUser?.name || trimmedName;
 
       // Immediately sync with global AuthContext
       updateUser({
-        name: trimmedName,
-        avatar: avatarPreview,
+        name: savedName,
+        avatar: savedAvatar,
       });
 
+      setAvatarPreview(savedAvatar);
+      setSelectedFile(null);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
@@ -256,7 +272,11 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
                   {avatarPreview && (
                     <button
                       type="button"
-                      onClick={() => setAvatarPreview(null)}
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setAvatarPreview(null);
+                        if (fileInputRef.current) fileInputRef.current.value = "";
+                      }}
                       className="text-[11px] text-gray-400 hover:text-rose-500 transition-colors"
                     >
                       Reset Photo

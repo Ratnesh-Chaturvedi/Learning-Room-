@@ -1,3 +1,0 @@
-# Routes
-Defines API endpoints, mounts versioned routers (e.g., v1), and applies router-level middlewares.
-

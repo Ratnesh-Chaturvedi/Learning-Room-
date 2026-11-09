@@ -5,57 +5,194 @@ import type { PeerUser, WaitingPeer, ChatMessage, RoomMeta } from "../types/sock
  * private waiting rooms (knock queue), and ephemeral chat.
  */
 class RoomStateManager {
-  // Map of roomId -> Map of socketId -> PeerUser (admitted active peers)
+  // Map of canonicalRoomId -> Map of socketId -> PeerUser (admitted active peers)
   private rooms: Map<string, Map<string, PeerUser>> = new Map();
 
-  // Map of roomId -> Map of socketId -> WaitingPeer (waiting room knock queue)
+  // Map of canonicalRoomId -> Map of socketId -> WaitingPeer (waiting room knock queue)
   private waitingRooms: Map<string, Map<string, WaitingPeer>> = new Map();
 
-  // Reverse index: socketId -> roomId for O(1) disconnect cleanup
+  // Reverse index: socketId -> canonicalRoomId for O(1) disconnect cleanup
   private socketToRoom: Map<string, string> = new Map();
 
-  // Ephemeral room chat history: roomId -> ChatMessage[] (kept up to 100 per room)
+  // Ephemeral room chat history: canonicalRoomId -> ChatMessage[] (kept up to 100 per room)
   private chatHistories: Map<string, ChatMessage[]> = new Map();
 
-  // In-memory real-time canvas state per room: roomId -> elements array
+  // In-memory real-time canvas state per room: canonicalRoomId -> elements array
   private canvasScenes: Map<string, unknown[]> = new Map();
 
   // Cache of room access & privacy metadata for fast in-memory routing
   private roomMetaCache: Map<string, RoomMeta> = new Map();
 
+  // Set of permanently ended room IDs and codes
+  private endedRooms: Set<string> = new Set();
+
   /**
    * Sets room metadata into in-memory cache.
    */
   public setRoomMeta(key: string, meta: RoomMeta): void {
+    if (!key) return;
     this.roomMetaCache.set(key, meta);
     if (meta.id) this.roomMetaCache.set(meta.id, meta);
-    if (meta.roomCode) this.roomMetaCache.set(meta.roomCode.toUpperCase(), meta);
+    if (meta.roomCode) {
+      this.roomMetaCache.set(meta.roomCode, meta);
+      this.roomMetaCache.set(meta.roomCode.toUpperCase(), meta);
+
+      // Merge and bridge states if room was joined using roomCode before meta was resolved
+      const codeKey = meta.roomCode.toUpperCase();
+      if (meta.id && meta.id !== codeKey) {
+        // Bridge active peers
+        const codePeers = this.rooms.get(codeKey);
+        if (codePeers) {
+          const idPeers = this.rooms.get(meta.id) || new Map();
+          codePeers.forEach((p, sId) => {
+            idPeers.set(sId, p);
+            this.socketToRoom.set(sId, meta.id);
+          });
+          this.rooms.set(meta.id, idPeers);
+          this.rooms.set(codeKey, idPeers);
+        }
+
+        // Bridge waiting peers
+        const codeWaiting = this.waitingRooms.get(codeKey);
+        if (codeWaiting) {
+          const idWaiting = this.waitingRooms.get(meta.id) || new Map();
+          codeWaiting.forEach((wp, sId) => idWaiting.set(sId, wp));
+          this.waitingRooms.set(meta.id, idWaiting);
+          this.waitingRooms.set(codeKey, idWaiting);
+        }
+
+        // Bridge chat history
+        const codeChat = this.chatHistories.get(codeKey);
+        if (codeChat) {
+          const idChat = this.chatHistories.get(meta.id) || [];
+          this.chatHistories.set(meta.id, [...idChat, ...codeChat]);
+          this.chatHistories.set(codeKey, this.chatHistories.get(meta.id)!);
+        }
+
+        // Bridge canvas scene
+        const codeCanvas = this.canvasScenes.get(codeKey);
+        if (codeCanvas && !this.canvasScenes.has(meta.id)) {
+          this.canvasScenes.set(meta.id, codeCanvas);
+          this.canvasScenes.set(codeKey, codeCanvas);
+        }
+      }
+    }
   }
 
   /**
    * Gets cached room metadata.
    */
   public getRoomMeta(roomIdOrCode: string): RoomMeta | undefined {
+    if (!roomIdOrCode) return undefined;
+    const clean = roomIdOrCode.trim();
     return (
-      this.roomMetaCache.get(roomIdOrCode) ||
-      this.roomMetaCache.get(roomIdOrCode.toUpperCase())
+      this.roomMetaCache.get(clean) ||
+      this.roomMetaCache.get(clean.toUpperCase())
     );
+  }
+
+  /**
+   * Resolves a room UUID or code to the canonical room ID.
+   */
+  public getCanonicalKey(roomIdOrCode: string): string {
+    if (!roomIdOrCode) return roomIdOrCode;
+    const clean = roomIdOrCode.trim();
+    const meta = this.getRoomMeta(clean);
+    return meta?.id || clean.toUpperCase();
+  }
+
+  /**
+   * Marks a room as ended in cache and cleans up all active peers and waiting queues.
+   */
+  public markRoomEnded(roomIdOrCode: string): void {
+    if (!roomIdOrCode) return;
+    const cleanKey = roomIdOrCode.trim();
+    this.endedRooms.add(cleanKey);
+    this.endedRooms.add(cleanKey.toUpperCase());
+
+    const meta = this.getRoomMeta(roomIdOrCode);
+    if (meta) {
+      meta.status = "ENDED";
+      this.setRoomMeta(meta.id, meta);
+      if (meta.roomCode) this.setRoomMeta(meta.roomCode, meta);
+      if (meta.id) {
+        this.endedRooms.add(meta.id);
+        this.endedRooms.add(meta.id.toUpperCase());
+      }
+    } else {
+      this.roomMetaCache.set(cleanKey, {
+        id: cleanKey,
+        roomCode: cleanKey.toUpperCase(),
+        isPrivate: false,
+        status: "ENDED",
+      });
+      this.roomMetaCache.set(cleanKey.toUpperCase(), {
+        id: cleanKey,
+        roomCode: cleanKey.toUpperCase(),
+        isPrivate: false,
+        status: "ENDED",
+      });
+    }
+
+    const canonicalKey = meta?.id || cleanKey;
+
+    this.rooms.delete(cleanKey);
+    this.waitingRooms.delete(cleanKey);
+    this.rooms.delete(cleanKey.toUpperCase());
+    this.waitingRooms.delete(cleanKey.toUpperCase());
+    this.rooms.delete(canonicalKey);
+    this.waitingRooms.delete(canonicalKey);
+
+    if (meta?.roomCode) {
+      this.rooms.delete(meta.roomCode);
+      this.rooms.delete(meta.roomCode.toUpperCase());
+      this.waitingRooms.delete(meta.roomCode);
+      this.waitingRooms.delete(meta.roomCode.toUpperCase());
+    }
+  }
+
+  /**
+   * Checks whether a room has already been terminated.
+   */
+  public isRoomEnded(roomIdOrCode: string): boolean {
+    if (!roomIdOrCode) return false;
+    const cleanKey = roomIdOrCode.trim();
+    if (this.endedRooms.has(cleanKey) || this.endedRooms.has(cleanKey.toUpperCase())) {
+      return true;
+    }
+    const meta = this.getRoomMeta(cleanKey);
+    return meta?.status === "ENDED";
   }
 
   /**
    * Adds or updates an active peer inside a room.
    */
   public addPeer(roomId: string, peer: PeerUser): PeerUser[] {
-    // If peer was in waiting room, remove from waiting
-    this.removeWaitingPeer(roomId, peer.socketId);
+    const key = this.getCanonicalKey(roomId);
+    const meta = this.getRoomMeta(roomId);
+    const altKey = meta?.roomCode ? meta.roomCode.toUpperCase() : undefined;
 
-    if (!this.rooms.has(roomId)) {
-      this.rooms.set(roomId, new Map());
+    // If peer was in waiting room, remove from waiting
+    this.removeWaitingPeer(key, peer.socketId);
+    if (altKey && altKey !== key) {
+      this.removeWaitingPeer(altKey, peer.socketId);
     }
 
-    const roomPeers = this.rooms.get(roomId)!;
+    if (!this.rooms.has(key)) {
+      this.rooms.set(key, new Map());
+    }
+
+    const roomPeers = this.rooms.get(key)!;
     roomPeers.set(peer.socketId, peer);
-    this.socketToRoom.set(peer.socketId, roomId);
+    this.socketToRoom.set(peer.socketId, key);
+
+    // Keep alternative room alias maps in sync as identical reference
+    if (altKey && altKey !== key) {
+      this.rooms.set(altKey, roomPeers);
+    }
+    if (meta?.id && meta.id !== key) {
+      this.rooms.set(meta.id, roomPeers);
+    }
 
     return Array.from(roomPeers.values());
   }
@@ -64,32 +201,50 @@ class RoomStateManager {
    * Gets a specific active peer in a room.
    */
   public getPeer(roomId: string, socketId: string): PeerUser | undefined {
-    return this.rooms.get(roomId)?.get(socketId);
+    const key = this.getCanonicalKey(roomId);
+    let peer = this.rooms.get(key)?.get(socketId);
+    if (!peer) {
+      const meta = this.getRoomMeta(roomId);
+      if (meta?.id) peer = this.rooms.get(meta.id)?.get(socketId);
+      if (!peer && meta?.roomCode) peer = this.rooms.get(meta.roomCode.toUpperCase())?.get(socketId);
+    }
+    return peer;
   }
 
   /**
    * Gets all active peers in a room.
    */
   public getRoomPeers(roomId: string): PeerUser[] {
-    const roomPeers = this.rooms.get(roomId);
+    const key = this.getCanonicalKey(roomId);
+    let roomPeers = this.rooms.get(key);
+    if (!roomPeers) {
+      const meta = this.getRoomMeta(roomId);
+      if (meta?.id && this.rooms.has(meta.id)) {
+        roomPeers = this.rooms.get(meta.id);
+      } else if (meta?.roomCode && this.rooms.has(meta.roomCode.toUpperCase())) {
+        roomPeers = this.rooms.get(meta.roomCode.toUpperCase());
+      }
+    }
     if (!roomPeers) return [];
     return Array.from(roomPeers.values());
   }
 
   /**
-   * Updates audio, video, or hand-raise media flags of an active peer.
+   * Updates audio, video, hand-raise, or screen share media flags of an active peer.
    */
   public updatePeerMedia(
     roomId: string,
     socketId: string,
-    updates: Partial<Pick<PeerUser, "isAudioMuted" | "isVideoOff" | "isHandRaised">>
+    updates: Partial<Pick<PeerUser, "isAudioMuted" | "isVideoOff" | "isHandRaised" | "isScreenSharing">>
   ): PeerUser | null {
-    const peer = this.rooms.get(roomId)?.get(socketId);
+    const key = this.getCanonicalKey(roomId);
+    const peer = this.rooms.get(key)?.get(socketId);
     if (!peer) return null;
 
     if (updates.isAudioMuted !== undefined) peer.isAudioMuted = updates.isAudioMuted;
     if (updates.isVideoOff !== undefined) peer.isVideoOff = updates.isVideoOff;
     if (updates.isHandRaised !== undefined) peer.isHandRaised = updates.isHandRaised;
+    if (updates.isScreenSharing !== undefined) peer.isScreenSharing = updates.isScreenSharing;
 
     return peer;
   }
@@ -98,25 +253,27 @@ class RoomStateManager {
    * Adds a user to the private room waiting queue (knock queue).
    */
   public addWaitingPeer(roomId: string, peer: WaitingPeer): void {
-    if (!this.waitingRooms.has(roomId)) {
-      this.waitingRooms.set(roomId, new Map());
+    const key = this.getCanonicalKey(roomId);
+    if (!this.waitingRooms.has(key)) {
+      this.waitingRooms.set(key, new Map());
     }
-    this.waitingRooms.get(roomId)!.set(peer.socketId, peer);
-    this.socketToRoom.set(peer.socketId, roomId);
+    this.waitingRooms.get(key)!.set(peer.socketId, peer);
+    this.socketToRoom.set(peer.socketId, key);
   }
 
   /**
    * Removes a user from the waiting queue.
    */
   public removeWaitingPeer(roomId: string, socketId: string): WaitingPeer | null {
-    const waiting = this.waitingRooms.get(roomId);
+    const key = this.getCanonicalKey(roomId);
+    const waiting = this.waitingRooms.get(key);
     if (!waiting) return null;
 
     const peer = waiting.get(socketId) || null;
     waiting.delete(socketId);
 
     if (waiting.size === 0) {
-      this.waitingRooms.delete(roomId);
+      this.waitingRooms.delete(key);
     }
 
     return peer;
@@ -126,7 +283,8 @@ class RoomStateManager {
    * Retrieves all users currently waiting in the knock queue for host approval.
    */
   public getWaitingPeers(roomId: string): WaitingPeer[] {
-    const waiting = this.waitingRooms.get(roomId);
+    const key = this.getCanonicalKey(roomId);
+    const waiting = this.waitingRooms.get(key);
     if (!waiting) return [];
     return Array.from(waiting.values());
   }
@@ -135,7 +293,8 @@ class RoomStateManager {
    * Checks if a socket is in the waiting queue.
    */
   public isWaiting(roomId: string, socketId: string): boolean {
-    return Boolean(this.waitingRooms.get(roomId)?.has(socketId));
+    const key = this.getCanonicalKey(roomId);
+    return Boolean(this.waitingRooms.get(key)?.has(socketId));
   }
 
   /**
@@ -188,11 +347,12 @@ class RoomStateManager {
    * Stores a chat message in memory for current room participants.
    */
   public addChatMessage(roomId: string, message: ChatMessage): void {
-    if (!this.chatHistories.has(roomId)) {
-      this.chatHistories.set(roomId, []);
+    const key = this.getCanonicalKey(roomId);
+    if (!this.chatHistories.has(key)) {
+      this.chatHistories.set(key, []);
     }
 
-    const history = this.chatHistories.get(roomId)!;
+    const history = this.chatHistories.get(key)!;
     history.push(message);
 
     if (history.length > 100) {
@@ -204,21 +364,24 @@ class RoomStateManager {
    * Returns recent chat messages for a room.
    */
   public getChatHistory(roomId: string): ChatMessage[] {
-    return this.chatHistories.get(roomId) || [];
+    const key = this.getCanonicalKey(roomId);
+    return this.chatHistories.get(key) || [];
   }
 
   /**
    * Stores the latest Excalidraw canvas scene elements for a room.
    */
   public setCanvasScene(roomId: string, elements: unknown[]): void {
-    this.canvasScenes.set(roomId, elements);
+    const key = this.getCanonicalKey(roomId);
+    this.canvasScenes.set(key, elements);
   }
 
   /**
    * Retrieves the current Excalidraw canvas scene elements for a room.
    */
   public getCanvasScene(roomId: string): unknown[] {
-    return this.canvasScenes.get(roomId) || [];
+    const key = this.getCanonicalKey(roomId);
+    return this.canvasScenes.get(key) || [];
   }
 }
 

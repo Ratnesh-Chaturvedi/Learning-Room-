@@ -39,10 +39,25 @@ const envSchema = z.object({
   GOOGLE_CALLBACK_URL: z
     .string()
     .default("http://localhost:5000/api/v1/auth/google/callback"),
+
+  // Cloudinary Image Storage
+  CLOUDINARY_CLOUD_NAME: z.string().default(""),
+  CLOUDINARY_API_KEY: z.string().default(""),
+  CLOUDINARY_API_SECRET: z.string().default(""),
+  CLOUDINARY_URL: z.string().optional(),
 });
 
+// Normalize environment aliases and whitespace
+const rawEnv = {
+  ...process.env,
+  CLOUDINARY_CLOUD_NAME: (process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUD_NAME || "").trim(),
+  CLOUDINARY_API_KEY: (process.env.CLOUDINARY_API_KEY || process.env.API_KEY || "").trim(),
+  CLOUDINARY_API_SECRET: (process.env.CLOUDINARY_API_SECRET || process.env.API_SECRET || "").trim(),
+  CLOUDINARY_URL: (process.env.CLOUDINARY_URL || "").trim(),
+};
+
 // 3. Non-Crashing Safe Parsing
-const parsed = envSchema.safeParse(process.env);
+const parsed = envSchema.safeParse(rawEnv);
 
 export const envConfigErrors: string[] = [];
 
@@ -58,6 +73,11 @@ if (!parsed.success) {
   }
   if (!parsed.data.GOOGLE_CLIENT_ID) {
     envConfigErrors.push("GOOGLE_CLIENT_ID is not set in environment variables");
+  }
+  if (!parsed.data.CLOUDINARY_CLOUD_NAME || !parsed.data.CLOUDINARY_API_KEY || !parsed.data.CLOUDINARY_API_SECRET) {
+    if (!parsed.data.CLOUDINARY_URL) {
+      envConfigErrors.push("Cloudinary credentials incomplete (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)");
+    }
   }
   if (envConfigErrors.length > 0) {
     console.warn("⚠️ [Notice] Running with missing optional/cloud credentials:\n" + envConfigErrors.join("\n"));

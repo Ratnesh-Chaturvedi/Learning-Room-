@@ -21,30 +21,86 @@ const RoomContext = createContext(null);
  * Centralizes real-time state management, WebRTC media streams, socket signaling,
  * knock approval queue, live chat, and room theming for the active collaboration room.
  */
-export function RoomProvider({ roomId, inviteToken = '', children }) {
+export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { theme: globalTheme } = useTheme();
 
-  // Socket instance created once per provider mount
+  // Normalize room code to uppercase for guaranteed matching across participants
+  const roomId = useMemo(() => (rawRoomId || '').trim().toUpperCase(), [rawRoomId]);
+
+  // Socket instance created once per provider mount with smart cloud / localhost fallback
   const socket = useMemo(() => {
-    const rawSocketUrl =
+    const isProductionHost =
+      typeof window !== 'undefined' &&
+      window.location.hostname !== 'localhost' &&
+      window.location.hostname !== '127.0.0.1' &&
+      !window.location.hostname.startsWith('192.168.') &&
+      !window.location.hostname.startsWith('10.') &&
+      !window.location.hostname.endsWith('.local');
+
+    const configuredSocketUrl = (
       import.meta.env.VITE_SOCKET_URL ||
       (import.meta.env.VITE_API_URL
         ? import.meta.env.VITE_API_URL.replace(/\/api\/v1\/?$/, '')
         : '') ||
-      'http://localhost:5000';
-    const socketUrl = rawSocketUrl.replace(/\/+$/, '');
+      ''
+    ).replace(/\/+$/, '');
+
+    let socketUrl = configuredSocketUrl;
+    if (!socketUrl) {
+      if (isProductionHost) {
+        socketUrl = 'https://learning-room-backend.onrender.com';
+      } else {
+        const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+        socketUrl = `http://${host}:5000`;
+      }
+    } else if (isProductionHost && socketUrl.includes('localhost')) {
+      socketUrl = 'https://learning-room-backend.onrender.com';
+    }
+
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('learningroom_token') || '' : '';
     return io(socketUrl, {
-      transports: ['websocket', 'polling'],
+      auth: {
+        token,
+      },
+      transports: ['polling', 'websocket'],
+      reconnectionAttempts: 20,
+      reconnectionDelay: 1000,
+      timeout: 15000,
     });
   }, []);
+
+  const [isSocketConnected, setIsSocketConnected] = useState(() => socket?.connected || false);
+  useEffect(() => {
+    if (!socket) return;
+    if (socket.connected) {
+      setIsSocketConnected(true);
+    }
+    const onConnect = () => setIsSocketConnected(true);
+    const onDisconnect = () => setIsSocketConnected(false);
+    const onConnectError = (err) => {
+      console.warn('[Room Socket] Connection error:', err.message);
+      setIsSocketConnected(false);
+    };
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('connect_error', onConnectError);
+
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('connect_error', onConnectError);
+    };
+  }, [socket]);
 
   // Room metadata state
   const [roomTitle, setRoomTitle] = useState('Learning Room');
   const [roomDetails, setRoomDetails] = useState(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(true);
+  const [isMembersOpen, setIsMembersOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
   // Private Waiting Room & Knock states
@@ -60,12 +116,26 @@ export function RoomProvider({ roomId, inviteToken = '', children }) {
   // Real-time Chat
   const [chatMessages, setChatMessages] = useState([]);
 
-  // Media states
+  // Media states (Camera defaults to off to protect privacy and avoid unwanted webcam LED lighting)
   const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOn, setIsVideoOn] = useState(true);
+  const [isVideoOn, setIsVideoOn] = useState(false);
   const [isVideoGalleryOpen, setIsVideoGalleryOpen] = useState(true);
   const [isHandRaised, setIsHandRaised] = useState(false);
   const [activeCallTime, setActiveCallTime] = useState(0);
+
+  // Room Termination State
+  const [isRoomTerminated, setIsRoomTerminated] = useState(false);
+  const [terminationInfo, setTerminationInfo] = useState(null);
+
+  // Keep refs for media states so socket effects never tear down connections on mute/video toggle
+  const isMutedRef = useRef(isMuted);
+  const isVideoOnRef = useRef(isVideoOn);
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
+  useEffect(() => {
+    isVideoOnRef.current = isVideoOn;
+  }, [isVideoOn]);
 
   // Floating Reactions
   const [floatingReactions, setFloatingReactions] = useState([]);
@@ -106,9 +176,15 @@ export function RoomProvider({ roomId, inviteToken = '', children }) {
     const fetchRoom = async () => {
       try {
         const res = await roomApi.getRoomDetails(roomId);
-        if (isMounted && res.data?.room) {
-          setRoomDetails(res.data.room);
-          setRoomTitle(res.data.room.title || 'Learning Room');
+        const room = res.data?.room || res.data?.data || res.data;
+        if (isMounted && room && (room.id || room.roomCode)) {
+          if (room.status === 'ENDED') {
+            alert('This room session has already been ended by the host.');
+            navigate('/dashboard');
+            return;
+          }
+          setRoomDetails(room);
+          setRoomTitle(room.title || 'Learning Room');
         }
       } catch {
         // Fallback for custom codes
@@ -118,7 +194,25 @@ export function RoomProvider({ roomId, inviteToken = '', children }) {
     return () => {
       isMounted = false;
     };
-  }, [roomId]);
+  }, [roomId, navigate]);
+
+  const [guestId] = useState(() => `guest-${Math.random().toString(36).substring(2, 9)}`);
+  const currentUser = useMemo(
+    () => ({
+      id: user?.id || guestId,
+      name: user?.name || 'Collaborator',
+      avatar: user?.avatar,
+      color: '#635bdb',
+    }),
+    [user?.id, user?.name, user?.avatar, guestId]
+  );
+
+  // Determine whether current user is the host / creator
+  const isHost = Boolean(
+    currentUser?.id &&
+    roomDetails &&
+    (roomDetails.creatorId === currentUser.id || roomDetails.creator?.id === currentUser.id)
+  );
 
   // Call timer increment
   useEffect(() => {
@@ -134,19 +228,16 @@ export function RoomProvider({ roomId, inviteToken = '', children }) {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   }, []);
 
-  const [guestId] = useState(() => `guest-${Math.random().toString(36).substring(2, 9)}`);
-  const currentUser = useMemo(
-    () => ({
-      id: user?.id || guestId,
-      name: user?.name || 'Collaborator',
-      avatar: user?.avatar,
-      color: '#635bdb',
-    }),
-    [user?.id, user?.name, user?.avatar, guestId]
-  );
-
-  // WebRTC Mesh Hook for live camera & microphone streams
-  const { localStream, remoteStreams } = useWebRtc({
+  // WebRTC Mesh Hook for live camera, microphone streams & screen sharing
+  const {
+    localStream,
+    remoteStreams,
+    isScreenSharing,
+    screenStream,
+    toggleScreenShare,
+    startScreenShare,
+    stopScreenShare,
+  } = useWebRtc({
     roomId,
     socket,
     user: currentUser,
@@ -175,86 +266,111 @@ export function RoomProvider({ roomId, inviteToken = '', children }) {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on('connect', () => {
+    const emitJoinRoom = () => {
       socket.emit('webrtc:join-room', {
         roomId,
         inviteToken,
         user: {
-          id: user?.id,
-          name: user?.name || 'Collaborator',
-          avatar: user?.avatar,
+          id: currentUser.id,
+          name: currentUser.name,
+          avatar: currentUser.avatar,
         },
         initialMediaState: {
-          isAudioMuted: isMuted,
-          isVideoOff: !isVideoOn,
+          isAudioMuted: isMutedRef.current,
+          isVideoOff: !isVideoOnRef.current,
         },
       });
-    });
+    };
+
+    // If socket is already connected, emit immediately; otherwise wait for connect event
+    if (socket.connected) {
+      emitJoinRoom();
+    }
+    socket.on('connect', emitJoinRoom);
 
     // 🔒 WAITING ROOM: Intercepted because room is private
-    socket.on('room:waiting', (data) => {
+    const handleWaiting = (data) => {
       setIsWaiting(true);
       setWaitingMessage(data.message || 'Waiting for the host to let you in...');
-    });
+    };
 
     // 🚪 KNOCK APPROVED: Host admitted user
-    socket.on('room:knock-approved', (data) => {
+    const handleKnockApproved = (data) => {
       setIsWaiting(false);
       setPeers(data.peers || []);
-    });
+    };
 
     // 🚫 KNOCK DENIED: Host rejected admission
-    socket.on('room:knock-denied', (data) => {
+    const handleKnockDenied = (data) => {
       alert(data.message || 'The host has denied your request to join this meeting.');
       navigate('/dashboard');
-    });
+    };
 
     // 🔔 HOST ALERT: Incoming knock request from a waiting guest
-    socket.on('room:knock-request', (knockPeer) => {
+    const handleKnockRequest = (knockPeer) => {
       setKnockRequests((prev) => {
         if (prev.some((p) => p.socketId === knockPeer.socketId)) return prev;
         return [...prev, knockPeer];
       });
-    });
+    };
 
     // 👥 PEER DISCOVERY & SYNCHRONIZATION
-    socket.on('webrtc:room-peers', (data) => {
+    const handleRoomPeers = (data) => {
       setIsWaiting(false);
-      setPeers(data.peers || []);
-    });
+      const filtered = (data?.peers || []).filter((p) => p.socketId !== socket.id);
+      setPeers(filtered);
+    };
 
-    socket.on('webrtc:peer-joined', (newPeer) => {
+    const handlePeerJoined = (newPeer) => {
+      if (!newPeer || newPeer.socketId === socket.id) return;
       setPeers((prev) => {
         if (prev.some((p) => p.socketId === newPeer.socketId)) return prev;
         return [...prev, newPeer];
       });
-    });
+    };
 
-    socket.on('webrtc:peer-left', (data) => {
-      setPeers((prev) => prev.filter((p) => p.socketId !== data.socketId));
-    });
+    const handlePeerLeft = (data) => {
+      if (data?.socketId === 'all') {
+        setPeers([]);
+      } else {
+        setPeers((prev) => prev.filter((p) => p.socketId !== data.socketId));
+      }
+    };
 
     // 🎙️ PEER MEDIA STATUS CHANGED
-    socket.on('media:audio-status-changed', ({ socketId, isAudioMuted }) => {
+    const handleAudioStatus = ({ socketId, isAudioMuted }) => {
       setPeers((prev) =>
         prev.map((p) => (p.socketId === socketId ? { ...p, isAudioMuted } : p))
       );
-    });
+    };
 
-    socket.on('media:video-status-changed', ({ socketId, isVideoOff }) => {
+    const handleVideoStatus = ({ socketId, isVideoOff }) => {
       setPeers((prev) =>
         prev.map((p) => (p.socketId === socketId ? { ...p, isVideoOff } : p))
       );
-    });
+    };
 
-    socket.on('media:hand-raise-changed', ({ socketId, isHandRaised }) => {
+    const handleHandRaise = ({ socketId, isHandRaised }) => {
       setPeers((prev) =>
         prev.map((p) => (p.socketId === socketId ? { ...p, isHandRaised } : p))
       );
-    });
+    };
+
+    // 🖥️ PEER SCREEN SHARE STATUS
+    const handleScreenShareStatus = ({ socketId, isScreenSharing }) => {
+      setPeers((prev) =>
+        prev.map((p) => (p.socketId === socketId ? { ...p, isScreenSharing } : p))
+      );
+    };
+
+    // 🚪 KICKED BY HOST
+    const handleKicked = (data) => {
+      alert(`Meeting Notice: ${data?.reason || 'You were removed from this meeting by the host.'}`);
+      navigate('/dashboard');
+    };
 
     // 💬 REAL-TIME CHAT: Map real sender names and dynamic avatars
-    socket.on('chat:history', (history) => {
+    const handleChatHistory = (history) => {
       if (!Array.isArray(history)) return;
       const formatted = history.map((msg) => ({
         id: msg.id,
@@ -265,12 +381,12 @@ export function RoomProvider({ roomId, inviteToken = '', children }) {
           minute: '2-digit',
         }),
         text: msg.text,
-        isMe: (msg.sender?.id || msg.userId) === user?.id,
+        isMe: (msg.sender?.id || msg.userId) === currentUser.id,
       }));
       setChatMessages(formatted);
-    });
+    };
 
-    socket.on('chat:new-message', (msg) => {
+    const handleNewMessage = (msg) => {
       setChatMessages((prev) => [
         ...prev,
         {
@@ -282,27 +398,76 @@ export function RoomProvider({ roomId, inviteToken = '', children }) {
             minute: '2-digit',
           }),
           text: msg.text,
-          isMe: (msg.sender?.id || msg.userId) === user?.id,
+          isMe: (msg.sender?.id || msg.userId) === currentUser.id,
         },
       ]);
-    });
+    };
 
     // 🎉 FLOATING EMOJI REACTIONS
-    socket.on('chat:emoji-reaction', (data) => {
+    const handleEmojiReaction = (data) => {
       triggerReaction(data.emoji, false);
-    });
-    socket.on('chat:reaction', (data) => {
-      triggerReaction(data.emoji, false);
-    });
+    };
 
-    // 🛑 ROOM TERMINATED
-    socket.on('room:terminated', (data) => {
-      alert(`Meeting Ended: ${data.reason || 'The host has ended this meeting.'}`);
+    // 🛑 ROOM TERMINATED (Instant reactive termination, no blocking alert)
+    const handleRoomTerminated = (data) => {
+      console.log('[Room] Meeting terminated by host:', data);
+      setIsRoomTerminated(true);
+      setTerminationInfo({
+        reason: data?.reason || 'The host has ended this meeting.',
+        endedAt: data?.endedAt || new Date().toISOString(),
+      });
+      setPeers([]);
+      try {
+        localStream?.getTracks().forEach((t) => t.stop());
+        screenStream?.getTracks().forEach((t) => t.stop());
+      } catch {}
+    };
+
+    // ⚠️ ROOM ERROR
+    const handleRoomError = (data) => {
+      alert(data?.message || 'Room error or session expired.');
       navigate('/dashboard');
-    });
+    };
+
+    socket.on('room:waiting', handleWaiting);
+    socket.on('room:knock-approved', handleKnockApproved);
+    socket.on('room:knock-denied', handleKnockDenied);
+    socket.on('room:knock-request', handleKnockRequest);
+    socket.on('webrtc:room-peers', handleRoomPeers);
+    socket.on('webrtc:peer-joined', handlePeerJoined);
+    socket.on('webrtc:peer-left', handlePeerLeft);
+    socket.on('media:audio-status-changed', handleAudioStatus);
+    socket.on('media:video-status-changed', handleVideoStatus);
+    socket.on('media:hand-raise-changed', handleHandRaise);
+    socket.on('media:screenshare-status-changed', handleScreenShareStatus);
+    socket.on('chat:history', handleChatHistory);
+    socket.on('chat:new-message', handleNewMessage);
+    socket.on('chat:emoji-reaction', handleEmojiReaction);
+    socket.on('chat:reaction', handleEmojiReaction);
+    socket.on('room:terminated', handleRoomTerminated);
+    socket.on('room:kicked', handleKicked);
+    socket.on('room:error', handleRoomError);
 
     return () => {
-      socket.disconnect();
+      socket.off('connect', emitJoinRoom);
+      socket.off('room:waiting', handleWaiting);
+      socket.off('room:knock-approved', handleKnockApproved);
+      socket.off('room:knock-denied', handleKnockDenied);
+      socket.off('room:knock-request', handleKnockRequest);
+      socket.off('webrtc:room-peers', handleRoomPeers);
+      socket.off('webrtc:peer-joined', handlePeerJoined);
+      socket.off('webrtc:peer-left', handlePeerLeft);
+      socket.off('media:audio-status-changed', handleAudioStatus);
+      socket.off('media:video-status-changed', handleVideoStatus);
+      socket.off('media:hand-raise-changed', handleHandRaise);
+      socket.off('media:screenshare-status-changed', handleScreenShareStatus);
+      socket.off('chat:history', handleChatHistory);
+      socket.off('chat:new-message', handleNewMessage);
+      socket.off('chat:emoji-reaction', handleEmojiReaction);
+      socket.off('chat:reaction', handleEmojiReaction);
+      socket.off('room:terminated', handleRoomTerminated);
+      socket.off('room:kicked', handleKicked);
+      socket.off('room:error', handleRoomError);
     };
   }, [
     socket,
@@ -311,11 +476,18 @@ export function RoomProvider({ roomId, inviteToken = '', children }) {
     user?.id,
     user?.name,
     user?.avatar,
-    isMuted,
-    isVideoOn,
     navigate,
     triggerReaction,
   ]);
+
+  // Cleanup socket on unmount only
+  useEffect(() => {
+    return () => {
+      if (socket) {
+        socket.disconnect();
+      }
+    };
+  }, [socket]);
 
   // Host Knock Decisions
   const handleApproveKnock = useCallback(
@@ -398,13 +570,58 @@ export function RoomProvider({ roomId, inviteToken = '', children }) {
   }, [roomDetails?.inviteToken, roomId]);
 
   const handleLeaveRoom = useCallback(() => {
+    try {
+      socket?.emit('webrtc:leave-room');
+    } catch {}
     navigate('/dashboard');
-  }, [navigate]);
+  }, [socket, navigate]);
+
+  // Host kicks a participant from the room
+  const handleKickPeer = useCallback(
+    (targetSocketId, peerName = 'Participant') => {
+      if (!isHost) {
+        alert('Only the room host can remove participants.');
+        return;
+      }
+      if (window.confirm(`Are you sure you want to remove ${peerName} from this meeting?`)) {
+        socket?.emit('room:kick-peer', {
+          roomId,
+          targetSocketId,
+          reason: 'Removed from meeting by the host.',
+        });
+      }
+    },
+    [isHost, socket, roomId]
+  );
+
+  // Host terminates room for all participants
+  const handleEndRoomForAll = useCallback(async () => {
+    if (!window.confirm('Are you sure you want to end this meeting for everyone? All participants will be disconnected immediately.')) {
+      return;
+    }
+    const targetId = roomDetails?.roomCode || roomDetails?.id || roomId;
+    // 1. Immediately emit socket end-session for 0ms eviction across all clients
+    socket?.emit('room:end-session', { roomId: targetId });
+    // 2. Instantly update local state to terminated
+    setIsRoomTerminated(true);
+    setTerminationInfo({
+      reason: 'You ended this meeting for everyone.',
+      endedAt: new Date().toISOString(),
+    });
+    setPeers([]);
+    try {
+      localStream?.getTracks().forEach((t) => t.stop());
+      screenStream?.getTracks().forEach((t) => t.stop());
+    } catch {}
+    // 3. Persist termination in database via REST endpoint
+    roomApi.endRoom(targetId).catch(() => {});
+  }, [roomDetails?.roomCode, roomDetails?.id, roomId, socket]);
 
   const value = useMemo(
     () => ({
       roomId,
       socket,
+      isSocketConnected,
       currentUser,
       // Metadata
       roomTitle,
@@ -414,12 +631,21 @@ export function RoomProvider({ roomId, inviteToken = '', children }) {
       setIsEditingTitle,
       copiedLink,
       handleCopyInvite,
+      isHost,
+      handleEndRoomForAll,
+      // Room Termination
+      isRoomTerminated,
+      terminationInfo,
       // Knock / Waiting Room
       isWaiting,
       waitingMessage,
       knockRequests,
       handleApproveKnock,
       handleDenyKnock,
+      // Members & Moderation
+      isMembersOpen,
+      setIsMembersOpen,
+      handleKickPeer,
       // Peers & Media
       peers,
       localStream,
@@ -435,6 +661,11 @@ export function RoomProvider({ roomId, inviteToken = '', children }) {
       isHandRaised,
       setIsHandRaised,
       handleToggleHand,
+      isScreenSharing,
+      screenStream,
+      toggleScreenShare,
+      startScreenShare,
+      stopScreenShare,
       // Call timer
       activeCallTime,
       formatCallTime,
@@ -453,17 +684,24 @@ export function RoomProvider({ roomId, inviteToken = '', children }) {
     [
       roomId,
       socket,
+      isSocketConnected,
       currentUser,
       roomTitle,
       roomDetails,
       isEditingTitle,
       copiedLink,
       handleCopyInvite,
+      isHost,
+      handleEndRoomForAll,
+      isRoomTerminated,
+      terminationInfo,
       isWaiting,
       waitingMessage,
       knockRequests,
       handleApproveKnock,
       handleDenyKnock,
+      isMembersOpen,
+      handleKickPeer,
       peers,
       localStream,
       remoteStreams,
@@ -474,6 +712,11 @@ export function RoomProvider({ roomId, inviteToken = '', children }) {
       isVideoGalleryOpen,
       isHandRaised,
       handleToggleHand,
+      isScreenSharing,
+      screenStream,
+      toggleScreenShare,
+      startScreenShare,
+      stopScreenShare,
       activeCallTime,
       formatCallTime,
       isChatOpen,

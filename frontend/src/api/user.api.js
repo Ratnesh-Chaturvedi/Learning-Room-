@@ -10,9 +10,33 @@ export const userApi = {
 
   /**
    * Update authenticated user's profile information.
+   * Accepts plain object or FormData (for direct multipart avatar upload).
    */
   updateProfile: async (updates) => {
+    if (updates instanceof FormData) {
+      return apiClient.patch('/users/profile', updates, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    }
     return apiClient.patch('/users/profile', updates);
+  },
+
+  /**
+   * Upload user avatar directly to Cloudinary and update profile.
+   * @param {File | Blob | FormData} fileOrFormData
+   */
+  uploadAvatar: async (fileOrFormData) => {
+    let formData;
+    if (fileOrFormData instanceof FormData) {
+      formData = fileOrFormData;
+    } else {
+      formData = new FormData();
+      formData.append('avatar', fileOrFormData);
+    }
+
+    return apiClient.post('/users/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
   },
 
   /**
@@ -24,4 +48,3 @@ export const userApi = {
 };
 
 export default userApi;
-

@@ -13,10 +13,10 @@ async function runTerminationVerification() {
   initSocketServer(io);
 
   const TEST_PORT = 5087;
-  await new Promise<void>((resolve) => server.listen(TEST_PORT, resolve));
+  await new Promise<void>((resolve) => server.listen(TEST_PORT, "127.0.0.1", () => resolve()));
 
-  const client1 = Client(`http://localhost:${TEST_PORT}`, { transports: ["websocket"] });
-  const client2 = Client(`http://localhost:${TEST_PORT}`, { transports: ["websocket"] });
+  const client1 = Client(`http://127.0.0.1:${TEST_PORT}`, { transports: ["polling", "websocket"] });
+  const client2 = Client(`http://127.0.0.1:${TEST_PORT}`, { transports: ["polling", "websocket"] });
 
   const roomId = "term-test-room";
   const roomCode = "LR-9999";
@@ -69,9 +69,22 @@ async function runTerminationVerification() {
   const termData = await terminationPromise;
   console.log(`✔ Client 2 received room termination: reason="${termData.reason}", duration=${termData.duration}s`);
 
+  // Test 3: Verify that after room termination, attempting to join is blocked
+  const client3 = Client(`http://127.0.0.1:${TEST_PORT}`, { transports: ["polling", "websocket"] });
+  await new Promise<void>((resolve) => client3.on("connect", () => resolve()));
+
+  const rejectedPromise = new Promise<any>((resolve) => {
+    client3.on("room:terminated", resolve);
+  });
+
+  client3.emit("webrtc:join-room", { roomId, user: { id: "late-user", name: "LateUser" } });
+  const rejectData = await rejectedPromise;
+  console.log(`✔ Blocked late join on terminated room: reason="${rejectData.reason}"`);
+
   // Clean up
   client1.disconnect();
   client2.disconnect();
+  client3.disconnect();
   await new Promise<void>((resolve) => server.close(() => resolve()));
 
   console.log("\n🎉 ROOM TERMINATION & REAL-TIME BROADCAST VERIFIED SUCCESSFULLY!");

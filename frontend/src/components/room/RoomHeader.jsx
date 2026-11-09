@@ -16,6 +16,7 @@ import { learningRoomLogo } from '../../assets';
  * - Live chat toggle button with dynamic message count
  * - Dark / Light theme toggle
  * - Responsive mobile drawer menu for compact screens
+ * - Host 'End Meeting' termination button & participant 'Leave' button
  */
 export default function RoomHeader(props = {}) {
   const room = useRoom() || {};
@@ -24,6 +25,7 @@ export default function RoomHeader(props = {}) {
   const roomId = props.roomId ?? room.roomId;
   const roomTitle = props.roomTitle ?? room.roomTitle;
   const setRoomTitle = props.setRoomTitle ?? room.setRoomTitle;
+  const isSocketConnected = props.isSocketConnected ?? room.isSocketConnected ?? true;
   const isEditingTitle = props.isEditingTitle ?? room.isEditingTitle;
   const setIsEditingTitle = props.setIsEditingTitle ?? room.setIsEditingTitle;
   const copiedLink = props.copiedLink ?? room.copiedLink;
@@ -44,9 +46,15 @@ export default function RoomHeader(props = {}) {
   const currentUser = props.currentUser ?? room.currentUser;
   const isVideoGalleryOpen = props.isVideoGalleryOpen ?? room.isVideoGalleryOpen;
   const onToggleVideoGallery = props.onToggleVideoGallery ?? (() => room.setIsVideoGalleryOpen?.((prev) => !prev));
+  const isScreenSharing = props.isScreenSharing ?? room.isScreenSharing ?? false;
+  const onToggleScreenShare = props.onToggleScreenShare ?? room.toggleScreenShare;
+  const isMembersOpen = props.isMembersOpen ?? room.isMembersOpen ?? false;
+  const setIsMembersOpen = props.setIsMembersOpen ?? room.setIsMembersOpen;
   const theme = props.theme ?? room.roomTheme ?? themeContext.theme;
   const onToggleTheme = props.onToggleTheme ?? room.handleToggleRoomTheme ?? themeContext.toggleTheme;
   const onLeaveRoom = props.onLeaveRoom ?? room.handleLeaveRoom;
+  const isHost = props.isHost ?? room.isHost ?? false;
+  const onEndRoomForAll = props.onEndRoomForAll ?? room.handleEndRoomForAll;
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const totalConnected = (peers?.length || 0) + 1;
@@ -123,16 +131,24 @@ export default function RoomHeader(props = {}) {
 
       {/* Center: Live Call Badge + Real Connected Collaborators (Large screens only) */}
       <div className="hidden lg:flex items-center gap-3 shrink-0">
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Live Audio & Video</span>
-          <span className="font-mono text-[11px] opacity-75">• {formatCallTime(activeCallTime)}</span>
-        </div>
+        {isSocketConnected ? (
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Live Audio & Video</span>
+            <span className="font-mono text-[11px] opacity-75">• {formatCallTime(activeCallTime)}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/80 text-amber-700 dark:text-amber-300 text-xs font-semibold shadow-2xs animate-pulse">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+            <span>Connecting to live server...</span>
+          </div>
+        )}
 
-        {/* Real Dynamic Collaborator Avatars */}
+        {/* Real Dynamic Collaborator Avatars (Click to open Members roster) */}
         <div
-          className="flex items-center -space-x-1.5"
-          title={`${totalConnected} participant${totalConnected > 1 ? 's' : ''} in room`}
+          onClick={() => setIsMembersOpen?.((prev) => !prev)}
+          className="flex items-center -space-x-1.5 cursor-pointer hover:opacity-85 transition-opacity"
+          title={`Click to view all ${totalConnected} room members and moderation controls`}
         >
           {/* Current User */}
           {currentUser?.avatar ? (
@@ -180,7 +196,7 @@ export default function RoomHeader(props = {}) {
         </div>
       </div>
 
-      {/* Right: Controls, Video Gallery, Chat & Leave Room */}
+      {/* Right: Controls, Video Gallery, Chat & End/Leave Room */}
       <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         {/* Microphone Mute Toggle */}
         <button
@@ -241,6 +257,28 @@ export default function RoomHeader(props = {}) {
           )}
         </button>
 
+        {/* Screen Sharing Toggle (Google Meet style presentation) */}
+        {onToggleScreenShare && (
+          <button
+            type="button"
+            onClick={onToggleScreenShare}
+            className={`p-1.5 sm:p-2 rounded-full transition-all cursor-pointer ${
+              isScreenSharing
+                ? 'bg-[#543FE3] text-white shadow-md shadow-indigo-500/30 ring-2 ring-[#543FE3]/50 animate-pulse'
+                : 'bg-[var(--color-surface-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]'
+            }`}
+            title={isScreenSharing ? 'Stop Screen Sharing' : 'Share Screen (Google Meet style)'}
+          >
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <rect width="20" height="14" x="2" y="3" rx="2" />
+              <line x1="8" y1="21" x2="16" y2="21" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+              <path d="m16 9-4-4-4 4" />
+              <path d="M12 5v8" />
+            </svg>
+          </button>
+        )}
+
         {/* Dedicated Video Grid Popup Toggle */}
         {onToggleVideoGallery && (
           <button
@@ -261,6 +299,31 @@ export default function RoomHeader(props = {}) {
             <span className="hidden xl:inline">Video Grid</span>
           </button>
         )}
+
+        {/* Members Roster Toggle */}
+        <button
+          type="button"
+          onClick={() => setIsMembersOpen?.((prev) => !prev)}
+          className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+            isMembersOpen
+              ? 'bg-[#543FE3] text-white shadow-xs'
+              : 'bg-[var(--color-surface-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]'
+          }`}
+          title="View all room members and moderation controls"
+        >
+          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          <span className="hidden sm:inline">Members</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+            isMembersOpen ? 'bg-white/20 text-white' : 'bg-[#543FE3]/15 text-[#543FE3]'
+          }`}>
+            {totalConnected}
+          </span>
+        </button>
 
         {/* Hand Raise Reaction (Desktop & Tablet) */}
         <button
@@ -428,20 +491,34 @@ export default function RoomHeader(props = {}) {
           )}
         </div>
 
-        {/* Leave Room Button */}
-        <button
-          type="button"
-          onClick={onLeaveRoom}
-          className="flex items-center gap-1 p-1.5 sm:px-3.5 sm:py-1.5 rounded-lg sm:rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
-          title="Leave room"
-        >
-          <span className="hidden sm:inline">Leave</span>
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-        </button>
+        {/* Action Button: End Meeting (Host) or Leave (Participant) */}
+        {isHost ? (
+          <button
+            type="button"
+            onClick={onEndRoomForAll}
+            className="flex items-center gap-1.5 p-1.5 sm:px-3.5 sm:py-1.5 rounded-lg sm:rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
+            title="End meeting for all participants"
+          >
+            <span className="hidden sm:inline">End Meeting</span>
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+              <rect width="14" height="14" x="5" y="5" rx="2" />
+            </svg>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onLeaveRoom}
+            className="flex items-center gap-1 p-1.5 sm:px-3.5 sm:py-1.5 rounded-lg sm:rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
+            title="Leave room"
+          >
+            <span className="hidden sm:inline">Leave</span>
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </button>
+        )}
       </div>
     </header>
   );
