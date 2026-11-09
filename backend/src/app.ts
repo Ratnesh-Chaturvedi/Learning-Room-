@@ -8,6 +8,9 @@ import { ApiError } from "./utils/apiError.ts";
 
 const app: Application = express();
 
+// Trust reverse proxies
+app.set("trust proxy", true);
+
 // Global Middlewares
 app.use(
   cors({
@@ -21,7 +24,6 @@ app.use(
 
       if (
         allowedOrigins.includes(requestOrigin) ||
-        requestOrigin.endsWith(".vercel.app") ||
         requestOrigin.includes("localhost") ||
         requestOrigin.includes("127.0.0.1")
       ) {
@@ -40,18 +42,13 @@ if (env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-// Health Check Endpoint
+// Health Check Endpoints
 app.get("/", (_req: Request, res: Response) => {
   res.status(200).json({
-    success: true,
+    status: "ok",
     message: "Learning Room API Server is running",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    env: {
-      nodeEnv: env.NODE_ENV,
-      databaseConfigured: Boolean(env.DATABASE_URL),
-      googleAuthConfigured: Boolean(env.GOOGLE_CLIENT_ID),
-    },
   });
 });
 
@@ -60,15 +57,10 @@ app.get("/health", (_req: Request, res: Response) => {
     status: "ok",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    env: {
-      nodeEnv: env.NODE_ENV,
-      databaseConfigured: Boolean(env.DATABASE_URL),
-      googleAuthConfigured: Boolean(env.GOOGLE_CLIENT_ID),
-    },
   });
 });
 
-// API Routes
+// API v1 Routes
 app.use("/api/v1", v1Routes);
 
 // Centralized 404 Route Handler

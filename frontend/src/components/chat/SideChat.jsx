@@ -214,11 +214,11 @@ export default function SideChat(props = {}) {
       <div className="fixed inset-0 z-[100000] flex flex-col justify-end pointer-events-none animate-in fade-in duration-200">
         <div
           onClick={onClose}
-          className="fixed inset-0 bg-black/50 backdrop-blur-2xs pointer-events-auto transition-opacity"
+          className="fixed inset-0 bg-black/50 backdrop-blur-xs pointer-events-auto transition-opacity"
           aria-hidden="true"
         />
 
-        <div className="relative w-full max-h-[82vh] flex flex-col bg-[var(--color-surface)] border-t border-[var(--color-border)] rounded-t-3xl shadow-3xl pointer-events-auto z-[100001] animate-in slide-in-from-bottom duration-300 overflow-hidden pb-1">
+        <div className="relative w-full max-h-[82vh] flex flex-col bg-[var(--color-surface)] border-t border-[var(--color-border)] rounded-t-3xl shadow-2xl pointer-events-auto z-[100001] animate-in slide-in-from-bottom duration-300 overflow-hidden pb-1">
           <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto my-2.5 shrink-0" />
 
           <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-surface-secondary)]/90 shrink-0">
@@ -278,7 +278,7 @@ export default function SideChat(props = {}) {
         >
           <div
             className={`flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl overflow-hidden ring-1 ring-black/5 dark:ring-white/10 ${
-              isDragging ? 'shadow-3xl ring-2 ring-[var(--color-brand)]/40 scale-[1.01]' : ''
+              isDragging ? 'shadow-2xl ring-2 ring-[var(--color-brand)]/40 scale-[1.01]' : ''
             }`}
             style={{
               transition: isDragging ? 'none' : 'transform 0.15s ease, box-shadow 0.15s ease',

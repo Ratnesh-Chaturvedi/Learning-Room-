@@ -1,10 +1,8 @@
-import path from "node:path";
 import { defineConfig } from "prisma/config";
 import dotenv from "dotenv";
 
-// Discover .env from backend directory or current directory
-dotenv.config({ path: path.resolve(import.meta.dirname, ".env") });
 dotenv.config();
+dotenv.config({ path: "backend/.env" });
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
