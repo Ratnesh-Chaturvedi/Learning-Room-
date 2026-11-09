@@ -3,8 +3,10 @@ import {
   getProfile,
   updateProfile,
   getMyRooms,
+  uploadAvatar,
 } from "../../controllers/user.controller.ts";
 import { authenticate } from "../../middlewares/auth.middleware.ts";
+import { uploadSingleImage } from "../../middlewares/upload.middleware.ts";
 
 const router = Router();
 
@@ -12,7 +14,9 @@ const router = Router();
 router.use(authenticate);
 
 router.get("/profile", getProfile);
-router.patch("/profile", updateProfile);
+router.patch("/profile", uploadSingleImage("avatar"), updateProfile);
+router.post("/avatar", uploadSingleImage("avatar"), uploadAvatar);
+router.patch("/avatar", uploadSingleImage("avatar"), uploadAvatar);
 router.get("/my-rooms", getMyRooms);
 
 export default router;

@@ -98,7 +98,6 @@ export default function ExcalidrawCanvas({
   const [excalidrawAPI, setExcalidrawAPI] = useState(null);
 
   const storageKey = `excalidraw_room_${roomId}`;
-  const channelName = `excalidraw_sync_channel_${roomId}`;
 
   // 1. Initialize room elements from localStorage or defaults without extra effect
   const [initialData] = useState(() => {
@@ -136,59 +135,17 @@ export default function ExcalidrawCanvas({
   });
 
   const isRemoteUpdateRef = useRef(false);
-  const channelRef = useRef(null);
+  const lastElementsSignatureRef = useRef('');
   const saveTimeoutRef = useRef(null);
+  const socketEmitTimeoutRef = useRef(null);
 
-  // 2. Multi-Tab & Real-Time Sync via BroadcastChannel
-  useEffect(() => {
-    if (isMockup) return;
+  // Helper: Generates a lightweight signature of canvas elements
+  const getElementsSignature = useCallback((elements) => {
+    if (!elements || !Array.isArray(elements)) return '';
+    return elements.map((el) => `${el.id}:${el.version}:${el.isDeleted ? 1 : 0}`).join(';');
+  }, []);
 
-    try {
-      const channel = new BroadcastChannel(channelName);
-      channelRef.current = channel;
-
-      channel.onmessage = (event) => {
-        const data = event.data;
-        if (!data || !excalidrawAPI) return;
-
-        if (data.type === 'SCENE_UPDATE' && data.elements) {
-          isRemoteUpdateRef.current = true;
-          excalidrawAPI.updateScene({
-            elements: data.elements,
-          });
-
-          try {
-            localStorage.setItem(
-              storageKey,
-              JSON.stringify({ elements: data.elements })
-            );
-          } catch {}
-        } else if (data.type === 'POINTER_UPDATE' && data.collaborator) {
-          const currentCollaborators = new Map();
-          currentCollaborators.set(data.collaborator.id, {
-            username: data.collaborator.name,
-            pointer: data.collaborator.pointer,
-            button: data.collaborator.button,
-            color: {
-              background: data.collaborator.color || '#635bdb',
-              stroke: data.collaborator.color || '#635bdb',
-            },
-          });
-          excalidrawAPI.updateScene({
-            collaborators: currentCollaborators,
-          });
-        }
-      };
-
-      return () => {
-        channel.close();
-      };
-    } catch (err) {
-      console.warn('BroadcastChannel sync unavailable:', err);
-    }
-  }, [channelName, excalidrawAPI, isMockup, storageKey]);
-
-  // 3. Real-Time Multiplayer Canvas Sync via Socket.io
+  // Real-Time Multiplayer Canvas Sync via Socket.io
   useEffect(() => {
     if (!socket || isMockup) return;
 
@@ -197,15 +154,26 @@ export default function ExcalidrawCanvas({
 
     const handleCanvasInit = (data) => {
       if (data?.elements && Array.isArray(data.elements) && data.elements.length > 0 && excalidrawAPI) {
+        const sig = getElementsSignature(data.elements);
+        lastElementsSignatureRef.current = sig;
         isRemoteUpdateRef.current = true;
         excalidrawAPI.updateScene({ elements: data.elements });
+        try {
+          localStorage.setItem(storageKey, JSON.stringify({ elements: data.elements }));
+        } catch {}
       }
     };
 
     const handleCanvasUpdate = (data) => {
       if (data?.elements && Array.isArray(data.elements) && excalidrawAPI) {
+        const sig = getElementsSignature(data.elements);
+        if (sig === lastElementsSignatureRef.current) return;
+        lastElementsSignatureRef.current = sig;
         isRemoteUpdateRef.current = true;
         excalidrawAPI.updateScene({ elements: data.elements });
+        try {
+          localStorage.setItem(storageKey, JSON.stringify({ elements: data.elements }));
+        } catch {}
       }
     };
 
@@ -234,9 +202,9 @@ export default function ExcalidrawCanvas({
       socket.off('canvas:update', handleCanvasUpdate);
       socket.off('canvas:pointer', handleCanvasPointer);
     };
-  }, [socket, roomId, excalidrawAPI, isMockup]);
+  }, [socket, roomId, excalidrawAPI, isMockup, getElementsSignature, storageKey]);
 
-  // 4. Synchronize theme changes into Excalidraw canvas
+  // Synchronize theme changes into Excalidraw canvas
   useEffect(() => {
     if (excalidrawAPI) {
       excalidrawAPI.updateScene({
@@ -248,36 +216,46 @@ export default function ExcalidrawCanvas({
     }
   }, [theme, excalidrawAPI]);
 
-  // 5. Handle local changes & broadcast to room participants
+  // Handle local changes & broadcast to room participants
   const handleChange = useCallback(
     (elements, appState, files) => {
-      if (isRemoteUpdateRef.current) {
-        isRemoteUpdateRef.current = false;
+      if (!elements || !Array.isArray(elements)) return;
+
+      const currentSig = getElementsSignature(elements);
+
+      // Skip broadcast if elements have not changed (zoom/pan/selection/echo)
+      if (currentSig === lastElementsSignatureRef.current) {
         return;
       }
 
+      if (isRemoteUpdateRef.current) {
+        isRemoteUpdateRef.current = false;
+        lastElementsSignatureRef.current = currentSig;
+        return;
+      }
+
+      lastElementsSignatureRef.current = currentSig;
+
+      // Debounce localStorage write
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = setTimeout(() => {
         try {
           localStorage.setItem(storageKey, JSON.stringify({ elements }));
         } catch {}
-      }, 400);
+      }, 500);
 
+      // Broadcast changes to connected room peers
       if (socket && !isMockup) {
-        socket.emit('canvas:update', {
-          roomId,
-          elements,
-        });
-      }
-
-      if (channelRef.current && !isMockup) {
-        channelRef.current.postMessage({
-          type: 'SCENE_UPDATE',
-          elements,
-        });
+        if (socketEmitTimeoutRef.current) clearTimeout(socketEmitTimeoutRef.current);
+        socketEmitTimeoutRef.current = setTimeout(() => {
+          socket.emit('canvas:update', {
+            roomId,
+            elements,
+          });
+        }, 30);
       }
     },
-    [isMockup, storageKey, socket, roomId]
+    [isMockup, storageKey, socket, roomId, getElementsSignature]
   );
 
   // 6. Broadcast local mouse cursor pointer movements to room participants
@@ -297,19 +275,6 @@ export default function ExcalidrawCanvas({
           },
         });
       }
-
-      if (!channelRef.current) return;
-
-      channelRef.current.postMessage({
-        type: 'POINTER_UPDATE',
-        collaborator: {
-          id: user.id || 'me',
-          name: user.name || 'Participant',
-          color: user.color || '#635bdb',
-          pointer: payload.pointer,
-          button: payload.button,
-        },
-      });
     },
     [isMockup, user, socket, roomId]
   );

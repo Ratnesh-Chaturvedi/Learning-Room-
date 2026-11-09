@@ -12,6 +12,7 @@ export const updateProfileSchema = z.object({
         val.startsWith("/"),
       "Avatar must be a valid image URL or image data"
     )
+    .nullable()
     .optional(),
 });
 

@@ -384,10 +384,23 @@ export class RoomService {
   }
 
   /**
-   * Transitions a scheduled room to active (Host only).
+   * Helper to query room by either its UUID id or short roomCode.
    */
+  public static async findRoomByIdOrCode(identifier: string) {
+    if (!identifier) return null;
+    const clean = identifier.trim();
+    return prisma.room.findFirst({
+      where: {
+        OR: [{ id: clean }, { roomCode: clean.toUpperCase() }],
+      },
+      include: {
+        creator: { select: { id: true, name: true, email: true, avatar: true } },
+        participants: { select: { id: true, name: true, email: true, avatar: true } },
+      },
+    });
+  }
   public static async startRoom(roomId: string, userId: string) {
-    const room = await prisma.room.findUnique({ where: { id: roomId } });
+    const room = await this.findRoomByIdOrCode(roomId);
 
     if (!room) {
       throw new ApiError(404, "Room not found.");
@@ -402,7 +415,7 @@ export class RoomService {
     }
 
     const updated = await prisma.room.update({
-      where: { id: roomId },
+      where: { id: room.id },
       data: { status: RoomStatus.ACTIVE },
       include: {
         creator: { select: { id: true, name: true, email: true, avatar: true } },
@@ -422,7 +435,7 @@ export class RoomService {
    * Ends an active room and records duration (Host only).
    */
   public static async endRoom(roomId: string, userId: string) {
-    const room = await prisma.room.findUnique({ where: { id: roomId } });
+    const room = await this.findRoomByIdOrCode(roomId);
 
     if (!room) {
       throw new ApiError(404, "Room not found.");
@@ -443,11 +456,12 @@ export class RoomService {
     );
 
     const endedRoom = await prisma.room.update({
-      where: { id: roomId },
+      where: { id: room.id },
       data: {
         status: RoomStatus.ENDED,
         endedAt,
         duration,
+        participants: { set: [] }, // Disconnects all participants from the room in DB
       },
       include: {
         creator: { select: { id: true, name: true, email: true, avatar: true } },
@@ -483,7 +497,7 @@ export class RoomService {
       tools?: Tool[];
     }
   ) {
-    const room = await prisma.room.findUnique({ where: { id: roomId } });
+    const room = await this.findRoomByIdOrCode(roomId);
 
     if (!room) {
       throw new ApiError(404, "Room not found.");
@@ -523,7 +537,7 @@ export class RoomService {
     }
 
     const updatedRoom = await prisma.room.update({
-      where: { id: roomId },
+      where: { id: room.id },
       data,
       include: {
         creator: { select: { id: true, name: true, email: true, avatar: true } },
@@ -540,7 +554,7 @@ export class RoomService {
    * Regenerates a new private invite link token (Host only).
    */
   public static async regenerateInviteToken(roomId: string, userId: string) {
-    const room = await prisma.room.findUnique({ where: { id: roomId } });
+    const room = await this.findRoomByIdOrCode(roomId);
 
     if (!room) {
       throw new ApiError(404, "Room not found.");
@@ -553,7 +567,7 @@ export class RoomService {
     const newInviteToken = generateInviteToken();
 
     return prisma.room.update({
-      where: { id: roomId },
+      where: { id: room.id },
       data: {
         isPrivate: true,
         inviteToken: newInviteToken,
@@ -569,7 +583,7 @@ export class RoomService {
    * Deletes a room (Host only).
    */
   public static async deleteRoom(roomId: string, userId: string) {
-    const room = await prisma.room.findUnique({ where: { id: roomId } });
+    const room = await this.findRoomByIdOrCode(roomId);
 
     if (!room) {
       throw new ApiError(404, "Room not found.");
@@ -581,7 +595,7 @@ export class RoomService {
 
     broadcastRoomTerminated(room.id, room.roomCode, "This room was deleted by the host.");
 
-    return prisma.room.delete({ where: { id: roomId } });
+    return prisma.room.delete({ where: { id: room.id } });
   }
 }
 

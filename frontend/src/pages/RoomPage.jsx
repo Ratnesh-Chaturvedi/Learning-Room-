@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import ExcalidrawCanvas from '../components/canvas/ExcalidrawCanvas';
 import RoomHeader from '../components/room/RoomHeader';
 import VideoGalleryModal from '../components/room/VideoGalleryModal';
+import ParticipantsModal from '../components/room/ParticipantsModal';
 import SideChat from '../components/chat/SideChat';
 import { RoomProvider, useRoom } from '../context/RoomContext';
 
@@ -10,6 +11,61 @@ import { RoomProvider, useRoom } from '../context/RoomContext';
  * Inner RoomView component that consumes RoomContext cleanly.
  * Decouples state & signaling orchestration from UI presentation.
  */
+class RoomErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('[Room Error Boundary] Caught runtime error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[var(--color-background)] text-center select-none">
+          <div className="max-w-md w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-8 shadow-2xl space-y-4">
+            <div className="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto text-xl">
+              ⚠️
+            </div>
+            <h3 className="font-heading font-extrabold text-lg text-[var(--color-text-primary)]">
+              Room Session Error
+            </h3>
+            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              {this.state.error?.message || 'An unexpected rendering error occurred inside this room session.'}
+            </p>
+            <div className="pt-2 flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 rounded-full border border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-all cursor-pointer"
+              >
+                Reload Room
+              </button>
+              <button
+                type="button"
+                onClick={() => (window.location.href = '/dashboard')}
+                className="px-4 py-2 rounded-full bg-[var(--color-brand)] text-white text-xs font-semibold shadow-xs hover:bg-[var(--color-brand-hover)] transition-all cursor-pointer"
+              >
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function RoomView() {
   const navigate = useNavigate();
   const {
@@ -29,7 +85,46 @@ function RoomView() {
     setIsVideoGalleryOpen,
     floatingReactions,
     roomTheme,
+    isRoomTerminated,
+    terminationInfo,
   } = useRoom();
+
+  // 🛑 INSTANT LIVE ROOM TERMINATION OVERLAY
+  if (isRoomTerminated) {
+    return (
+      <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-[var(--color-background)] text-center relative overflow-hidden select-none">
+        <div className="absolute w-96 h-96 rounded-full bg-rose-500/10 blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-md w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-8 shadow-2xl space-y-6 animate-in zoom-in-95 duration-200">
+          <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto text-3xl shadow-inner">
+            🛑
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="font-heading font-extrabold text-xl text-[var(--color-text-primary)]">
+              Meeting Ended
+            </h2>
+            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              {terminationInfo?.reason || 'The host has ended this meeting for all participants.'}
+            </p>
+            <p className="text-[11px] text-[var(--color-text-secondary)]/70">
+              All members have been disconnected from the live room.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard')}
+              className="w-full py-2.5 px-4 rounded-xl bg-[#543FE3] hover:bg-[#4330C8] text-white text-xs font-bold transition-all shadow-md cursor-pointer"
+            >
+              Return to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // 🔒 WAITING ROOM OVERLAY (When waiting for host admission)
   if (isWaiting) {
@@ -138,17 +233,35 @@ function RoomView() {
       {/* 2. Floating Live Video Gallery Popup (Context-connected) */}
       <VideoGalleryModal />
 
+      {/* 3. Room Participants Roster & Moderation Modal */}
+      <ParticipantsModal />
+
       {/* 3. Interactive Multiplayer Collaborative Canvas */}
       <main className="flex-1 relative w-full h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] overflow-hidden">
         <section className="w-full h-full relative overflow-hidden">
           <div className="absolute inset-0">
-            <ExcalidrawCanvas
-              roomId={roomId}
-              theme={roomTheme}
-              user={currentUser}
-              socket={socket}
-              autoFocus
-            />
+            <RoomErrorBoundary
+              fallback={
+                <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                  <p className="text-xs text-[var(--color-text-secondary)]">Canvas encountered an issue loading.</p>
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="mt-2 px-3 py-1 bg-[var(--color-brand)] text-white text-[11px] font-semibold rounded-lg"
+                  >
+                    Refresh
+                  </button>
+                </div>
+              }
+            >
+              <ExcalidrawCanvas
+                roomId={roomId}
+                theme={roomTheme}
+                user={currentUser}
+                socket={socket}
+                autoFocus
+              />
+            </RoomErrorBoundary>
           </div>
 
           {/* Floating Emoji Reactions */}
@@ -220,8 +333,10 @@ export default function RoomPage() {
   const inviteToken = searchParams.get('token') || '';
 
   return (
-    <RoomProvider roomId={roomId} inviteToken={inviteToken}>
-      <RoomView />
-    </RoomProvider>
+    <RoomErrorBoundary>
+      <RoomProvider roomId={roomId} inviteToken={inviteToken}>
+        <RoomView />
+      </RoomProvider>
+    </RoomErrorBoundary>
   );
 }

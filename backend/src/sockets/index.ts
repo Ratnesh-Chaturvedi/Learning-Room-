@@ -45,11 +45,20 @@ export const initSocketServer = (io: Server): void => {
       const { roomId, removedPeer, remainingPeers } = roomStateManager.removePeer(socket.id);
 
       if (roomId && removedPeer) {
-        // Notify other room participants so they immediately remove peer video/audio streams
-        io.to(roomId).emit("webrtc:peer-left", {
+        const meta = roomStateManager.getRoomMeta(roomId);
+        const leavePayload = {
           socketId: socket.id,
           userId: removedPeer.userId,
-        });
+        };
+
+        // Notify other room participants across all channel aliases
+        io.to(roomId).emit("webrtc:peer-left", leavePayload);
+        if (meta?.roomCode && meta.roomCode !== roomId) {
+          io.to(meta.roomCode).emit("webrtc:peer-left", leavePayload);
+        }
+        if (meta?.id && meta.id !== roomId) {
+          io.to(meta.id).emit("webrtc:peer-left", leavePayload);
+        }
 
         console.log(`[Socket] Notified room ${roomId} of disconnected peer: ${removedPeer.name}. Remaining: ${remainingPeers.length}`);
       }
