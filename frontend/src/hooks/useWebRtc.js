@@ -19,7 +19,7 @@ const ICE_SERVERS = {
  * - Remote peer audio and video stream mapping
  * - Real-time track mute/enable toggling without dropping peer connections
  */
-export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn }) {
+export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn, isEnabled = true }) {
   const [localStream, setLocalStream] = useState(null);
   const [remoteStreams, setRemoteStreams] = useState({}); // { [socketId]: MediaStream }
   const [mediaError, setMediaError] = useState(null);
@@ -33,6 +33,7 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn }) {
 
   // 1. Initialize Local Media Stream (Microphone always, Camera only if isVideoOn is true)
   useEffect(() => {
+    if (!isEnabled) return;
     let isMounted = true;
 
     const startLocalMedia = async () => {
@@ -121,7 +122,7 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn }) {
       peerConnectionsRef.current = {};
       pendingCandidatesRef.current = {};
     };
-  }, []);
+  }, [isEnabled]);
 
   // 2. Synchronize Mute (Audio Track) state
   useEffect(() => {
@@ -326,7 +327,7 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn }) {
 
   // 5. WebRTC Signaling Listeners
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !isEnabled) return;
 
     // A. When existing peers in room are received, initiate offer to each
     const handleRoomPeers = async ({ peers }) => {
@@ -476,7 +477,7 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn }) {
       socket.off('webrtc:ice-candidate', handleIceCandidate);
       socket.off('webrtc:peer-left', handlePeerLeft);
     };
-  }, [socket, createPeerConnection]);
+  }, [socket, createPeerConnection, isEnabled]);
 
   // Stop screen sharing and restore camera video track
   const stopScreenShare = useCallback(() => {

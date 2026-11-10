@@ -129,20 +129,14 @@ export default function RoomHeader(props = {}) {
         </div>
       </div>
 
-      {/* Center: Live Call Badge + Real Connected Collaborators (Large screens only) */}
+      {/* Center: Sleek Call Timer & Connected Collaborators (No bulky text labels) */}
       <div className="hidden lg:flex items-center gap-3 shrink-0">
-        {isSocketConnected ? (
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Live Audio & Video</span>
-            <span className="font-mono text-[11px] opacity-75">• {formatCallTime(activeCallTime)}</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/80 text-amber-700 dark:text-amber-300 text-xs font-semibold shadow-2xs animate-pulse">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-            <span>Connecting to live server...</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-surface-secondary)] border border-[var(--color-border)] text-xs font-semibold shadow-2xs">
+          <span className={`w-2 h-2 rounded-full ${isSocketConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500 animate-ping'}`} />
+          <span className="font-mono text-[11px] font-bold text-[var(--color-text-primary)]">
+            {formatCallTime(activeCallTime)}
+          </span>
+        </div>
 
         {/* Real Dynamic Collaborator Avatars (Click to open Members roster) */}
         <div

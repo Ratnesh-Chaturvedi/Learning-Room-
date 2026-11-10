@@ -58,6 +58,13 @@ export const roomApi = {
   },
 
   /**
+   * Host starts a scheduled room early.
+   */
+  startRoom: async (roomId) => {
+    return apiClient.patch(`/rooms/${roomId}/start`);
+  },
+
+  /**
    * Host terminates the meeting room.
    */
   endRoom: async (roomId) => {

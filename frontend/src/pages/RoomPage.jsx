@@ -81,12 +81,137 @@ function RemoteAudioTrack({ stream }) {
   return <audio ref={audioRef} autoPlay playsInline />;
 }
 
+function ScheduledRoomHoldingScreen({
+  scheduledInfo,
+  isHost,
+  onStartEarly,
+  onCopyInvite,
+  copiedLink,
+  onLeave,
+}) {
+  const [timeLeft, setTimeLeft] = React.useState('');
+
+  React.useEffect(() => {
+    if (!scheduledInfo?.scheduledAt) return;
+    const start = new Date(scheduledInfo.scheduledAt).getTime();
+
+    const updateTimer = () => {
+      const diff = start - Date.now();
+      if (diff <= 0) {
+        setTimeLeft('Starting now...');
+        return;
+      }
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const secs = Math.floor((diff % (1000 * 60)) / 1000);
+      setTimeLeft(
+        `${hours.toString().padStart(2, '0')}h ${mins.toString().padStart(2, '0')}m ${secs.toString().padStart(2, '0')}s`
+      );
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [scheduledInfo?.scheduledAt]);
+
+  const formattedStart = scheduledInfo?.scheduledAt
+    ? new Date(scheduledInfo.scheduledAt).toLocaleString([], {
+        dateStyle: 'full',
+        timeStyle: 'short',
+      })
+    : '';
+
+  const formattedEnd = scheduledInfo?.scheduledEndTime
+    ? new Date(scheduledInfo.scheduledEndTime).toLocaleTimeString([], {
+        timeStyle: 'short',
+      })
+    : '';
+
+  return (
+    <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-[var(--color-background)] text-center relative overflow-hidden select-none">
+      <div className="absolute w-96 h-96 rounded-full bg-[#543FE3]/10 blur-3xl pointer-events-none" />
+
+      <div className="relative z-10 max-w-lg w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-8 shadow-2xl space-y-6 animate-in zoom-in-95 duration-200">
+        <div className="w-16 h-16 rounded-full bg-[#543FE3]/15 text-[#543FE3] flex items-center justify-center mx-auto text-3xl shadow-inner">
+          📅
+        </div>
+
+        <div className="space-y-2">
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#543FE3]/15 text-[#543FE3] border border-[#543FE3]/30">
+            Scheduled Meeting
+          </span>
+          <h2 className="font-heading font-extrabold text-2xl text-[var(--color-text-primary)] pt-1">
+            {scheduledInfo?.title || 'Scheduled Room'}
+          </h2>
+          <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+            {isHost
+              ? 'You scheduled this meeting. It will unlock for all participants at the scheduled start time, or you can start it now.'
+              : 'This meeting is scheduled for a future time. It will open automatically when the host starts the meeting.'}
+          </p>
+        </div>
+
+        {/* Schedule Timing Box */}
+        <div className="bg-[var(--color-surface-secondary)] border border-[var(--color-border)] rounded-2xl p-4 text-left space-y-2.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-[var(--color-text-secondary)]">Planned Start:</span>
+            <span className="font-bold text-[var(--color-text-primary)]">{formattedStart}</span>
+          </div>
+          {formattedEnd && (
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-[var(--color-text-secondary)]">Auto-Ends At:</span>
+              <span className="font-semibold text-[var(--color-text-primary)]">{formattedEnd}</span>
+            </div>
+          )}
+          <div className="pt-2 border-t border-[var(--color-border)] flex items-center justify-between text-xs">
+            <span className="text-[var(--color-text-secondary)]">Countdown:</span>
+            <span className="font-mono font-extrabold text-[#543FE3] text-sm animate-pulse">
+              {timeLeft || 'Calculating...'}
+            </span>
+          </div>
+        </div>
+
+        {/* Action Controls */}
+        <div className="space-y-2.5 pt-1">
+          {isHost && (
+            <button
+              type="button"
+              onClick={onStartEarly}
+              className="w-full py-3 px-4 rounded-xl bg-[#543FE3] hover:bg-[#4330C8] text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>▶</span>
+              <span>Start Meeting Now</span>
+            </button>
+          )}
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onCopyInvite}
+              className="flex-1 py-2.5 px-4 rounded-xl border border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-all cursor-pointer"
+            >
+              {copiedLink ? '✓ Copied Link' : '📋 Copy Invite Link'}
+            </button>
+            <button
+              type="button"
+              onClick={onLeave}
+              className="flex-1 py-2.5 px-4 rounded-xl border border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] transition-all cursor-pointer"
+            >
+              Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RoomView() {
   const navigate = useNavigate();
   const {
     roomId,
     socket,
     currentUser,
+    isHost,
     peers,
     remoteStreams,
     isWaiting,
@@ -103,7 +228,26 @@ function RoomView() {
     roomTheme,
     isRoomTerminated,
     terminationInfo,
+    isRoomScheduled,
+    scheduledInfo,
+    handleStartScheduledRoomEarly,
+    handleCopyInvite,
+    copiedLink,
   } = useRoom();
+
+  // 📅 SCHEDULED HOLDING ROOM OVERLAY (When room is scheduled for a future time)
+  if (isRoomScheduled) {
+    return (
+      <ScheduledRoomHoldingScreen
+        scheduledInfo={scheduledInfo}
+        isHost={isHost}
+        onStartEarly={handleStartScheduledRoomEarly}
+        onCopyInvite={handleCopyInvite}
+        copiedLink={copiedLink}
+        onLeave={() => navigate('/dashboard')}
+      />
+    );
+  }
 
   // 🛑 INSTANT LIVE ROOM TERMINATION OVERLAY
   if (isRoomTerminated) {

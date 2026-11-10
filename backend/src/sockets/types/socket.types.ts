@@ -25,6 +25,9 @@ export interface RoomMeta {
   creatorId?: string | null;
   inviteToken?: string | null;
   status?: "ACTIVE" | "SCHEDULED" | "ENDED";
+  scheduledAt?: Date | string | null;
+  scheduledEndTime?: Date | string | null;
+  title?: string | null;
 }
 
 /**

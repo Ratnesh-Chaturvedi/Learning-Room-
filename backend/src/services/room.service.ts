@@ -315,6 +315,31 @@ export class RoomService {
       return endedRoom;
     }
 
+    // Auto-activate scheduled room if start time has arrived
+    if (
+      room.status === RoomStatus.SCHEDULED &&
+      room.scheduledAt &&
+      room.scheduledAt <= new Date()
+    ) {
+      const activeRoom = await prisma.room.update({
+        where: { id: room.id },
+        data: {
+          status: RoomStatus.ACTIVE,
+        },
+        include: {
+          creator: { select: { id: true, name: true, email: true, avatar: true } },
+          participants: { select: { id: true, name: true, email: true, avatar: true } },
+        },
+      });
+
+      broadcastRoomUpdated(room.id, room.roomCode, {
+        status: RoomStatus.ACTIVE,
+        message: "Room is now active.",
+      });
+
+      return activeRoom;
+    }
+
     return room;
   }
 
