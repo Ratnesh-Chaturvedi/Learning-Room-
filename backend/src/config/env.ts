@@ -74,6 +74,9 @@ if (!parsed.success) {
   if (!parsed.data.GOOGLE_CLIENT_ID) {
     envConfigErrors.push("GOOGLE_CLIENT_ID is not set in environment variables");
   }
+  if (parsed.data.NODE_ENV === "production" && parsed.data.JWT_SECRET === "learning-room-jwt-secret-production-fallback") {
+    envConfigErrors.push("SECURITY WARNING: JWT_SECRET is using default fallback in production. Set a strong JWT_SECRET.");
+  }
   if (!parsed.data.CLOUDINARY_CLOUD_NAME || !parsed.data.CLOUDINARY_API_KEY || !parsed.data.CLOUDINARY_API_SECRET) {
     if (!parsed.data.CLOUDINARY_URL) {
       envConfigErrors.push("Cloudinary credentials incomplete (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)");

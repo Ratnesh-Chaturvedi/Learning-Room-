@@ -8,7 +8,7 @@ import {
   burstLines,
 } from '../../assets';
 
-export default function AboutSection({ onStartRoom }) {
+export default function AboutSection({ onStartRoom: _onStartRoom }) {
   const handleScrollToMission = (e) => {
     e.preventDefault();
     const missionElem = document.getElementById('our-mission-cards');

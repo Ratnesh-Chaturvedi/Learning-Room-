@@ -74,9 +74,6 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
   const [isSocketConnected, setIsSocketConnected] = useState(() => socket?.connected || false);
   useEffect(() => {
     if (!socket) return;
-    if (socket.connected) {
-      setIsSocketConnected(true);
-    }
     const onConnect = () => setIsSocketConnected(true);
     const onDisconnect = () => setIsSocketConnected(false);
     const onConnectError = (err) => {
@@ -149,7 +146,9 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     try {
       const saved = localStorage.getItem(`room_theme_${roomId}`);
       if (saved === 'dark' || saved === 'light') return saved;
-    } catch {}
+    } catch (_e) {
+      // Ignore localStorage read errors
+    }
     return globalTheme || 'light';
   });
 
@@ -158,7 +157,9 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       const next = prev === 'light' ? 'dark' : 'light';
       try {
         localStorage.setItem(`room_theme_${roomId}`, next);
-      } catch {}
+      } catch (_e) {
+        // Ignore localStorage write errors
+      }
       return next;
     });
   }, [roomId]);
@@ -258,20 +259,40 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     return () => clearInterval(timer);
   }, []);
 
+  // WebRTC Mesh Hook for live camera, microphone streams & screen sharing
+  const {
+    localStream,
+    remoteStreams,
+    isScreenSharing,
+    screenStream,
+    toggleScreenShare,
+    startScreenShare,
+    stopScreenShare,
+  } = useWebRtc({
+    roomId,
+    socket,
+    user: currentUser,
+    isMuted,
+    isVideoOn,
+    isEnabled: !isRoomScheduled && !isRoomTerminated,
+  });
+
+  // Keep refs to latest stream values so socket event handlers
+  // can stop tracks on room termination without stale closure bugs.
+  const localStreamRef = useRef(localStream);
+  const screenStreamRef = useRef(screenStream);
+  useEffect(() => {
+    localStreamRef.current = localStream;
+  }, [localStream]);
+  useEffect(() => {
+    screenStreamRef.current = screenStream;
+  }, [screenStream]);
+
   // Auto-terminate meeting when scheduledEndTime is reached
   useEffect(() => {
     if (!roomDetails?.scheduledEndTime) return;
     const endTime = new Date(roomDetails.scheduledEndTime).getTime();
     const remainingMs = endTime - Date.now();
-
-    if (remainingMs <= 0) {
-      setIsRoomTerminated(true);
-      setTerminationInfo({
-        reason: 'This scheduled meeting duration has ended.',
-        endedAt: roomDetails.scheduledEndTime,
-      });
-      return;
-    }
 
     const timer = setTimeout(() => {
       setIsRoomTerminated(true);
@@ -282,9 +303,15 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       try {
         localStreamRef.current?.getTracks().forEach((t) => t.stop());
         screenStreamRef.current?.getTracks().forEach((t) => t.stop());
-      } catch {}
-      socket?.disconnect();
-    }, remainingMs);
+      } catch (_e) {
+        // Ignore stream stop failure
+      }
+      try {
+        socket?.disconnect();
+      } catch (_e) {
+        // Ignore disconnect failure
+      }
+    }, Math.max(0, remainingMs));
 
     return () => clearTimeout(timer);
   }, [roomDetails?.scheduledEndTime, socket]);
@@ -349,7 +376,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     } catch (err) {
       console.warn('Failed to start scheduled room early:', err);
     }
-  }, [roomDetails?.id, roomDetails?.roomCode, roomId, socket, inviteToken, currentUser]);
+  }, [roomDetails, roomId, socket, inviteToken, currentUser]);
 
   const formatCallTime = useCallback((secs) => {
     const m = Math.floor(secs / 60);
@@ -357,30 +384,6 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   }, []);
 
-  // WebRTC Mesh Hook for live camera, microphone streams & screen sharing
-  const {
-    localStream,
-    remoteStreams,
-    isScreenSharing,
-    screenStream,
-    toggleScreenShare,
-    startScreenShare,
-    stopScreenShare,
-  } = useWebRtc({
-    roomId,
-    socket,
-    user: currentUser,
-    isMuted,
-    isVideoOn,
-    isEnabled: !isRoomScheduled && !isRoomTerminated,
-  });
-
-  // Keep refs to latest stream values so socket event handlers (closed over at mount)
-  // can stop tracks on room termination without stale closure bugs.
-  const localStreamRef = useRef(localStream);
-  const screenStreamRef = useRef(screenStream);
-  useEffect(() => { localStreamRef.current = localStream; }, [localStream]);
-  useEffect(() => { screenStreamRef.current = screenStream; }, [screenStream]);
 
   // Floating reactions trigger
   const triggerReaction = useCallback(
@@ -522,10 +525,14 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       try {
         localStreamRef.current?.getTracks().forEach((t) => t.stop());
         screenStreamRef.current?.getTracks().forEach((t) => t.stop());
-      } catch {}
+      } catch (_e) {
+        // Ignore stream stop failure
+      }
       try {
         socket?.disconnect();
-      } catch {}
+      } catch (_e) {
+        // Ignore disconnect error
+      }
       setTimeout(() => navigate('/dashboard'), 3000);
     };
 
@@ -581,10 +588,14 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       try {
         localStreamRef.current?.getTracks().forEach((t) => t.stop());
         screenStreamRef.current?.getTracks().forEach((t) => t.stop());
-      } catch {}
+      } catch (_e) {
+        // Ignore stream stop failure
+      }
       try {
         socket?.disconnect();
-      } catch {}
+      } catch (_e) {
+        // Ignore disconnect error
+      }
     };
 
     // 📅 SCHEDULED ROOM: Not started yet
@@ -673,9 +684,10 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     socket,
     roomId,
     inviteToken,
-    user?.id,
-    user?.name,
-    user?.avatar,
+    currentUser.id,
+    currentUser.name,
+    currentUser.avatar,
+    roomTitle,
     navigate,
     triggerReaction,
   ]);
@@ -767,12 +779,14 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     navigator.clipboard?.writeText(inviteUrl);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
-  }, [roomDetails?.inviteToken, roomId]);
+  }, [roomDetails, roomId]);
 
   const handleLeaveRoom = useCallback(() => {
     try {
       socket?.emit('webrtc:leave-room');
-    } catch {}
+    } catch (_e) {
+      // Ignore leave socket emit failure
+    }
     navigate('/dashboard');
   }, [socket, navigate]);
 
@@ -806,7 +820,9 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     try {
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
       screenStreamRef.current?.getTracks().forEach((t) => t.stop());
-    } catch {}
+    } catch (_e) {
+      // Ignore stream stop failure
+    }
     // 3. Persist termination in database via REST endpoint
     roomApi.endRoom(targetId).catch(() => {});
   }, [roomDetails?.roomCode, roomDetails?.id, roomId, socket]);

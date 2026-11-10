@@ -113,7 +113,9 @@ export default function ExcalidrawCanvas({
           },
         };
       }
-    } catch {}
+    } catch (_e) {
+      // Ignore corrupted or missing localStorage data
+    }
 
     if (isMockup) {
       return {
@@ -160,7 +162,9 @@ export default function ExcalidrawCanvas({
         excalidrawAPI.updateScene({ elements: data.elements });
         try {
           localStorage.setItem(storageKey, JSON.stringify({ elements: data.elements }));
-        } catch {}
+        } catch (_e) {
+          // Ignore storage quota errors
+        }
       }
     };
 
@@ -173,7 +177,9 @@ export default function ExcalidrawCanvas({
         excalidrawAPI.updateScene({ elements: data.elements });
         try {
           localStorage.setItem(storageKey, JSON.stringify({ elements: data.elements }));
-        } catch {}
+        } catch (_e) {
+          // Ignore storage quota errors
+        }
       }
     };
 
@@ -218,7 +224,7 @@ export default function ExcalidrawCanvas({
 
   // Handle local changes & broadcast to room participants
   const handleChange = useCallback(
-    (elements, appState, files) => {
+    (elements, _appState, _files) => {
       if (!elements || !Array.isArray(elements)) return;
 
       const currentSig = getElementsSignature(elements);
@@ -241,7 +247,9 @@ export default function ExcalidrawCanvas({
       saveTimeoutRef.current = setTimeout(() => {
         try {
           localStorage.setItem(storageKey, JSON.stringify({ elements }));
-        } catch {}
+        } catch (_e) {
+          // Ignore storage write failure
+        }
       }, 500);
 
       // Broadcast changes to connected room peers

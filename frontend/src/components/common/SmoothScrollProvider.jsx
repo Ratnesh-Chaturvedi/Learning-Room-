@@ -491,7 +491,7 @@ export default function SmoothScrollProvider({ children }) {
             originalDestroy?.();
           };
         }
-      } catch (err) {
+      } catch (_err) {
         // Fall back seamlessly to built-in high-performance Lenis engine
         if (isMounted) {
           instance = new BuiltinLenisEngine({

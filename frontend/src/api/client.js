@@ -56,7 +56,9 @@ apiClient.interceptors.response.use(
       try {
         localStorage.removeItem('learningroom_token');
         localStorage.removeItem('learningroom_user');
-      } catch {}
+      } catch (_e) {
+        // Ignore localStorage access failures
+      }
       
       const currentPath = window.location.pathname;
       if (currentPath !== '/' && currentPath !== '/login') {

@@ -4,9 +4,7 @@ import { userApi } from '../../api/user.api';
 import GoalsWidget from './GoalsWidget';
 import {
   goldMedal,
-  whiteboardPreview,
   burstLines,
-  ratneshAvatar,
 } from '../../assets';
 
 export default function ActivityView({ onOpenRoom, onOpenCreateRoom }) {

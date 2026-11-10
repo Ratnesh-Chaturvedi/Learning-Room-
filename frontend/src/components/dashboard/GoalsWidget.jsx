@@ -6,7 +6,6 @@ export default function GoalsWidget({ variant = 'todo', onOpenCreateRoom }) {
   const [isLoading, setIsLoading] = useState(true);
   const [newTitle, setNewTitle] = useState('');
   const [newTarget, setNewTarget] = useState(1);
-  const [newCategory, setNewCategory] = useState('STUDY');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'active' | 'completed'
   const [showAddForm, setShowAddForm] = useState(false);
@@ -23,8 +22,26 @@ export default function GoalsWidget({ variant = 'todo', onOpenCreateRoom }) {
   }, []);
 
   useEffect(() => {
-    fetchGoals();
-  }, [fetchGoals]);
+    let isMounted = true;
+    const loadData = async () => {
+      try {
+        const response = await goalApi.getGoals();
+        if (isMounted) {
+          setGoals(response.data?.goals || []);
+        }
+      } catch (err) {
+        console.error('[Goals] Failed to fetch goals:', err);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleAddGoal = async (e) => {
     if (e) e.preventDefault();
@@ -36,7 +53,7 @@ export default function GoalsWidget({ variant = 'todo', onOpenCreateRoom }) {
       const response = await goalApi.createGoal({
         title: trimmed,
         targetCount: Number(newTarget) || 1,
-        category: newCategory || 'STUDY',
+        category: 'STUDY',
       });
       const created = response.data?.goal;
       if (created) {

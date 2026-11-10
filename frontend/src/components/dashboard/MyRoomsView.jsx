@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { userApi } from '../../api/user.api';
 import { roomApi } from '../../api/room.api';
 import { useAuth } from '../../context/AuthContext';
-import { burstLines } from '../../assets';
 
 export default function MyRoomsView({ onOpenRoom, onOpenCreateRoom }) {
   const { user } = useAuth();
@@ -49,8 +48,45 @@ export default function MyRoomsView({ onOpenRoom, onOpenCreateRoom }) {
   }, [activeFilter, user?.id]);
 
   useEffect(() => {
-    fetchMyRooms();
-  }, [fetchMyRooms]);
+    let isMounted = true;
+    const loadRooms = async () => {
+      setIsLoading(true);
+      setErrorMessage('');
+      try {
+        const response = await userApi.getMyRooms();
+        const allRooms = response.data?.rooms || [];
+
+        let filtered = allRooms;
+        if (activeFilter === 'hosted') {
+          filtered = allRooms.filter((r) => r.creatorId === user?.id);
+        } else if (activeFilter === 'joined') {
+          filtered = allRooms.filter((r) => r.creatorId !== user?.id);
+        } else if (activeFilter === 'scheduled') {
+          filtered = allRooms.filter((r) => r.status === 'SCHEDULED');
+        } else if (activeFilter === 'archived') {
+          filtered = allRooms.filter((r) => r.status === 'ENDED');
+        }
+
+        if (isMounted) {
+          setRooms(filtered);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setErrorMessage(err.message || 'Failed to load your rooms.');
+          setRooms([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadRooms();
+    return () => {
+      isMounted = false;
+    };
+  }, [activeFilter, user?.id]);
 
   const handleCopyLink = (room) => {
     const origin = window.location.origin;
@@ -240,10 +276,12 @@ export default function MyRoomsView({ onOpenRoom, onOpenCreateRoom }) {
           </div>
           <div className="space-y-1">
             <h3 className="font-heading font-bold text-base text-[var(--color-text-primary)]">
-              No rooms found in "{filterTabs.find((t) => t.key === activeFilter)?.label}"
+              {errorMessage
+                ? 'Unable to load rooms'
+                : `No rooms found in "${filterTabs.find((t) => t.key === activeFilter)?.label}"`}
             </h3>
             <p className="text-xs text-[var(--color-text-secondary)] max-w-sm mx-auto">
-              Start an instant study room or schedule a collaboration session for later.
+              {errorMessage || 'Start an instant study room or schedule a collaboration session for later.'}
             </p>
           </div>
           <button

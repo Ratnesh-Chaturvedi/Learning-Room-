@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import RoomCard from '../room/RoomCard';
 import { roomApi } from '../../api/room.api';
 import {
   aboutUsCollab,
-  studyPlanNotebook,
   exploreRocket,
   burstLines,
 } from '../../assets';
@@ -47,7 +45,7 @@ export default function ExploreView({ onOpenRoom, onOpenCreateRoom }) {
         if (isMounted) {
           setRooms(response.data?.rooms || []);
         }
-      } catch (err) {
+      } catch (_err) {
         if (isMounted) {
           setErrorMessage('Failed to load active rooms. Please check your connection.');
           setRooms([]);
@@ -266,12 +264,12 @@ export default function ExploreView({ onOpenRoom, onOpenCreateRoom }) {
             </div>
             <div className="space-y-1">
               <h3 className="font-heading font-bold text-base text-[var(--color-text-primary)]">
-                No active rooms found in this category
+                {errorMessage ? 'Unable to load rooms' : 'No active rooms found in this category'}
               </h3>
               <p className="text-xs text-[var(--color-text-secondary)] max-w-sm mx-auto">
-                {searchQuery
+                {errorMessage || (searchQuery
                   ? `No rooms matched "${searchQuery}". Try a different keyword.`
-                  : 'Be the pioneer! Start the first collaborative study room for this topic.'}
+                  : 'Be the pioneer! Start the first collaborative study room for this topic.')}
               </p>
             </div>
             <button

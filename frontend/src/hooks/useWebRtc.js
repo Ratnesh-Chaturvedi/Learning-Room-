@@ -19,7 +19,7 @@ const ICE_SERVERS = {
  * - Remote peer audio and video stream mapping
  * - Real-time track mute/enable toggling without dropping peer connections
  */
-export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn, isEnabled = true }) {
+export function useWebRtc({ roomId, socket, user: _user, isMuted, isVideoOn, isEnabled = true }) {
   const [localStream, setLocalStream] = useState(null);
   const [remoteStreams, setRemoteStreams] = useState({}); // { [socketId]: MediaStream }
   const [mediaError, setMediaError] = useState(null);
@@ -30,6 +30,8 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn, isEnabled 
   const screenStreamRef = useRef(null);
   const peerConnectionsRef = useRef({}); // { [socketId]: RTCPeerConnection }
   const pendingCandidatesRef = useRef({}); // { [socketId]: RTCIceCandidate[] }
+  const initialVideoOnRef = useRef(isVideoOn);
+  const initialMutedRef = useRef(isMuted);
 
   // 1. Initialize Local Media Stream (Microphone always, Camera only if isVideoOn is true)
   useEffect(() => {
@@ -39,7 +41,7 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn, isEnabled 
     const startLocalMedia = async () => {
       try {
         let stream = null;
-        if (isVideoOn) {
+        if (initialVideoOnRef.current) {
           try {
             // Attempt Video + Audio
             stream = await navigator.mediaDevices.getUserMedia({
@@ -87,7 +89,7 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn, isEnabled 
 
         // Apply initial mute/video states
         stream.getAudioTracks().forEach((t) => {
-          t.enabled = !isMuted;
+          t.enabled = !initialMutedRef.current;
         });
 
         localStreamRef.current = stream;
@@ -117,7 +119,9 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn, isEnabled 
       Object.values(peerConnectionsRef.current).forEach((pc) => {
         try {
           pc.close();
-        } catch {}
+        } catch (_e) {
+          // Ignore connection closing errors on teardown
+        }
       });
       peerConnectionsRef.current = {};
       pendingCandidatesRef.current = {};
@@ -441,7 +445,11 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn, isEnabled 
       // 'all' is emitted when host terminates the room — close every peer connection
       if (socketId === 'all') {
         Object.values(peerConnectionsRef.current).forEach((pc) => {
-          try { pc.close(); } catch {}
+          try {
+            pc.close();
+          } catch (_e) {
+            // Ignore close error
+          }
         });
         peerConnectionsRef.current = {};
         pendingCandidatesRef.current = {};
@@ -451,7 +459,9 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn, isEnabled 
       if (peerConnectionsRef.current[socketId]) {
         try {
           peerConnectionsRef.current[socketId].close();
-        } catch {}
+        } catch (_e) {
+          // Ignore close error
+        }
         delete peerConnectionsRef.current[socketId];
       }
       delete pendingCandidatesRef.current[socketId];
@@ -534,7 +544,9 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn, isEnabled 
             if (videoT.direction !== 'sendrecv') {
               videoT.direction = 'sendrecv';
             }
-          } catch {}
+          } catch (_e) {
+            // Ignore transceiver direction update error
+          }
           if (videoT.sender) {
             videoT.sender.replaceTrack(screenTrack).catch((err) => {
               console.warn('[WebRTC] Error replacing with screen track:', targetSocketId, err);

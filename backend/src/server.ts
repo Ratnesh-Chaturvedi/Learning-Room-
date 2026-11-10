@@ -12,7 +12,23 @@ const server = http.createServer(app);
 export const io = new SocketIOServer(server, {
   cors: {
     origin: (requestOrigin, callback) => {
-      callback(null, true);
+      if (!requestOrigin || env.NODE_ENV !== "production") {
+        return callback(null, true);
+      }
+      const allowedOrigins = [
+        env.CLIENT_URL,
+        "http://localhost:3000",
+        "http://localhost:5173",
+      ].filter(Boolean);
+
+      if (
+        allowedOrigins.includes(requestOrigin) ||
+        requestOrigin.includes("localhost") ||
+        requestOrigin.includes("127.0.0.1")
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error("Socket connection rejected by CORS"), false);
     },
     credentials: true,
   },

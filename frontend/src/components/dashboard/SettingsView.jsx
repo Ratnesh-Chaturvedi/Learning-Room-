@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { userApi } from '../../api/user.api';
@@ -16,11 +16,13 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Sync state if user changes in context
-  useEffect(() => {
+  // Sync state during render if user changes in context (React 19 recommended pattern)
+  const [prevUser, setPrevUser] = useState(user);
+  if (user !== prevUser) {
+    setPrevUser(user);
     if (user?.name) setFullName(user.name);
     if (user?.avatar) setAvatarPreview(user.avatar);
-  }, [user]);
+  }
 
   // File Input Ref for image upload
   const fileInputRef = useRef(null);

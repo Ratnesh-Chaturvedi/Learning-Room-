@@ -248,18 +248,21 @@ export default function VideoGalleryModal(props = {}) {
     };
   };
 
-  const handleMouseMove = (e) => {
-    if (!isDragging.current || isFullscreen) return;
-    const maxX = Math.max(10, window.innerWidth - (isMinimized ? 280 : 540));
-    const maxY = Math.max(50, window.innerHeight - (isMinimized ? 80 : 380));
-    const nextX = Math.min(Math.max(10, e.clientX - dragOffset.current.x), maxX);
-    const nextY = Math.min(Math.max(50, e.clientY - dragOffset.current.y), maxY);
-    setPosition({ x: nextX, y: nextY });
-  };
+  const handleMouseMove = useCallback(
+    (e) => {
+      if (!isDragging.current || isFullscreen) return;
+      const maxX = Math.max(10, window.innerWidth - (isMinimized ? 280 : 540));
+      const maxY = Math.max(50, window.innerHeight - (isMinimized ? 80 : 380));
+      const nextX = Math.min(Math.max(10, e.clientX - dragOffset.current.x), maxX);
+      const nextY = Math.min(Math.max(50, e.clientY - dragOffset.current.y), maxY);
+      setPosition({ x: nextX, y: nextY });
+    },
+    [isFullscreen, isMinimized]
+  );
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     isDragging.current = false;
-  };
+  }, []);
 
   useEffect(() => {
     window.addEventListener('mousemove', handleMouseMove);
@@ -268,7 +271,7 @@ export default function VideoGalleryModal(props = {}) {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, []);
+  }, [handleMouseMove, handleMouseUp]);
 
   if (!isOpen) return null;
 
