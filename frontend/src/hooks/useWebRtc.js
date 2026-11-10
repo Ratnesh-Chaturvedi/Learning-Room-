@@ -204,9 +204,13 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn }) {
     const videoTrack = localStream.getVideoTracks()[0];
 
     Object.entries(peerConnectionsRef.current).forEach(([targetSocketId, pc]) => {
+      // Transceivers are always added in order: index 0 = audio, index 1 = video.
+      // Using index lookup is safe on both caller and answerer because addTransceiver
+      // was called audio-first. Avoid t.receiver.track.kind — it is null on the
+      // caller side before remote SDP is applied.
       const transceivers = pc.getTransceivers();
-      const audioT = transceivers.find((t) => t.receiver.track.kind === 'audio');
-      const videoT = transceivers.find((t) => t.receiver.track.kind === 'video');
+      const audioT = transceivers[0];
+      const videoT = transceivers[1];
 
       if (audioT && audioTrack) {
         audioT.sender.replaceTrack(audioTrack).catch((err) => {
@@ -244,9 +248,10 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn }) {
       if (localStreamRef.current) {
         const audioTrack = localStreamRef.current.getAudioTracks()[0];
         const videoTrack = localStreamRef.current.getVideoTracks()[0];
+        // Index 0 = audio transceiver, index 1 = video transceiver (matches addTransceiver order above)
         const transceivers = pc.getTransceivers();
-        const audioT = transceivers.find((t) => t.receiver.track.kind === 'audio');
-        const videoT = transceivers.find((t) => t.receiver.track.kind === 'video');
+        const audioT = transceivers[0];
+        const videoT = transceivers[1];
 
         if (audioT && audioTrack) {
           audioT.sender.replaceTrack(audioTrack).catch(() => {});
@@ -267,24 +272,22 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn }) {
       };
 
       // Handle incoming remote audio/video tracks
+      // Use event.streams[0] directly — creating a snapshot with new MediaStream(...)
+      // breaks React re-renders because the object reference never changes on subsequent tracks.
       pc.ontrack = (event) => {
-        const stream = event.streams[0] || new MediaStream([event.track]);
-        setRemoteStreams((prev) => {
-          const currentStream = prev[targetSocketId];
-          if (currentStream) {
-            if (!currentStream.getTracks().some((t) => t.id === event.track.id)) {
-              currentStream.addTrack(event.track);
-            }
-            return {
-              ...prev,
-              [targetSocketId]: new MediaStream(currentStream.getTracks()),
-            };
-          }
-          return {
+        const incomingStream = event.streams && event.streams[0];
+        if (!incomingStream) {
+          // Fallback: wrap single track when stream isn't provided (rare)
+          setRemoteStreams((prev) => ({
             ...prev,
-            [targetSocketId]: new MediaStream(stream.getTracks()),
-          };
-        });
+            [targetSocketId]: prev[targetSocketId] || new MediaStream([event.track]),
+          }));
+          return;
+        }
+        setRemoteStreams((prev) => ({
+          ...prev,
+          [targetSocketId]: incomingStream,
+        }));
       };
 
       // Handle connection state changes
@@ -345,9 +348,11 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn }) {
         if (localStreamRef.current) {
           const audioTrack = localStreamRef.current.getAudioTracks()[0];
           const videoTrack = localStreamRef.current.getVideoTracks()[0];
+          // Use index because on the answerer side receiver tracks are also null
+          // until after setRemoteDescription — using index is always safe here.
           const transceivers = pc.getTransceivers();
-          const audioT = transceivers.find((t) => t.receiver.track.kind === 'audio');
-          const videoT = transceivers.find((t) => t.receiver.track.kind === 'video');
+          const audioT = transceivers[0];
+          const videoT = transceivers[1];
           if (audioT && audioTrack) audioT.sender.replaceTrack(audioTrack).catch(() => {});
           if (videoT && videoTrack) videoT.sender.replaceTrack(videoTrack).catch(() => {});
         }
@@ -418,6 +423,16 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn }) {
 
     // E. Handle peer disconnecting
     const handlePeerLeft = ({ socketId }) => {
+      // 'all' is emitted when host terminates the room — close every peer connection
+      if (socketId === 'all') {
+        Object.values(peerConnectionsRef.current).forEach((pc) => {
+          try { pc.close(); } catch {}
+        });
+        peerConnectionsRef.current = {};
+        pendingCandidatesRef.current = {};
+        setRemoteStreams({});
+        return;
+      }
       if (peerConnectionsRef.current[socketId]) {
         try {
           peerConnectionsRef.current[socketId].close();
@@ -461,9 +476,8 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn }) {
     // Restore local camera video track on all peer connections
     const cameraTrack = localStreamRef.current?.getVideoTracks()[0] || null;
     Object.entries(peerConnectionsRef.current).forEach(([targetSocketId, pc]) => {
-      const videoSender =
-        pc.getSenders().find((s) => s.track && s.track.kind === 'video') ||
-        pc.getTransceivers().find((t) => t.receiver.track.kind === 'video')?.sender;
+      // Index 1 is always the video transceiver (audio was added first)
+      const videoSender = pc.getTransceivers()[1]?.sender;
       if (videoSender && cameraTrack) {
         videoSender.replaceTrack(cameraTrack).catch((err) => {
           console.warn('[WebRTC] Error restoring camera track:', targetSocketId, err);
@@ -498,9 +512,8 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn }) {
 
       // Replace video track with screen track across all active peer connections
       Object.entries(peerConnectionsRef.current).forEach(([targetSocketId, pc]) => {
-        const videoSender =
-          pc.getSenders().find((s) => s.track && s.track.kind === 'video') ||
-          pc.getTransceivers().find((t) => t.receiver.track.kind === 'video')?.sender;
+        // Index 1 is always the video transceiver (audio was added first at index 0)
+        const videoSender = pc.getTransceivers()[1]?.sender;
         if (videoSender) {
           videoSender.replaceTrack(screenTrack).catch((err) => {
             console.warn('[WebRTC] Error replacing with screen track:', targetSocketId, err);

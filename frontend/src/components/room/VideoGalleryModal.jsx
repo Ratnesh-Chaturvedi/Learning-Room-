@@ -17,16 +17,25 @@ function PeerVideoTile({
   const videoRef = useRef(null);
 
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
+    if (!videoRef.current) return;
+    // Always reassign srcObject so the video element picks up the latest stream reference
+    if (stream) {
+      if (videoRef.current.srcObject !== stream) {
+        videoRef.current.srcObject = stream;
+      }
       videoRef.current.play().catch(() => {});
+    } else {
+      videoRef.current.srcObject = null;
     }
   }, [stream]);
 
+  // A video track counts as displayable when it exists and is not ended.
+  // Avoid checking readyState === 'live' — remote tracks may be in 'muted' or other
+  // transient states right after the ICE connection is established.
   const hasVideoTrack = Boolean(
     stream &&
     stream.getVideoTracks().length > 0 &&
-    stream.getVideoTracks().some((t) => t.enabled && t.readyState === 'live') &&
+    stream.getVideoTracks().some((t) => t.enabled && t.readyState !== 'ended') &&
     (!isVideoOff || isScreenSharing)
   );
 

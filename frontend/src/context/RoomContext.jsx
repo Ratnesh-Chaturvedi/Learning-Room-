@@ -245,6 +245,13 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     isVideoOn,
   });
 
+  // Keep refs to latest stream values so socket event handlers (closed over at mount)
+  // can stop tracks on room termination without stale closure bugs.
+  const localStreamRef = useRef(localStream);
+  const screenStreamRef = useRef(screenStream);
+  useEffect(() => { localStreamRef.current = localStream; }, [localStream]);
+  useEffect(() => { screenStreamRef.current = screenStream; }, [screenStream]);
+
   // Floating reactions trigger
   const triggerReaction = useCallback(
     (emoji, broadcast = true) => {
@@ -302,8 +309,13 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
 
     // 🚫 KNOCK DENIED: Host rejected admission
     const handleKnockDenied = (data) => {
-      alert(data.message || 'The host has denied your request to join this meeting.');
-      navigate('/dashboard');
+      // Use non-blocking notification then navigate
+      setTerminationInfo({
+        reason: data.message || 'The host has denied your request to join this meeting.',
+        endedAt: new Date().toISOString(),
+      });
+      setIsRoomTerminated(true);
+      setTimeout(() => navigate('/dashboard'), 2500);
     };
 
     // 🔔 HOST ALERT: Incoming knock request from a waiting guest
@@ -365,8 +377,13 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
 
     // 🚪 KICKED BY HOST
     const handleKicked = (data) => {
-      alert(`Meeting Notice: ${data?.reason || 'You were removed from this meeting by the host.'}`);
-      navigate('/dashboard');
+      setTerminationInfo({
+        reason: data?.reason || 'You were removed from this meeting by the host.',
+        endedAt: new Date().toISOString(),
+      });
+      setIsRoomTerminated(true);
+      // Let the terminated overlay render, then redirect after short delay
+      setTimeout(() => navigate('/dashboard'), 3000);
     };
 
     // 💬 REAL-TIME CHAT: Map real sender names and dynamic avatars
@@ -417,9 +434,10 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
         endedAt: data?.endedAt || new Date().toISOString(),
       });
       setPeers([]);
+      // Use refs to get current stream values — the socket handler closes over mount-time values
       try {
-        localStream?.getTracks().forEach((t) => t.stop());
-        screenStream?.getTracks().forEach((t) => t.stop());
+        localStreamRef.current?.getTracks().forEach((t) => t.stop());
+        screenStreamRef.current?.getTracks().forEach((t) => t.stop());
       } catch {}
     };
 
@@ -579,28 +597,22 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
   // Host kicks a participant from the room
   const handleKickPeer = useCallback(
     (targetSocketId, peerName = 'Participant') => {
-      if (!isHost) {
-        alert('Only the room host can remove participants.');
-        return;
-      }
-      if (window.confirm(`Are you sure you want to remove ${peerName} from this meeting?`)) {
-        socket?.emit('room:kick-peer', {
-          roomId,
-          targetSocketId,
-          reason: 'Removed from meeting by the host.',
-        });
-      }
+      if (!isHost) return;
+      // Emit kick immediately — no blocking confirm dialog
+      socket?.emit('room:kick-peer', {
+        roomId,
+        targetSocketId,
+        reason: `${peerName} was removed from the meeting by the host.`,
+      });
     },
     [isHost, socket, roomId]
   );
 
   // Host terminates room for all participants
   const handleEndRoomForAll = useCallback(async () => {
-    if (!window.confirm('Are you sure you want to end this meeting for everyone? All participants will be disconnected immediately.')) {
-      return;
-    }
+    // No blocking confirm — host button click is intentional
     const targetId = roomDetails?.roomCode || roomDetails?.id || roomId;
-    // 1. Immediately emit socket end-session for 0ms eviction across all clients
+    // 1. Immediately emit socket end-session for instant eviction across all clients
     socket?.emit('room:end-session', { roomId: targetId });
     // 2. Instantly update local state to terminated
     setIsRoomTerminated(true);
@@ -610,8 +622,8 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     });
     setPeers([]);
     try {
-      localStream?.getTracks().forEach((t) => t.stop());
-      screenStream?.getTracks().forEach((t) => t.stop());
+      localStreamRef.current?.getTracks().forEach((t) => t.stop());
+      screenStreamRef.current?.getTracks().forEach((t) => t.stop());
     } catch {}
     // 3. Persist termination in database via REST endpoint
     roomApi.endRoom(targetId).catch(() => {});
