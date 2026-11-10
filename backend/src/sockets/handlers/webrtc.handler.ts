@@ -141,9 +141,19 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
       }
     }
 
-    // Attach canonical IDs to socket data for fast cross-channel routing
+    // Attach canonical IDs and user identity to socket data for fast cross-channel routing
     socket.data.canonicalId = canonicalId;
     socket.data.canonicalCode = canonicalCode;
+    socket.data.userId = userId;
+
+    // Check if user was previously kicked/banned from this room
+    if (roomStateManager.isUserBanned(canonicalId, userId, socket.id)) {
+      socket.emit("room:kicked", {
+        roomId,
+        reason: "You were removed from this meeting by the host and cannot rejoin.",
+      });
+      return;
+    }
 
     // 🔒 PRIVATE ROOM GATEWAY: Knock / Waiting Room logic
     if (isPrivate && !isHost && !isAlreadyParticipant && !hasValidInvite) {
@@ -505,8 +515,8 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
       const canonicalCode =
         socket.data?.canonicalCode || meta?.roomCode || canonicalId;
 
-      // Verify host permission (sender is room creator or in socket.data.user)
-      const senderUserId = socket.data?.user?.id;
+      // Verify host permission (sender is room creator, socket.data.user, or socket.data.userId)
+      const senderUserId = socket.data?.user?.id || socket.data?.userId;
       const isHost = meta
         ? meta.creatorId === senderUserId || meta.creatorId === socket.data?.user?.id
         : true;
@@ -522,7 +532,13 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
       const targetPeer = roomStateManager.getPeer(canonicalId, targetSocketId);
       const peerName = targetPeer?.name || "A participant";
 
-      // 1. Notify target peer that they were removed
+      // 1. Record ban so kicked user cannot rejoin this session
+      const bannedIdentifier = targetUserId || targetPeer?.userId || targetSocketId;
+      roomStateManager.banUser(canonicalId, bannedIdentifier);
+      if (targetPeer?.userId) roomStateManager.banUser(canonicalId, targetPeer.userId);
+      roomStateManager.banUser(canonicalId, targetSocketId);
+
+      // 2. Notify target peer that they were removed
       const kickReason =
         reason || "You were removed from this meeting by the host.";
       if (targetSocket) {
@@ -539,10 +555,10 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
         }
       }
 
-      // 2. Remove peer from in-memory state manager
+      // 3. Remove peer from in-memory state manager
       roomStateManager.removePeer(targetSocketId);
 
-      // 3. Notify remaining participants across all channel aliases
+      // 4. Notify remaining participants across all channel aliases
       const targetRooms = Array.from(
         new Set([canonicalId, canonicalCode, roomId].filter(Boolean))
       );

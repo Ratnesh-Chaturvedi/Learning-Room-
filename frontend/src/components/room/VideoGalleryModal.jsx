@@ -15,18 +15,50 @@ function PeerVideoTile({
   isSpotlight = false,
 }) {
   const videoRef = useRef(null);
+  const [, setTrackVersion] = useState(0);
+
+  // Re-render immediately when remote or local video track state changes (mute, unmute, addtrack)
+  useEffect(() => {
+    if (!stream) return;
+    const update = () => setTrackVersion((v) => v + 1);
+
+    stream.addEventListener('addtrack', update);
+    stream.addEventListener('removetrack', update);
+    const tracks = stream.getTracks();
+    tracks.forEach((t) => {
+      t.addEventListener('mute', update);
+      t.addEventListener('unmute', update);
+      t.addEventListener('ended', update);
+    });
+
+    return () => {
+      stream.removeEventListener('addtrack', update);
+      stream.removeEventListener('removetrack', update);
+      tracks.forEach((t) => {
+        t.removeEventListener('mute', update);
+        t.removeEventListener('unmute', update);
+        t.removeEventListener('ended', update);
+      });
+    };
+  }, [stream]);
 
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
+    if (!videoRef.current) return;
+    if (stream) {
+      if (videoRef.current.srcObject !== stream) {
+        videoRef.current.srcObject = stream;
+      }
       videoRef.current.play().catch(() => {});
+    } else {
+      videoRef.current.srcObject = null;
     }
   }, [stream]);
 
+  // A video track counts as displayable when it exists and is not ended.
   const hasVideoTrack = Boolean(
     stream &&
     stream.getVideoTracks().length > 0 &&
-    stream.getVideoTracks().some((t) => t.enabled && t.readyState === 'live') &&
+    stream.getVideoTracks().some((t) => t.enabled && t.readyState !== 'ended') &&
     (!isVideoOff || isScreenSharing)
   );
 
