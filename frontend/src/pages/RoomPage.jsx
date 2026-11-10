@@ -244,7 +244,7 @@ function RoomView() {
       )}
 
       {/* 0. Permanent Background Audio for Remote Peers (Plays even if VideoGalleryModal is closed) */}
-      <div className="hidden pointer-events-none" aria-hidden="true">
+      <div className="fixed -top-[9999px] -left-[9999px] w-px h-px opacity-0 pointer-events-none" aria-hidden="true">
         {Object.entries(remoteStreams || {}).map(([peerSocketId, stream]) => (
           <RemoteAudioTrack key={peerSocketId} stream={stream} />
         ))}

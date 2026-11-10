@@ -332,14 +332,20 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     // 👥 PEER DISCOVERY & SYNCHRONIZATION
     const handleRoomPeers = (data) => {
       setIsWaiting(false);
-      const filtered = (data?.peers || []).filter((p) => p.socketId !== socket.id);
+      // Filter out self by socket ID and by user ID (prevents ghost self tile on reconnect/refresh)
+      const myId = currentUser?.id;
+      const filtered = (data?.peers || []).filter(
+        (p) => p.socketId !== socket.id && (!myId || p.userId !== myId)
+      );
       setPeers(filtered);
     };
 
     const handlePeerJoined = (newPeer) => {
       if (!newPeer || newPeer.socketId === socket.id) return;
+      const myId = currentUser?.id;
+      if (myId && newPeer.userId === myId) return; // Prevent ghost self duplicate
       setPeers((prev) => {
-        if (prev.some((p) => p.socketId === newPeer.socketId)) return prev;
+        if (prev.some((p) => p.socketId === newPeer.socketId || (myId && p.userId === newPeer.userId))) return prev;
         return [...prev, newPeer];
       });
     };

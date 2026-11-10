@@ -73,7 +73,7 @@ function PeerVideoTile({
         ref={videoRef}
         autoPlay
         playsInline
-        muted={isLocal} // Always mute local video playback to avoid audio echo feedback loop
+        muted={true} // Dedicated <RemoteAudioTrack> renders audio without echo or browser autoplay blocks
         className={`w-full h-full ${
           isScreenSharing ? 'object-contain bg-black' : 'object-cover'
         } transition-opacity duration-200 ${
@@ -386,11 +386,11 @@ export default function VideoGalleryModal(props = {}) {
               isFullscreen ? 'max-h-[calc(100vh-130px)] items-center' : 'max-h-[60vh]'
             }`}
           >
-            {/* Screen Share Spotlight Layout in Fullscreen */}
-            {isFullscreen && activeScreenSharer ? (
-              <div className="w-full h-full flex flex-col lg:flex-row gap-4 items-center justify-center">
+            {/* Screen Share Spotlight Layout */}
+            {activeScreenSharer ? (
+              <div className={`w-full h-full flex flex-col ${isFullscreen ? 'lg:flex-row' : ''} gap-3 sm:gap-4 items-center justify-center`}>
                 {/* Large Screen Share Center Stage */}
-                <div className="flex-1 w-full h-full min-h-[50vh] flex items-center justify-center">
+                <div className={`w-full ${isFullscreen ? 'flex-1 h-full min-h-[50vh]' : 'aspect-video max-h-[42vh]'} flex items-center justify-center`}>
                   <PeerVideoTile
                     isLocal={activeScreenSharer.isLocal}
                     peer={activeScreenSharer.peer}
@@ -402,26 +402,29 @@ export default function VideoGalleryModal(props = {}) {
                   />
                 </div>
 
-                {/* Participant Cameras Side Strip */}
-                <div className="w-full lg:w-72 flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto max-h-[80vh] shrink-0">
-                  <PeerVideoTile
-                    isLocal={true}
-                    peer={{ name: currentUser?.name || 'You', avatar: currentUser?.avatar }}
-                    stream={localStream}
-                    isAudioMuted={isMuted}
-                    isVideoOff={!isVideoOn}
-                    isScreenSharing={false}
-                  />
-                  {peers.map((peer) => (
+                {/* Participant Cameras Strip */}
+                <div className={`w-full ${isFullscreen ? 'lg:w-72 flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto max-h-[80vh]' : 'flex flex-row gap-2 overflow-x-auto py-1'} shrink-0`}>
+                  <div className={isFullscreen ? 'w-full' : 'w-32 sm:w-36 shrink-0'}>
                     <PeerVideoTile
-                      key={peer.socketId}
-                      isLocal={false}
-                      peer={peer}
-                      stream={remoteStreams[peer.socketId]}
-                      isAudioMuted={peer.isAudioMuted}
-                      isVideoOff={peer.isVideoOff}
+                      isLocal={true}
+                      peer={{ name: currentUser?.name || 'You', avatar: currentUser?.avatar }}
+                      stream={localStream}
+                      isAudioMuted={isMuted}
+                      isVideoOff={!isVideoOn}
                       isScreenSharing={false}
                     />
+                  </div>
+                  {peers.map((peer) => (
+                    <div key={peer.socketId} className={isFullscreen ? 'w-full' : 'w-32 sm:w-36 shrink-0'}>
+                      <PeerVideoTile
+                        isLocal={false}
+                        peer={peer}
+                        stream={remoteStreams[peer.socketId]}
+                        isAudioMuted={peer.isAudioMuted}
+                        isVideoOff={peer.isVideoOff}
+                        isScreenSharing={false}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>

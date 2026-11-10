@@ -218,8 +218,10 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
         .catch(() => {});
     }
 
-    // Reply to joining peer with list of existing peers (excluding self)
-    const existingPeersForClient = existingPeers.filter((p) => p.socketId !== socket.id);
+    // Reply to joining peer with list of existing peers (excluding self by socketId and userId)
+    const existingPeersForClient = existingPeers.filter(
+      (p) => p.socketId !== socket.id && (!userId || p.userId !== userId)
+    );
     socket.emit("webrtc:room-peers", {
       self: peer,
       peers: existingPeersForClient,
@@ -237,9 +239,7 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
         ].filter(Boolean)
       )
     );
-    announceRooms.forEach((r) => {
-      socket.to(r).emit("webrtc:peer-joined", peer);
-    });
+    socket.to(announceRooms).emit("webrtc:peer-joined", peer);
 
     // Deliver chat history from canonical ID
     const chatHistory = roomStateManager.getChatHistory(canonicalId);
