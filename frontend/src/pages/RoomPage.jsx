@@ -66,6 +66,21 @@ class RoomErrorBoundary extends React.Component {
   }
 }
 
+function RemoteAudioTrack({ stream }) {
+  const audioRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const el = audioRef.current;
+    if (!el || !stream) return;
+    if (el.srcObject !== stream) {
+      el.srcObject = stream;
+    }
+    el.play().catch(() => {});
+  }, [stream]);
+
+  return <audio ref={audioRef} autoPlay playsInline />;
+}
+
 function RoomView() {
   const navigate = useNavigate();
   const {
@@ -73,6 +88,7 @@ function RoomView() {
     socket,
     currentUser,
     peers,
+    remoteStreams,
     isWaiting,
     waitingMessage,
     knockRequests,
@@ -226,6 +242,13 @@ function RoomView() {
           </div>
         </div>
       )}
+
+      {/* 0. Permanent Background Audio for Remote Peers (Plays even if VideoGalleryModal is closed) */}
+      <div className="hidden pointer-events-none" aria-hidden="true">
+        {Object.entries(remoteStreams || {}).map(([peerSocketId, stream]) => (
+          <RemoteAudioTrack key={peerSocketId} stream={stream} />
+        ))}
+      </div>
 
       {/* 1. Immersive Top Room Header (Context-connected) */}
       <RoomHeader />

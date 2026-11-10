@@ -15,10 +15,35 @@ function PeerVideoTile({
   isSpotlight = false,
 }) {
   const videoRef = useRef(null);
+  const [, setTrackVersion] = useState(0);
+
+  // Re-render immediately when remote or local video track state changes (mute, unmute, addtrack)
+  useEffect(() => {
+    if (!stream) return;
+    const update = () => setTrackVersion((v) => v + 1);
+
+    stream.addEventListener('addtrack', update);
+    stream.addEventListener('removetrack', update);
+    const tracks = stream.getTracks();
+    tracks.forEach((t) => {
+      t.addEventListener('mute', update);
+      t.addEventListener('unmute', update);
+      t.addEventListener('ended', update);
+    });
+
+    return () => {
+      stream.removeEventListener('addtrack', update);
+      stream.removeEventListener('removetrack', update);
+      tracks.forEach((t) => {
+        t.removeEventListener('mute', update);
+        t.removeEventListener('unmute', update);
+        t.removeEventListener('ended', update);
+      });
+    };
+  }, [stream]);
 
   useEffect(() => {
     if (!videoRef.current) return;
-    // Always reassign srcObject so the video element picks up the latest stream reference
     if (stream) {
       if (videoRef.current.srcObject !== stream) {
         videoRef.current.srcObject = stream;
@@ -30,8 +55,6 @@ function PeerVideoTile({
   }, [stream]);
 
   // A video track counts as displayable when it exists and is not ended.
-  // Avoid checking readyState === 'live' — remote tracks may be in 'muted' or other
-  // transient states right after the ICE connection is established.
   const hasVideoTrack = Boolean(
     stream &&
     stream.getVideoTracks().length > 0 &&

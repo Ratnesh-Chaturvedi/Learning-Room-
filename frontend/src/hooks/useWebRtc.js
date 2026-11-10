@@ -5,6 +5,9 @@ const ICE_SERVERS = {
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+    { urls: 'stun:stun.services.mozilla.com' },
   ],
 };
 
@@ -149,8 +152,8 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn }) {
             // If not screen sharing, replace video sender with null across all active peer connections
             if (!screenStreamRef.current) {
               Object.values(peerConnectionsRef.current).forEach((pc) => {
-                const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
-                const videoT = transceivers.find((t) => t.receiver?.track?.kind === 'video' || t.sender?.track?.kind === 'video');
+                // Index 1 is always the video transceiver (audio is index 0)
+                const videoT = pc.getTransceivers ? pc.getTransceivers()[1] : null;
                 if (videoT?.sender) {
                   videoT.sender.replaceTrack(null).catch(() => {});
                 }
@@ -175,8 +178,8 @@ export function useWebRtc({ roomId, socket, user, isMuted, isVideoOn }) {
                 stream.addTrack(newVideoTrack);
                 if (!screenStreamRef.current) {
                   Object.values(peerConnectionsRef.current).forEach((pc) => {
-                    const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
-                    const videoT = transceivers.find((t) => t.receiver?.track?.kind === 'video' || t.sender?.track?.kind === 'video');
+                    // Index 1 is always the video transceiver (audio is index 0)
+                    const videoT = pc.getTransceivers ? pc.getTransceivers()[1] : null;
                     if (videoT?.sender) {
                       videoT.sender.replaceTrack(newVideoTrack).catch(() => {});
                     }

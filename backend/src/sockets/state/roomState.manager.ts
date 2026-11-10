@@ -26,6 +26,9 @@ class RoomStateManager {
   // Set of permanently ended room IDs and codes
   private endedRooms: Set<string> = new Set();
 
+  // Map of canonicalRoomId -> Set of kicked/banned user identifiers (userId or socketId)
+  private bannedUsers: Map<string, Set<string>> = new Map();
+
   /**
    * Sets room metadata into in-memory cache.
    */
@@ -382,6 +385,48 @@ class RoomStateManager {
   public getCanvasScene(roomId: string): unknown[] {
     const key = this.getCanonicalKey(roomId);
     return this.canvasScenes.get(key) || [];
+  }
+
+  /**
+   * Records a banned/kicked user for a room to prevent them from rejoining.
+   */
+  public banUser(roomId: string, userIdentifier: string): void {
+    if (!roomId || !userIdentifier) return;
+    const canonicalKey = this.getCanonicalKey(roomId);
+    if (!this.bannedUsers.has(canonicalKey)) {
+      this.bannedUsers.set(canonicalKey, new Set());
+    }
+    this.bannedUsers.get(canonicalKey)!.add(userIdentifier);
+    const meta = this.getRoomMeta(roomId);
+    if (meta?.roomCode) {
+      const codeKey = meta.roomCode.toUpperCase();
+      if (!this.bannedUsers.has(codeKey)) {
+        this.bannedUsers.set(codeKey, new Set());
+      }
+      this.bannedUsers.get(codeKey)!.add(userIdentifier);
+    }
+  }
+
+  /**
+   * Checks whether a user has been kicked from a room.
+   */
+  public isUserBanned(roomId: string, userId?: string, socketId?: string): boolean {
+    if (!roomId) return false;
+    const canonicalKey = this.getCanonicalKey(roomId);
+    const banned = this.bannedUsers.get(canonicalKey);
+    if (banned) {
+      if (userId && banned.has(userId)) return true;
+      if (socketId && banned.has(socketId)) return true;
+    }
+    const meta = this.getRoomMeta(roomId);
+    if (meta?.roomCode) {
+      const codeBanned = this.bannedUsers.get(meta.roomCode.toUpperCase());
+      if (codeBanned) {
+        if (userId && codeBanned.has(userId)) return true;
+        if (socketId && codeBanned.has(socketId)) return true;
+      }
+    }
+    return false;
   }
 }
 

@@ -179,8 +179,11 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
         const room = res.data?.room || res.data?.data || res.data;
         if (isMounted && room && (room.id || room.roomCode)) {
           if (room.status === 'ENDED') {
-            alert('This room session has already been ended by the host.');
-            navigate('/dashboard');
+            setIsRoomTerminated(true);
+            setTerminationInfo({
+              reason: 'This room session has already been ended by the host.',
+              endedAt: room.endedAt || new Date().toISOString(),
+            });
             return;
           }
           setRoomDetails(room);
@@ -382,7 +385,14 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
         endedAt: new Date().toISOString(),
       });
       setIsRoomTerminated(true);
-      // Let the terminated overlay render, then redirect after short delay
+      setPeers([]);
+      try {
+        localStreamRef.current?.getTracks().forEach((t) => t.stop());
+        screenStreamRef.current?.getTracks().forEach((t) => t.stop());
+      } catch {}
+      try {
+        socket?.disconnect();
+      } catch {}
       setTimeout(() => navigate('/dashboard'), 3000);
     };
 
@@ -438,6 +448,9 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       try {
         localStreamRef.current?.getTracks().forEach((t) => t.stop());
         screenStreamRef.current?.getTracks().forEach((t) => t.stop());
+      } catch {}
+      try {
+        socket?.disconnect();
       } catch {}
     };
 
