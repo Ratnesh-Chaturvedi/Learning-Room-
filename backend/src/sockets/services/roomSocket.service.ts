@@ -57,6 +57,18 @@ export const broadcastRoomUpdated = (
   roomCode: string,
   updatedData: unknown
 ) => {
+  if (updatedData && typeof updatedData === "object" && "status" in updatedData) {
+    const newStatus = (updatedData as { status?: "ACTIVE" | "SCHEDULED" | "ENDED" }).status;
+    if (newStatus) {
+      const cached = roomStateManager.getRoomMeta(roomId) || roomStateManager.getRoomMeta(roomCode);
+      if (cached) {
+        cached.status = newStatus;
+        roomStateManager.setRoomMeta(roomId, cached);
+        if (roomCode) roomStateManager.setRoomMeta(roomCode, cached);
+      }
+    }
+  }
+
   if (!socketServerInstance) return;
 
   socketServerInstance.to(roomId).emit("room:updated", updatedData);
@@ -64,13 +76,14 @@ export const broadcastRoomUpdated = (
 };
 
 /**
- * Periodic background task that auto-terminates rooms when their scheduledEndTime is reached.
+ * Periodic background task that auto-terminates rooms when their scheduledEndTime is reached
+ * and auto-activates scheduled rooms when their scheduledAt start time is reached.
  */
 export const checkAndTerminateExpiredRooms = async () => {
   try {
     const now = new Date();
 
-    // Find all active or scheduled rooms where scheduledEndTime has passed
+    // 1. Auto-terminate expired rooms
     const expiredRooms = await prisma.room.findMany({
       where: {
         status: { in: [RoomStatus.ACTIVE, RoomStatus.SCHEDULED] },
@@ -102,8 +115,30 @@ export const checkAndTerminateExpiredRooms = async () => {
         duration
       );
     }
+
+    // 2. Auto-activate scheduled rooms whose start time has arrived
+    const readyScheduledRooms = await prisma.room.findMany({
+      where: {
+        status: RoomStatus.SCHEDULED,
+        scheduledAt: { lte: now },
+      },
+    });
+
+    for (const room of readyScheduledRooms) {
+      await prisma.room.update({
+        where: { id: room.id },
+        data: {
+          status: RoomStatus.ACTIVE,
+        },
+      });
+
+      broadcastRoomUpdated(room.id, room.roomCode, {
+        status: RoomStatus.ACTIVE,
+        message: "Scheduled meeting start time reached. Room is now active.",
+      });
+    }
   } catch (error) {
-    console.error("[Room Lifecycle] Error checking expired rooms:", error);
+    console.error("[Room Lifecycle] Error checking expired/scheduled rooms:", error);
   }
 };
 

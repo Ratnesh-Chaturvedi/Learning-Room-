@@ -6,6 +6,15 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
+      const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const urlUser = urlParams?.get('user');
+      if (urlUser) {
+        const parsed = JSON.parse(decodeURIComponent(urlUser));
+        try {
+          localStorage.setItem('learningroom_user', JSON.stringify(parsed));
+        } catch (_e) {}
+        return parsed;
+      }
       const saved = localStorage.getItem('learningroom_user');
       return saved ? JSON.parse(saved) : null;
     } catch {
@@ -15,6 +24,14 @@ export const AuthProvider = ({ children }) => {
 
   const [token, setToken] = useState(() => {
     try {
+      const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const urlToken = urlParams?.get('token');
+      if (urlToken) {
+        try {
+          localStorage.setItem('learningroom_token', urlToken);
+        } catch (_e) {}
+        return urlToken;
+      }
       return localStorage.getItem('learningroom_token') || null;
     } catch {
       return null;
@@ -37,29 +54,19 @@ export const AuthProvider = ({ children }) => {
       } else {
         localStorage.removeItem('learningroom_user');
       }
-    } catch {}
+    } catch (_e) {
+      // Ignore storage errors
+    }
 
     setToken(newToken);
     setUser(newUser);
   }, []);
 
-  // Verify session on mount (or capture from Google OAuth redirect)
+  // Verify session on mount (and clean OAuth URL tokens)
   useEffect(() => {
-    // 1. Check if returning from Google OAuth redirect with ?token=...&user=...
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlToken = urlParams.get('token');
-      const urlUser = urlParams.get('user');
-
-      if (urlToken && urlUser) {
-        const parsedUser = JSON.parse(decodeURIComponent(urlUser));
-        saveSession(urlToken, parsedUser);
-        setIsLoading(false);
-        // Clean URL parameters from browser address bar
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return;
-      }
-    } catch {}
+    if (typeof window !== 'undefined' && window.location.search.includes('token=')) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
 
     const verifySession = async () => {
       const savedToken = localStorage.getItem('learningroom_token');

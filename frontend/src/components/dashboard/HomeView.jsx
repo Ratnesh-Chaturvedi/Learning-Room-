@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   aboutUsCollab,
-  footerBooks,
   studySunset,
   bulbIcon,
 } from '../../assets';
@@ -243,7 +242,9 @@ export default function HomeView({
               </button>
             </div>
 
-            {latestMyRoom ? (
+            {isLoading ? (
+              <div className="h-28 rounded-2xl border border-[var(--color-border)] p-4 animate-pulse bg-[var(--color-surface)]" />
+            ) : latestMyRoom ? (
               <RoomCard
                 variant="horizontal"
                 title={latestMyRoom.title}
@@ -286,7 +287,12 @@ export default function HomeView({
             </div>
 
             <div className="space-y-2">
-              {recentRooms.length > 0 ? (
+              {isLoading ? (
+                <div className="space-y-2">
+                  <div className="h-12 rounded-xl border border-[var(--color-border)] p-3 animate-pulse bg-[var(--color-surface)]" />
+                  <div className="h-12 rounded-xl border border-[var(--color-border)] p-3 animate-pulse bg-[var(--color-surface)]" />
+                </div>
+              ) : recentRooms.length > 0 ? (
                 recentRooms.slice(0, 3).map((r) => (
                   <div
                     key={r.id}

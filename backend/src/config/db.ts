@@ -1,12 +1,11 @@
 import { neonConfig } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
+import ws from "ws";
 import { env } from "./env.ts";
 
-// Set WebSocket constructor for Neon adapter if available
-if (typeof globalThis.WebSocket !== "undefined") {
-  neonConfig.webSocketConstructor = globalThis.WebSocket;
-}
+// Neon serverless driver requires `ws` in Node.js runtime for reliable WebSocket transport
+neonConfig.webSocketConstructor = ws;
 
 const adapter = new PrismaNeon({
   connectionString: env.DATABASE_URL,

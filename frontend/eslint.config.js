@@ -20,10 +20,20 @@ export default defineConfig([
     rules: {
       'no-unused-vars': [
         'warn',
-        { argsIgnorePattern: '^_', varsIgnorePattern: '^(React|_)' },
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^(React|_)',
+          caughtErrorsIgnorePattern: '^_',
+        },
       ],
-      'no-empty': 'warn',
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      'no-empty': ['warn', { allowEmptyCatch: true }],
+      'react-refresh/only-export-components': [
+        'warn',
+        {
+          allowConstantExport: true,
+          allowExportNames: ['useTheme', 'useAuth', 'useRoom', 'useLenis'],
+        },
+      ],
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/preserve-manual-memoization': 'warn',
       'react-hooks/exhaustive-deps': 'warn',

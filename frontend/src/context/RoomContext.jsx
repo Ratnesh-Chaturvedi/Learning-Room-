@@ -74,9 +74,6 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
   const [isSocketConnected, setIsSocketConnected] = useState(() => socket?.connected || false);
   useEffect(() => {
     if (!socket) return;
-    if (socket.connected) {
-      setIsSocketConnected(true);
-    }
     const onConnect = () => setIsSocketConnected(true);
     const onDisconnect = () => setIsSocketConnected(false);
     const onConnectError = (err) => {
@@ -127,6 +124,10 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
   const [isRoomTerminated, setIsRoomTerminated] = useState(false);
   const [terminationInfo, setTerminationInfo] = useState(null);
 
+  // Scheduled Room State (Holding room until scheduledAt arrives or host starts early)
+  const [isRoomScheduled, setIsRoomScheduled] = useState(false);
+  const [scheduledInfo, setScheduledInfo] = useState(null);
+
   // Keep refs for media states so socket effects never tear down connections on mute/video toggle
   const isMutedRef = useRef(isMuted);
   const isVideoOnRef = useRef(isVideoOn);
@@ -145,7 +146,9 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     try {
       const saved = localStorage.getItem(`room_theme_${roomId}`);
       if (saved === 'dark' || saved === 'light') return saved;
-    } catch {}
+    } catch (_e) {
+      // Ignore localStorage read errors
+    }
     return globalTheme || 'light';
   });
 
@@ -154,7 +157,9 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       const next = prev === 'light' ? 'dark' : 'light';
       try {
         localStorage.setItem(`room_theme_${roomId}`, next);
-      } catch {}
+      } catch (_e) {
+        // Ignore localStorage write errors
+      }
       return next;
     });
   }, [roomId]);
@@ -186,6 +191,35 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
             });
             return;
           }
+
+          // Check if scheduled end time has already elapsed
+          if (room.scheduledEndTime && new Date(room.scheduledEndTime).getTime() <= Date.now()) {
+            setIsRoomTerminated(true);
+            setTerminationInfo({
+              reason: 'This scheduled meeting duration has ended.',
+              endedAt: room.scheduledEndTime,
+            });
+            return;
+          }
+
+          // Check if meeting has a planned start time in the future
+          const isFutureScheduled =
+            room.status === 'SCHEDULED' &&
+            room.scheduledAt &&
+            new Date(room.scheduledAt).getTime() > Date.now();
+
+          if (isFutureScheduled) {
+            setIsRoomScheduled(true);
+            setScheduledInfo({
+              title: room.title || 'Scheduled Meeting',
+              scheduledAt: room.scheduledAt,
+              scheduledEndTime: room.scheduledEndTime,
+              creatorName: room.creator?.name || 'The Host',
+            });
+          } else {
+            setIsRoomScheduled(false);
+          }
+
           setRoomDetails(room);
           setRoomTitle(room.title || 'Learning Room');
         }
@@ -225,12 +259,6 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     return () => clearInterval(timer);
   }, []);
 
-  const formatCallTime = useCallback((secs) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  }, []);
-
   // WebRTC Mesh Hook for live camera, microphone streams & screen sharing
   const {
     localStream,
@@ -246,14 +274,116 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     user: currentUser,
     isMuted,
     isVideoOn,
+    isEnabled: !isRoomScheduled && !isRoomTerminated,
   });
 
-  // Keep refs to latest stream values so socket event handlers (closed over at mount)
+  // Keep refs to latest stream values so socket event handlers
   // can stop tracks on room termination without stale closure bugs.
   const localStreamRef = useRef(localStream);
   const screenStreamRef = useRef(screenStream);
-  useEffect(() => { localStreamRef.current = localStream; }, [localStream]);
-  useEffect(() => { screenStreamRef.current = screenStream; }, [screenStream]);
+  useEffect(() => {
+    localStreamRef.current = localStream;
+  }, [localStream]);
+  useEffect(() => {
+    screenStreamRef.current = screenStream;
+  }, [screenStream]);
+
+  // Auto-terminate meeting when scheduledEndTime is reached
+  useEffect(() => {
+    if (!roomDetails?.scheduledEndTime) return;
+    const endTime = new Date(roomDetails.scheduledEndTime).getTime();
+    const remainingMs = endTime - Date.now();
+
+    const timer = setTimeout(() => {
+      setIsRoomTerminated(true);
+      setTerminationInfo({
+        reason: 'This scheduled meeting duration has ended.',
+        endedAt: roomDetails.scheduledEndTime,
+      });
+      try {
+        localStreamRef.current?.getTracks().forEach((t) => t.stop());
+        screenStreamRef.current?.getTracks().forEach((t) => t.stop());
+      } catch (_e) {
+        // Ignore stream stop failure
+      }
+      try {
+        socket?.disconnect();
+      } catch (_e) {
+        // Ignore disconnect failure
+      }
+    }, Math.max(0, remainingMs));
+
+    return () => clearTimeout(timer);
+  }, [roomDetails?.scheduledEndTime, socket]);
+
+  // Auto-activate scheduled room when scheduled start time is reached
+  useEffect(() => {
+    if (!isRoomScheduled || !scheduledInfo?.scheduledAt) return;
+    const startTime = new Date(scheduledInfo.scheduledAt).getTime();
+    const remainingMs = startTime - Date.now();
+
+    const triggerActivation = () => {
+      setIsRoomScheduled(false);
+      setRoomDetails((prev) => (prev ? { ...prev, status: 'ACTIVE' } : prev));
+      if (socket?.connected) {
+        socket.emit('webrtc:join-room', {
+          roomId,
+          inviteToken,
+          user: {
+            id: currentUser.id,
+            name: currentUser.name,
+            avatar: currentUser.avatar,
+          },
+          initialMediaState: {
+            isAudioMuted: isMutedRef.current,
+            isVideoOff: !isVideoOnRef.current,
+          },
+        });
+      }
+    };
+
+    if (remainingMs <= 0) {
+      triggerActivation();
+      return;
+    }
+
+    const timer = setTimeout(triggerActivation, remainingMs);
+    return () => clearTimeout(timer);
+  }, [isRoomScheduled, scheduledInfo?.scheduledAt, socket, roomId, inviteToken, currentUser]);
+
+  // Host starts scheduled room early
+  const handleStartScheduledRoomEarly = useCallback(async () => {
+    try {
+      const targetId = roomDetails?.id || roomDetails?.roomCode || roomId;
+      await roomApi.startRoom(targetId);
+      setIsRoomScheduled(false);
+      setRoomDetails((prev) => (prev ? { ...prev, status: 'ACTIVE' } : prev));
+      if (socket?.connected) {
+        socket.emit('webrtc:join-room', {
+          roomId,
+          inviteToken,
+          user: {
+            id: currentUser.id,
+            name: currentUser.name,
+            avatar: currentUser.avatar,
+          },
+          initialMediaState: {
+            isAudioMuted: isMutedRef.current,
+            isVideoOff: !isVideoOnRef.current,
+          },
+        });
+      }
+    } catch (err) {
+      console.warn('Failed to start scheduled room early:', err);
+    }
+  }, [roomDetails, roomId, socket, inviteToken, currentUser]);
+
+  const formatCallTime = useCallback((secs) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }, []);
+
 
   // Floating reactions trigger
   const triggerReaction = useCallback(
@@ -332,14 +462,20 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     // 👥 PEER DISCOVERY & SYNCHRONIZATION
     const handleRoomPeers = (data) => {
       setIsWaiting(false);
-      const filtered = (data?.peers || []).filter((p) => p.socketId !== socket.id);
+      // Filter out self by socket ID and by user ID (prevents ghost self tile on reconnect/refresh)
+      const myId = currentUser?.id;
+      const filtered = (data?.peers || []).filter(
+        (p) => p.socketId !== socket.id && (!myId || p.userId !== myId)
+      );
       setPeers(filtered);
     };
 
     const handlePeerJoined = (newPeer) => {
       if (!newPeer || newPeer.socketId === socket.id) return;
+      const myId = currentUser?.id;
+      if (myId && newPeer.userId === myId) return; // Prevent ghost self duplicate
       setPeers((prev) => {
-        if (prev.some((p) => p.socketId === newPeer.socketId)) return prev;
+        if (prev.some((p) => p.socketId === newPeer.socketId || (myId && p.userId === newPeer.userId))) return prev;
         return [...prev, newPeer];
       });
     };
@@ -389,10 +525,14 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       try {
         localStreamRef.current?.getTracks().forEach((t) => t.stop());
         screenStreamRef.current?.getTracks().forEach((t) => t.stop());
-      } catch {}
+      } catch (_e) {
+        // Ignore stream stop failure
+      }
       try {
         socket?.disconnect();
-      } catch {}
+      } catch (_e) {
+        // Ignore disconnect error
+      }
       setTimeout(() => navigate('/dashboard'), 3000);
     };
 
@@ -448,10 +588,46 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       try {
         localStreamRef.current?.getTracks().forEach((t) => t.stop());
         screenStreamRef.current?.getTracks().forEach((t) => t.stop());
-      } catch {}
+      } catch (_e) {
+        // Ignore stream stop failure
+      }
       try {
         socket?.disconnect();
-      } catch {}
+      } catch (_e) {
+        // Ignore disconnect error
+      }
+    };
+
+    // 📅 SCHEDULED ROOM: Not started yet
+    const handleRoomScheduled = (data) => {
+      setIsRoomScheduled(true);
+      setScheduledInfo({
+        title: data?.title || roomTitle,
+        scheduledAt: data?.scheduledAt,
+        scheduledEndTime: data?.scheduledEndTime,
+        creatorName: 'The Host',
+      });
+    };
+
+    // 🔄 ROOM UPDATED: e.g. Host started room early
+    const handleRoomUpdated = (data) => {
+      if (data?.status === 'ACTIVE') {
+        setIsRoomScheduled(false);
+        setRoomDetails((prev) => (prev ? { ...prev, status: 'ACTIVE' } : prev));
+        socket.emit('webrtc:join-room', {
+          roomId,
+          inviteToken,
+          user: {
+            id: currentUser.id,
+            name: currentUser.name,
+            avatar: currentUser.avatar,
+          },
+          initialMediaState: {
+            isAudioMuted: isMutedRef.current,
+            isVideoOff: !isVideoOnRef.current,
+          },
+        });
+      }
     };
 
     // ⚠️ ROOM ERROR
@@ -464,6 +640,8 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     socket.on('room:knock-approved', handleKnockApproved);
     socket.on('room:knock-denied', handleKnockDenied);
     socket.on('room:knock-request', handleKnockRequest);
+    socket.on('room:scheduled', handleRoomScheduled);
+    socket.on('room:updated', handleRoomUpdated);
     socket.on('webrtc:room-peers', handleRoomPeers);
     socket.on('webrtc:peer-joined', handlePeerJoined);
     socket.on('webrtc:peer-left', handlePeerLeft);
@@ -485,6 +663,8 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       socket.off('room:knock-approved', handleKnockApproved);
       socket.off('room:knock-denied', handleKnockDenied);
       socket.off('room:knock-request', handleKnockRequest);
+      socket.off('room:scheduled', handleRoomScheduled);
+      socket.off('room:updated', handleRoomUpdated);
       socket.off('webrtc:room-peers', handleRoomPeers);
       socket.off('webrtc:peer-joined', handlePeerJoined);
       socket.off('webrtc:peer-left', handlePeerLeft);
@@ -504,9 +684,10 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     socket,
     roomId,
     inviteToken,
-    user?.id,
-    user?.name,
-    user?.avatar,
+    currentUser.id,
+    currentUser.name,
+    currentUser.avatar,
+    roomTitle,
     navigate,
     triggerReaction,
   ]);
@@ -598,12 +779,14 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     navigator.clipboard?.writeText(inviteUrl);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
-  }, [roomDetails?.inviteToken, roomId]);
+  }, [roomDetails, roomId]);
 
   const handleLeaveRoom = useCallback(() => {
     try {
       socket?.emit('webrtc:leave-room');
-    } catch {}
+    } catch (_e) {
+      // Ignore leave socket emit failure
+    }
     navigate('/dashboard');
   }, [socket, navigate]);
 
@@ -637,7 +820,9 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     try {
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
       screenStreamRef.current?.getTracks().forEach((t) => t.stop());
-    } catch {}
+    } catch (_e) {
+      // Ignore stream stop failure
+    }
     // 3. Persist termination in database via REST endpoint
     roomApi.endRoom(targetId).catch(() => {});
   }, [roomDetails?.roomCode, roomDetails?.id, roomId, socket]);
@@ -661,6 +846,10 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       // Room Termination
       isRoomTerminated,
       terminationInfo,
+      // Scheduled Room State
+      isRoomScheduled,
+      scheduledInfo,
+      handleStartScheduledRoomEarly,
       // Knock / Waiting Room
       isWaiting,
       waitingMessage,
@@ -720,6 +909,9 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       handleEndRoomForAll,
       isRoomTerminated,
       terminationInfo,
+      isRoomScheduled,
+      scheduledInfo,
+      handleStartScheduledRoomEarly,
       isWaiting,
       waitingMessage,
       knockRequests,

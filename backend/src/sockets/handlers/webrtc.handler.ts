@@ -1,6 +1,7 @@
 import type { Server, Socket } from "socket.io";
 import prisma from "../../config/db.ts";
 import { roomStateManager } from "../state/roomState.manager.ts";
+import { broadcastRoomUpdated } from "../services/roomSocket.service.ts";
 import type {
   JoinRoomPayload,
   KnockDecisionPayload,
@@ -52,6 +53,30 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
       hasValidInvite = Boolean(
         cachedMeta.inviteToken && inviteToken && cachedMeta.inviteToken === inviteToken
       );
+
+      // Intercept scheduled room if start time has not arrived yet
+      if (cachedMeta.status === "SCHEDULED" && cachedMeta.scheduledAt) {
+        const scheduledTime = new Date(cachedMeta.scheduledAt).getTime();
+        if (scheduledTime <= Date.now()) {
+          cachedMeta.status = "ACTIVE";
+          roomStateManager.setRoomMeta(cachedMeta.id, cachedMeta);
+        } else {
+          socket.join(canonicalId);
+          socket.join(canonicalCode);
+          if (roomId !== canonicalId && roomId !== canonicalCode) {
+            socket.join(roomId);
+          }
+          socket.emit("room:scheduled", {
+            roomId: cachedMeta.id,
+            roomCode: cachedMeta.roomCode,
+            scheduledAt: cachedMeta.scheduledAt,
+            scheduledEndTime: cachedMeta.scheduledEndTime,
+            title: cachedMeta.title,
+            message: "This meeting is scheduled for a future time.",
+          });
+          return;
+        }
+      }
     } else {
       try {
         const dbLookupPromise = prisma.room.findFirst({
@@ -97,6 +122,56 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
             room.inviteToken && inviteToken && room.inviteToken === inviteToken
           );
 
+          // Check if room is scheduled for the future
+          if (room.status === "SCHEDULED" && room.scheduledAt) {
+            const now = new Date();
+            if (room.scheduledAt <= now) {
+              await prisma.room
+                .update({
+                  where: { id: room.id },
+                  data: { status: "ACTIVE" },
+                })
+                .catch(() => {});
+              room.status = "ACTIVE";
+              broadcastRoomUpdated(room.id, room.roomCode, {
+                status: "ACTIVE",
+                message: "Room is now active.",
+              });
+            } else {
+              const scheduledMeta = {
+                id: room.id,
+                roomCode: room.roomCode,
+                isPrivate: room.isPrivate,
+                creatorId: room.creatorId,
+                inviteToken: room.inviteToken,
+                status: room.status,
+                scheduledAt: room.scheduledAt,
+                scheduledEndTime: room.scheduledEndTime,
+                title: room.title,
+              };
+
+              roomStateManager.setRoomMeta(room.id, scheduledMeta);
+              roomStateManager.setRoomMeta(room.roomCode, scheduledMeta);
+              roomStateManager.setRoomMeta(roomId, scheduledMeta);
+
+              socket.join(canonicalId);
+              socket.join(canonicalCode);
+              if (roomId !== canonicalId && roomId !== canonicalCode) {
+                socket.join(roomId);
+              }
+
+              socket.emit("room:scheduled", {
+                roomId: room.id,
+                roomCode: room.roomCode,
+                scheduledAt: room.scheduledAt,
+                scheduledEndTime: room.scheduledEndTime,
+                title: room.title,
+                message: "This meeting is scheduled for a future time.",
+              });
+              return;
+            }
+          }
+
           const roomMeta = {
             id: room.id,
             roomCode: room.roomCode,
@@ -104,6 +179,9 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
             creatorId: room.creatorId,
             inviteToken: room.inviteToken,
             status: room.status,
+            scheduledAt: room.scheduledAt,
+            scheduledEndTime: room.scheduledEndTime,
+            title: room.title,
           };
 
           roomStateManager.setRoomMeta(room.id, roomMeta);
@@ -218,8 +296,10 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
         .catch(() => {});
     }
 
-    // Reply to joining peer with list of existing peers (excluding self)
-    const existingPeersForClient = existingPeers.filter((p) => p.socketId !== socket.id);
+    // Reply to joining peer with list of existing peers (excluding self by socketId and userId)
+    const existingPeersForClient = existingPeers.filter(
+      (p) => p.socketId !== socket.id && (!userId || p.userId !== userId)
+    );
     socket.emit("webrtc:room-peers", {
       self: peer,
       peers: existingPeersForClient,
@@ -237,9 +317,7 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
         ].filter(Boolean)
       )
     );
-    announceRooms.forEach((r) => {
-      socket.to(r).emit("webrtc:peer-joined", peer);
-    });
+    socket.to(announceRooms).emit("webrtc:peer-joined", peer);
 
     // Deliver chat history from canonical ID
     const chatHistory = roomStateManager.getChatHistory(canonicalId);

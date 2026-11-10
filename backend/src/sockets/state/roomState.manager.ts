@@ -186,6 +186,17 @@ class RoomStateManager {
     }
 
     const roomPeers = this.rooms.get(key)!;
+
+    // Clean up any stale/ghost sockets for the same registered user ID (e.g. from page refresh or reconnect)
+    if (peer.userId && !peer.userId.startsWith('guest-') && !peer.userId.startsWith('user-')) {
+      for (const [existingSocketId, existingPeer] of roomPeers.entries()) {
+        if (existingPeer.userId === peer.userId && existingSocketId !== peer.socketId) {
+          roomPeers.delete(existingSocketId);
+          this.socketToRoom.delete(existingSocketId);
+        }
+      }
+    }
+
     roomPeers.set(peer.socketId, peer);
     this.socketToRoom.set(peer.socketId, key);
 

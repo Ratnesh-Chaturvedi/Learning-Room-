@@ -28,7 +28,9 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     try {
       localStorage.setItem('learningroom_theme', theme);
-    } catch {}
+    } catch (_e) {
+      // Ignore localStorage write errors
+    }
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);

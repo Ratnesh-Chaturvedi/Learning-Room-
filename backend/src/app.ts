@@ -11,25 +11,35 @@ const app: Application = express();
 // Trust reverse proxies
 app.set("trust proxy", true);
 
+// Helper to validate trusted origins
+const isOriginAllowed = (requestOrigin: string | undefined): boolean => {
+  if (!requestOrigin) return true;
+  const allowedOrigins = [
+    env.CLIENT_URL,
+    "http://localhost:3000",
+    "http://localhost:5173",
+  ].filter(Boolean);
+
+  if (
+    allowedOrigins.includes(requestOrigin) ||
+    requestOrigin.includes("localhost") ||
+    requestOrigin.includes("127.0.0.1")
+  ) {
+    return true;
+  }
+
+  // Allow non-production environments for flexible local networking
+  return env.NODE_ENV !== "production";
+};
+
 // Global Middlewares
 app.use(
   cors({
     origin: (requestOrigin, callback) => {
-      if (!requestOrigin) return callback(null, true);
-      const allowedOrigins = [
-        env.CLIENT_URL,
-        "http://localhost:3000",
-        "http://localhost:5173",
-      ].filter(Boolean);
-
-      if (
-        allowedOrigins.includes(requestOrigin) ||
-        requestOrigin.includes("localhost") ||
-        requestOrigin.includes("127.0.0.1")
-      ) {
+      if (isOriginAllowed(requestOrigin)) {
         return callback(null, true);
       }
-      return callback(null, requestOrigin);
+      return callback(new Error("Blocked by CORS policy: Origin not allowed"));
     },
     credentials: true,
   })

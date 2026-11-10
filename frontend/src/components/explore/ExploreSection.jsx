@@ -7,7 +7,7 @@ import { burstLines } from '../../assets';
  * exactly matching the reference design with large legible cursive typography,
  * properly proportioned (non-stretched) cards, and zero horizontal page overflow.
  */
-export default function ExploreSection({ onJoinRoom, onStartRoom }) {
+export default function ExploreSection({ onJoinRoom, onStartRoom: _onStartRoom }) {
   const [activeCategory, setActiveCategory] = useState('All rooms');
   const [searchQuery, setSearchQuery] = useState('');
 
