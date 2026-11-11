@@ -279,12 +279,9 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
     const existingPeers = roomStateManager.getRoomPeers(canonicalId);
     roomStateManager.addPeer(canonicalId, peer);
 
-    // Join both canonical ID, canonical Code, and raw roomId socket channels
-    socket.join(canonicalId);
-    socket.join(canonicalCode);
-    if (roomId !== canonicalId && roomId !== canonicalCode) {
-      socket.join(roomId);
-    }
+    // Join all channel aliases
+    const { targetRooms } = roomStateManager.getRoomChannels(roomId, socket);
+    targetRooms.forEach((r) => socket.join(r));
 
     // If room exists in DB, ensure user is registered in participants
     if (roomFoundInDb && (authUser?.id || user?.id)) {
@@ -305,19 +302,8 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
       peers: existingPeersForClient,
     });
 
-    // Announce new peer across all channel aliases (deduplicated)
-    const announceRooms = Array.from(
-      new Set(
-        [
-          canonicalId,
-          canonicalCode,
-          canonicalCode.toUpperCase(),
-          roomId,
-          roomId.trim().toUpperCase(),
-        ].filter(Boolean)
-      )
-    );
-    socket.to(announceRooms).emit("webrtc:peer-joined", peer);
+    // Announce new peer across all channel aliases
+    socket.to(targetRooms).emit("webrtc:peer-joined", peer);
 
     // Deliver chat history from canonical ID
     const chatHistory = roomStateManager.getChatHistory(canonicalId);
@@ -360,11 +346,8 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
     roomStateManager.addPeer(canonicalId, peer);
 
     // Join all channel aliases
-    targetSocket.join(canonicalId);
-    targetSocket.join(canonicalCode);
-    if (roomId !== canonicalId && roomId !== canonicalCode) {
-      targetSocket.join(roomId);
-    }
+    const { targetRooms } = roomStateManager.getRoomChannels(roomId, targetSocket);
+    targetRooms.forEach((r) => targetSocket.join(r));
 
     // Notify approved user that they have been admitted immediately
     targetSocket.emit("room:knock-approved", {
@@ -383,9 +366,8 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
     const chatHistory = roomStateManager.getChatHistory(canonicalId);
     targetSocket.emit("chat:history", chatHistory);
 
-    // Broadcast new peer to all existing peers across channels (deduplicated)
-    const approvedRooms = Array.from(new Set([canonicalId, canonicalCode, roomId].filter(Boolean)));
-    targetSocket.to(approvedRooms).emit("webrtc:peer-joined", peer);
+    // Broadcast new peer to all existing peers across channels
+    targetSocket.to(targetRooms).emit("webrtc:peer-joined", peer);
 
     // Record in DB participants asynchronously (fire-and-forget, non-blocking)
     if (peer.userId && !peer.userId.startsWith("user-")) {

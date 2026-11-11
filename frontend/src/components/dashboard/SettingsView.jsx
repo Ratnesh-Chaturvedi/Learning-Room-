@@ -4,6 +4,65 @@ import { useAuth } from '../../context/AuthContext';
 import { userApi } from '../../api/user.api';
 import { ratneshAvatar, burstLines } from '../../assets';
 
+function ToggleSwitch({ label, checked, onChange }) {
+  return (
+    <div className="flex items-center justify-between">
+      {label && <span className="text-xs text-[#18191F] dark:text-gray-200 font-medium">{label}</span>}
+      <button
+        type="button"
+        onClick={() => onChange(!checked)}
+        className={`w-9 h-5 flex items-center rounded-full p-0.5 cursor-pointer transition-colors ${
+          checked ? 'bg-[#543FE3]' : 'bg-gray-300 dark:bg-gray-600'
+        }`}
+      >
+        <div
+          className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+            checked ? 'translate-x-4' : 'translate-x-0'
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
+
+function ThemeOption({ id, label, isSelected, onSelect, bgClass, barClass, cardClass }) {
+  return (
+    <div onClick={() => onSelect(id)} className="group cursor-pointer flex flex-col items-center">
+      <div
+        className={`w-full aspect-[4/3] rounded-xl p-2 border transition-all relative overflow-hidden flex flex-col justify-between ${bgClass} ${
+          isSelected
+            ? 'border-[#543FE3] ring-2 ring-[#543FE3]/30 shadow-xs'
+            : 'border-[#EAE1D2] dark:border-[#303240] hover:border-[#543FE3]/50'
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          </div>
+          {isSelected && (
+            <div className="w-4 h-4 rounded-full bg-[#543FE3] text-white flex items-center justify-center text-[10px] font-bold">
+              ✓
+            </div>
+          )}
+        </div>
+        <div className="flex gap-1.5 my-auto">
+          <div className={`w-2 h-7 rounded-xs ${barClass}`} />
+          <div className="flex-1 space-y-1">
+            <div className={`w-8 h-2 rounded-xs ${barClass}`} />
+            <div className={`w-12 h-2.5 rounded-xs ${cardClass}`} />
+            <div className="w-6 h-2 rounded-full bg-[#543FE3]" />
+          </div>
+        </div>
+      </div>
+      <span className="text-[11px] font-semibold text-[#18191F] dark:text-gray-200 mt-1.5 text-center">
+        {label}
+      </span>
+    </div>
+  );
+}
+
 export default function SettingsView({ theme = 'light', onToggleTheme }) {
   const navigate = useNavigate();
   const { user, updateUser, logout } = useAuth();
@@ -372,179 +431,52 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
 
             {/* 3 Theme Mockup Cards */}
             <div className="grid grid-cols-3 gap-2.5">
-              {/* Option 1: Warm Light */}
-              <div
-                onClick={() => handleSelectTheme('warm-light')}
-                className="group cursor-pointer flex flex-col items-center"
-              >
-                <div
-                  className={`w-full aspect-[4/3] rounded-xl p-2 bg-[#FFF8EE] border transition-all relative overflow-hidden flex flex-col justify-between ${
-                    selectedTheme === 'warm-light'
-                      ? 'border-[#543FE3] ring-2 ring-[#543FE3]/30 shadow-xs'
-                      : 'border-[#EAE1D2] hover:border-[#543FE3]/50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    </div>
-                    {selectedTheme === 'warm-light' && (
-                      <div className="w-4 h-4 rounded-full bg-[#543FE3] text-white flex items-center justify-center text-[10px] font-bold">
-                        ✓
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-1.5 my-auto">
-                    <div className="w-2 h-7 rounded-xs bg-[#E8DDD0]" />
-                    <div className="flex-1 space-y-1">
-                      <div className="w-8 h-2 rounded-xs bg-[#E8DDD0]" />
-                      <div className="w-12 h-2.5 rounded-xs bg-[#DCD1C4]" />
-                      <div className="w-6 h-2 rounded-full bg-[#543FE3]/70" />
-                    </div>
-                  </div>
-                </div>
-                <span className="text-[11px] font-semibold text-[#18191F] dark:text-gray-200 mt-1.5 text-center">
-                  Warm Light
-                </span>
-              </div>
-
-              {/* Option 2: Deep Ink Dark */}
-              <div
-                onClick={() => handleSelectTheme('dark')}
-                className="group cursor-pointer flex flex-col items-center"
-              >
-                <div
-                  className={`w-full aspect-[4/3] rounded-xl p-2 bg-[#181920] border transition-all relative overflow-hidden flex flex-col justify-between ${
-                    selectedTheme === 'dark'
-                      ? 'border-[#543FE3] ring-2 ring-[#543FE3]/30 shadow-xs'
-                      : 'border-[#303240] hover:border-[#543FE3]/50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    </div>
-                    {selectedTheme === 'dark' && (
-                      <div className="w-4 h-4 rounded-full bg-[#543FE3] text-white flex items-center justify-center text-[10px] font-bold">
-                        ✓
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-1.5 my-auto">
-                    <div className="w-2 h-7 rounded-xs bg-[#2A2B36]" />
-                    <div className="flex-1 space-y-1">
-                      <div className="w-8 h-2 rounded-xs bg-[#2A2B36]" />
-                      <div className="w-12 h-2.5 rounded-xs bg-[#363847]" />
-                      <div className="w-6 h-2 rounded-full bg-[#543FE3]" />
-                    </div>
-                  </div>
-                </div>
-                <span className="text-[11px] font-semibold text-[#18191F] dark:text-gray-200 mt-1.5 text-center">
-                  Deep Ink Dark
-                </span>
-              </div>
-
-              {/* Option 3: System Adaptive */}
-              <div
-                onClick={() => handleSelectTheme('system')}
-                className="group cursor-pointer flex flex-col items-center"
-              >
-                <div
-                  className={`w-full aspect-[4/3] rounded-xl p-2 bg-gradient-to-r from-[#FFF8EE] to-[#1E202B] border transition-all relative overflow-hidden flex flex-col justify-between ${
-                    selectedTheme === 'system'
-                      ? 'border-[#543FE3] ring-2 ring-[#543FE3]/30 shadow-xs'
-                      : 'border-[#D8D2C6] dark:border-[#383A4A] hover:border-[#543FE3]/50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    </div>
-                    {selectedTheme === 'system' && (
-                      <div className="w-4 h-4 rounded-full bg-[#543FE3] text-white flex items-center justify-center text-[10px] font-bold">
-                        ✓
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-1.5 my-auto">
-                    <div className="w-2 h-7 rounded-xs bg-gray-400/50" />
-                    <div className="flex-1 space-y-1">
-                      <div className="w-8 h-2 rounded-xs bg-gray-400/50" />
-                      <div className="w-12 h-2.5 rounded-xs bg-gray-400/30" />
-                      <div className="w-6 h-2 rounded-full bg-[#543FE3]" />
-                    </div>
-                  </div>
-                </div>
-                <span className="text-[11px] font-semibold text-[#18191F] dark:text-gray-200 mt-1.5 text-center">
-                  System Adaptive
-                </span>
-              </div>
+              <ThemeOption
+                id="warm-light"
+                label="Warm Light"
+                isSelected={selectedTheme === 'warm-light'}
+                onSelect={handleSelectTheme}
+                bgClass="bg-[#FFF8EE]"
+                barClass="bg-[#E8DDD0]"
+                cardClass="bg-[#DCD1C4]"
+              />
+              <ThemeOption
+                id="dark"
+                label="Deep Ink Dark"
+                isSelected={selectedTheme === 'dark'}
+                onSelect={handleSelectTheme}
+                bgClass="bg-[#181920]"
+                barClass="bg-[#2A2B36]"
+                cardClass="bg-[#363847]"
+              />
+              <ThemeOption
+                id="system"
+                label="System Adaptive"
+                isSelected={selectedTheme === 'system'}
+                onSelect={handleSelectTheme}
+                bgClass="bg-gradient-to-r from-[#FFF8EE] to-[#1E202B]"
+                barClass="bg-gray-400/50"
+                cardClass="bg-gray-400/30"
+              />
             </div>
 
             {/* Toggles list */}
             <div className="mt-5 space-y-3 pt-3 border-t border-[#F2EDE5] dark:border-[#2D2F3C]">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[#18191F] dark:text-gray-200 font-medium">
-                  Show subtle canvas grid dots
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setShowGridDots(!showGridDots)}
-                  className={`w-9 h-5 flex items-center rounded-full p-0.5 cursor-pointer transition-colors ${
-                    showGridDots ? 'bg-[#543FE3]' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                >
-                  <div
-                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                      showGridDots ? 'translate-x-4' : 'translate-x-0'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[#18191F] dark:text-gray-200 font-medium">
-                  Sound effects on room interactions
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setShowSoundEffects(!showSoundEffects)}
-                  className={`w-9 h-5 flex items-center rounded-full p-0.5 cursor-pointer transition-colors ${
-                    showSoundEffects ? 'bg-[#543FE3]' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                >
-                  <div
-                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                      showSoundEffects ? 'translate-x-4' : 'translate-x-0'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[#18191F] dark:text-gray-200 font-medium">
-                  Reduced motion
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setReducedMotion(!reducedMotion)}
-                  className={`w-9 h-5 flex items-center rounded-full p-0.5 cursor-pointer transition-colors ${
-                    reducedMotion ? 'bg-[#543FE3]' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                >
-                  <div
-                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                      reducedMotion ? 'translate-x-4' : 'translate-x-0'
-                    }`}
-                  />
-                </button>
-              </div>
+              <ToggleSwitch
+                label="Show subtle canvas grid dots"
+                checked={showGridDots}
+                onChange={setShowGridDots}
+              />
+              <ToggleSwitch
+                label="Sound effects on room interactions"
+                checked={showSoundEffects}
+                onChange={setShowSoundEffects}
+              />
+              <ToggleSwitch
+                label="Reduced motion"
+                checked={reducedMotion}
+                onChange={setReducedMotion}
+              />
             </div>
           </div>
         </div>
@@ -618,43 +550,16 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
                 Studio Notifications
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[#18191F] dark:text-gray-200 font-medium">
-                  Room invites
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setRoomInvitesNotif(!roomInvitesNotif)}
-                  className={`w-9 h-5 flex items-center rounded-full p-0.5 cursor-pointer transition-colors ${
-                    roomInvitesNotif ? 'bg-[#543FE3]' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                >
-                  <div
-                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                      roomInvitesNotif ? 'translate-x-4' : 'translate-x-0'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[#18191F] dark:text-gray-200 font-medium">
-                  Live activity alerts
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setLiveActivityNotif(!liveActivityNotif)}
-                  className={`w-9 h-5 flex items-center rounded-full p-0.5 cursor-pointer transition-colors ${
-                    liveActivityNotif ? 'bg-[#543FE3]' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                >
-                  <div
-                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                      liveActivityNotif ? 'translate-x-4' : 'translate-x-0'
-                    }`}
-                  />
-                </button>
-              </div>
+              <ToggleSwitch
+                label="Room invites"
+                checked={roomInvitesNotif}
+                onChange={setRoomInvitesNotif}
+              />
+              <ToggleSwitch
+                label="Live activity alerts"
+                checked={liveActivityNotif}
+                onChange={setLiveActivityNotif}
+              />
             </div>
           </div>
         </div>

@@ -62,6 +62,17 @@ export class GoalService {
     });
   }
 
+  private static async findUserGoal(goalId: string, userId: string) {
+    const existing = await prisma.goal.findFirst({
+      where: { id: goalId, userId },
+    });
+
+    if (!existing) {
+      throw new ApiError(404, "Goal or task not found.");
+    }
+    return existing;
+  }
+
   /**
    * Updates an existing goal or to-do task.
    */
@@ -70,13 +81,7 @@ export class GoalService {
     goalId: string,
     data: UpdateGoalInput
   ) {
-    const existing = await prisma.goal.findFirst({
-      where: { id: goalId, userId },
-    });
-
-    if (!existing) {
-      throw new ApiError(404, "Goal or task not found.");
-    }
+    const existing = await this.findUserGoal(goalId, userId);
 
     const updatePayload: Record<string, unknown> = {};
 
@@ -111,13 +116,7 @@ export class GoalService {
    * Quick toggle between completed and uncompleted states.
    */
   public static async toggleGoal(userId: string, goalId: string) {
-    const existing = await prisma.goal.findFirst({
-      where: { id: goalId, userId },
-    });
-
-    if (!existing) {
-      throw new ApiError(404, "Goal or task not found.");
-    }
+    const existing = await this.findUserGoal(goalId, userId);
 
     const nextCompleted = !existing.completed;
     const nextCurrentCount = nextCompleted
@@ -137,13 +136,7 @@ export class GoalService {
    * Deletes a goal or to-do item.
    */
   public static async deleteGoal(userId: string, goalId: string) {
-    const existing = await prisma.goal.findFirst({
-      where: { id: goalId, userId },
-    });
-
-    if (!existing) {
-      throw new ApiError(404, "Goal or task not found.");
-    }
+    await this.findUserGoal(goalId, userId);
 
     await prisma.goal.delete({
       where: { id: goalId },

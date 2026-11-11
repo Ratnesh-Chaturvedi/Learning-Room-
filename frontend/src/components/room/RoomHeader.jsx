@@ -31,11 +31,11 @@ export default function RoomHeader(props = {}) {
   const copiedLink = props.copiedLink ?? room.copiedLink;
   const handleCopyInvite = props.handleCopyInvite ?? room.handleCopyInvite;
   const isMuted = props.isMuted ?? room.isMuted;
-  const setIsMuted = props.setIsMuted ?? room.handleToggleMute;
+  const handleToggleMute = props.setIsMuted ?? room.handleToggleMute;
   const isVideoOn = props.isVideoOn ?? room.isVideoOn;
-  const setIsVideoOn = props.setIsVideoOn ?? room.handleToggleVideo;
+  const handleToggleVideo = props.setIsVideoOn ?? room.handleToggleVideo;
   const isHandRaised = props.isHandRaised ?? room.isHandRaised;
-  const setIsHandRaised = props.setIsHandRaised ?? room.handleToggleHand;
+  const handleToggleHand = props.setIsHandRaised ?? room.handleToggleHand;
   const activeCallTime = props.activeCallTime ?? room.activeCallTime ?? 0;
   const formatCallTime = props.formatCallTime ?? room.formatCallTime;
   const triggerReaction = props.triggerReaction ?? room.triggerReaction;
@@ -60,9 +60,9 @@ export default function RoomHeader(props = {}) {
   const totalConnected = (peers?.length || 0) + 1;
 
   return (
-    <header className="h-14 sm:h-16 px-2 sm:px-4 md:px-5 border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md flex items-center justify-between gap-1.5 sm:gap-3 shrink-0 z-40 shadow-xs max-w-full overflow-visible">
+    <header className="h-14 sm:h-16 px-2.5 sm:px-4 md:px-5 border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md flex items-center justify-between gap-1.5 sm:gap-3 shrink-0 z-40 shadow-xs max-w-full overflow-hidden">
       {/* Left: Back button + Brand logo + Room Name + Code pill */}
-      <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 shrink">
+      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 shrink">
         {/* Back to Dashboard */}
         <button
           type="button"
@@ -87,7 +87,7 @@ export default function RoomHeader(props = {}) {
         />
 
         {/* Room Title & Room ID Badge */}
-        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
           {isEditingTitle ? (
             <input
               type="text"
@@ -96,12 +96,12 @@ export default function RoomHeader(props = {}) {
               onBlur={() => setIsEditingTitle(false)}
               onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
               onChange={(e) => setRoomTitle(e.target.value)}
-              className="font-heading font-extrabold text-xs sm:text-base bg-[var(--color-surface-secondary)] border border-[var(--color-brand)] rounded px-1.5 py-0.5 outline-none max-w-[110px] sm:max-w-[280px]"
+              className="font-heading font-extrabold text-xs sm:text-base bg-[var(--color-surface-secondary)] border border-[var(--color-brand)] rounded px-1.5 py-0.5 outline-none max-w-[100px] xs:max-w-[140px] sm:max-w-[240px]"
             />
           ) : (
             <h1
               onClick={() => setIsEditingTitle(true)}
-              className="font-heading font-extrabold text-xs sm:text-sm md:text-base text-[var(--color-text-primary)] truncate max-w-[85px] xs:max-w-[120px] sm:max-w-[200px] md:max-w-none cursor-pointer hover:underline decoration-dotted"
+              className="font-heading font-extrabold text-xs sm:text-sm md:text-base text-[var(--color-text-primary)] truncate max-w-[80px] xs:max-w-[120px] sm:max-w-[180px] md:max-w-none cursor-pointer hover:underline decoration-dotted"
               title={`${roomTitle} (Click to rename)`}
             >
               {roomTitle}
@@ -129,7 +129,7 @@ export default function RoomHeader(props = {}) {
         </div>
       </div>
 
-      {/* Center: Sleek Call Timer & Connected Collaborators (No bulky text labels) */}
+      {/* Center: Sleek Call Timer & Connected Collaborators (Desktop & Laptop) */}
       <div className="hidden lg:flex items-center gap-3 shrink-0">
         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-surface-secondary)] border border-[var(--color-border)] text-xs font-semibold shadow-2xs">
           <span className={`w-2 h-2 rounded-full ${isSocketConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500 animate-ping'}`} />
@@ -191,11 +191,11 @@ export default function RoomHeader(props = {}) {
       </div>
 
       {/* Right: Controls, Video Gallery, Chat & End/Leave Room */}
-      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0">
         {/* Microphone Mute Toggle */}
         <button
           type="button"
-          onClick={() => setIsMuted((prev) => !prev)}
+          onClick={() => handleToggleMute()}
           className={`p-1.5 sm:p-2 rounded-full transition-all cursor-pointer ${
             isMuted
               ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/80 dark:text-rose-400'
@@ -210,7 +210,8 @@ export default function RoomHeader(props = {}) {
               <path d="M5 10v2a7 7 0 0 0 12 5" />
               <path d="M15 9.34V5a3 3 0 0 0-5.68-1.33" />
               <path d="M9 9v3a3 3 0 0 0 5.12 2.12" />
-              <line x1="12" y1="19" x2="12" y2="22" />
+              <line x1="12" y1="19" x2="12" y2="23" />
+              <line x1="8" y1="23" x2="16" y2="23" />
             </svg>
           ) : (
             <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -225,7 +226,7 @@ export default function RoomHeader(props = {}) {
         <button
           type="button"
           onClick={() => {
-            setIsVideoOn((prev) => !prev);
+            handleToggleVideo();
             if (onToggleVideoGallery && !isVideoGalleryOpen) {
               onToggleVideoGallery();
             }
@@ -251,12 +252,12 @@ export default function RoomHeader(props = {}) {
           )}
         </button>
 
-        {/* Screen Sharing Toggle (Google Meet style presentation) */}
+        {/* Screen Sharing Toggle (Tablet & Desktop: inline) */}
         {onToggleScreenShare && (
           <button
             type="button"
             onClick={onToggleScreenShare}
-            className={`p-1.5 sm:p-2 rounded-full transition-all cursor-pointer ${
+            className={`hidden sm:flex p-1.5 sm:p-2 rounded-full transition-all cursor-pointer ${
               isScreenSharing
                 ? 'bg-[#543FE3] text-white shadow-md shadow-indigo-500/30 ring-2 ring-[#543FE3]/50 animate-pulse'
                 : 'bg-[var(--color-surface-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]'
@@ -273,12 +274,12 @@ export default function RoomHeader(props = {}) {
           </button>
         )}
 
-        {/* Dedicated Video Grid Popup Toggle */}
+        {/* Dedicated Video Grid Popup Toggle (Tablet & Desktop: inline) */}
         {onToggleVideoGallery && (
           <button
             type="button"
             onClick={onToggleVideoGallery}
-            className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+            className={`hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
               isVideoGalleryOpen
                 ? 'bg-emerald-600 text-white shadow-xs'
                 : 'bg-[var(--color-surface-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]'
@@ -294,11 +295,11 @@ export default function RoomHeader(props = {}) {
           </button>
         )}
 
-        {/* Members Roster Toggle */}
+        {/* Members Roster Toggle (Tablet & Desktop: inline) */}
         <button
           type="button"
           onClick={() => setIsMembersOpen?.((prev) => !prev)}
-          className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+          className={`hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
             isMembersOpen
               ? 'bg-[#543FE3] text-white shadow-xs'
               : 'bg-[var(--color-surface-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]'
@@ -311,7 +312,7 @@ export default function RoomHeader(props = {}) {
             <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
-          <span className="hidden sm:inline">Members</span>
+          <span className="hidden md:inline">Members</span>
           <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
             isMembersOpen ? 'bg-white/20 text-white' : 'bg-[#543FE3]/15 text-[#543FE3]'
           }`}>
@@ -323,10 +324,10 @@ export default function RoomHeader(props = {}) {
         <button
           type="button"
           onClick={() => {
-            setIsHandRaised((prev) => !prev);
+            handleToggleHand();
             triggerReaction('✋');
           }}
-          className={`hidden sm:flex p-2 rounded-full transition-all cursor-pointer ${
+          className={`hidden sm:flex p-1.5 sm:p-2 rounded-full transition-all cursor-pointer ${
             isHandRaised
               ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 ring-2 ring-amber-400'
               : 'bg-[var(--color-surface-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]'
@@ -336,7 +337,7 @@ export default function RoomHeader(props = {}) {
           <span className="text-sm">✋</span>
         </button>
 
-        {/* Quick Reaction Emojis Dropdown (Desktop & Tablet) */}
+        {/* Quick Reaction Emojis Dropdown (Desktop & Laptop) */}
         <div className="hidden md:flex items-center gap-0.5 bg-[var(--color-surface-secondary)] rounded-full px-1.5 py-0.5 border border-[var(--color-border)]">
           {['❤️', '👏', '💡', '🔥', '🚀'].map((emoji) => (
             <button
@@ -355,7 +356,7 @@ export default function RoomHeader(props = {}) {
         <button
           type="button"
           onClick={() => setIsChatOpen((prev) => !prev)}
-          className={`flex items-center gap-1 px-2 py-1.5 sm:px-3 sm:py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+          className={`flex items-center gap-1 p-1.5 sm:px-3 sm:py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
             isChatOpen
               ? 'bg-[var(--color-brand)] text-white shadow-xs'
               : 'bg-[var(--color-surface-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]'
@@ -413,7 +414,18 @@ export default function RoomHeader(props = {}) {
 
           {/* Mobile Dropdown Popup */}
           {isMobileMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl p-2 z-50 flex flex-col gap-1.5 animate-in fade-in zoom-in-95">
+            <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 animate-in fade-in zoom-in-95">
+              {/* Call Timer indicator on mobile */}
+              <div className="flex items-center justify-between px-2.5 py-1.5 text-xs border-b border-[var(--color-border)] text-[var(--color-text-secondary)]">
+                <span className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${isSocketConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                  <span>Call time</span>
+                </span>
+                <span className="font-mono font-bold text-[var(--color-text-primary)]">
+                  {formatCallTime(activeCallTime)}
+                </span>
+              </div>
+
               {/* Video Grid Toggle on Mobile */}
               {onToggleVideoGallery && (
                 <button
@@ -422,25 +434,67 @@ export default function RoomHeader(props = {}) {
                     onToggleVideoGallery();
                     setIsMobileMenuOpen(false);
                   }}
-                  className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)]"
+                  className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
                     <span>📹</span>
                     <span>Video Gallery</span>
                   </span>
-                  {isVideoGalleryOpen && <span className="text-[10px] text-emerald-600 font-bold">Open</span>}
+                  {isVideoGalleryOpen ? (
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Open</span>
+                  ) : (
+                    <span className="text-[10px] text-gray-400">Closed</span>
+                  )}
                 </button>
               )}
+
+              {/* Screen Share on Mobile */}
+              {onToggleScreenShare && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onToggleScreenShare();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <span>🖥️</span>
+                    <span>Screen Share</span>
+                  </span>
+                  {isScreenSharing && (
+                    <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">Sharing</span>
+                  )}
+                </button>
+              )}
+
+              {/* Members Roster on Mobile */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMembersOpen?.((prev) => !prev);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <span>👥</span>
+                  <span>Room Members</span>
+                </span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-[#543FE3]/15 text-[#543FE3]">
+                  {totalConnected}
+                </span>
+              </button>
 
               {/* Hand Raise */}
               <button
                 type="button"
                 onClick={() => {
-                  setIsHandRaised((prev) => !prev);
+                  handleToggleHand();
                   triggerReaction('✋');
                   setIsMobileMenuOpen(false);
                 }}
-                className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)]"
+                className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] cursor-pointer"
               >
                 <span className="flex items-center gap-2">
                   <span>✋</span>
@@ -456,7 +510,7 @@ export default function RoomHeader(props = {}) {
                   onToggleTheme();
                   setIsMobileMenuOpen(false);
                 }}
-                className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)]"
+                className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] cursor-pointer"
               >
                 <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
                 <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
@@ -474,7 +528,7 @@ export default function RoomHeader(props = {}) {
                         triggerReaction(emoji);
                         setIsMobileMenuOpen(false);
                       }}
-                      className="text-sm p-1 hover:scale-125 transition-transform"
+                      className="text-sm p-1 hover:scale-125 transition-transform cursor-pointer"
                     >
                       {emoji}
                     </button>
@@ -490,7 +544,7 @@ export default function RoomHeader(props = {}) {
           <button
             type="button"
             onClick={onEndRoomForAll}
-            className="flex items-center gap-1.5 p-1.5 sm:px-3.5 sm:py-1.5 rounded-lg sm:rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
+            className="flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
             title="End meeting for all participants"
           >
             <span className="hidden sm:inline">End Meeting</span>
@@ -502,7 +556,7 @@ export default function RoomHeader(props = {}) {
           <button
             type="button"
             onClick={onLeaveRoom}
-            className="flex items-center gap-1 p-1.5 sm:px-3.5 sm:py-1.5 rounded-lg sm:rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
+            className="flex items-center gap-1 p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
             title="Leave room"
           >
             <span className="hidden sm:inline">Leave</span>

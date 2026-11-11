@@ -16,6 +16,29 @@ import { roomApi } from '../api/room.api';
 
 const RoomContext = createContext(null);
 
+function getSocketUrl() {
+  const envUrl = (
+    import.meta.env.VITE_SOCKET_URL ||
+    import.meta.env.VITE_API_URL?.replace(/\/api\/v1\/?$/, '') ||
+    ''
+  ).replace(/\/+$/, '');
+
+  const isLocalHost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.startsWith('192.168.'));
+
+  if (isLocalHost) {
+    return envUrl && !envUrl.includes('onrender.com')
+      ? envUrl
+      : `http://${window.location.hostname}:5000`;
+  }
+  return envUrl && !envUrl.includes('localhost')
+    ? envUrl
+    : 'https://learning-room-backend.onrender.com';
+}
+
 /**
  * RoomProvider
  * Centralizes real-time state management, WebRTC media streams, socket signaling,
@@ -31,39 +54,9 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
 
   // Socket instance created once per provider mount with smart cloud / localhost fallback
   const socket = useMemo(() => {
-    const isProductionHost =
-      typeof window !== 'undefined' &&
-      window.location.hostname !== 'localhost' &&
-      window.location.hostname !== '127.0.0.1' &&
-      !window.location.hostname.startsWith('192.168.') &&
-      !window.location.hostname.startsWith('10.') &&
-      !window.location.hostname.endsWith('.local');
-
-    const configuredSocketUrl = (
-      import.meta.env.VITE_SOCKET_URL ||
-      (import.meta.env.VITE_API_URL
-        ? import.meta.env.VITE_API_URL.replace(/\/api\/v1\/?$/, '')
-        : '') ||
-      ''
-    ).replace(/\/+$/, '');
-
-    let socketUrl = configuredSocketUrl;
-    if (!socketUrl) {
-      if (isProductionHost) {
-        socketUrl = 'https://learning-room-backend.onrender.com';
-      } else {
-        const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-        socketUrl = `http://${host}:5000`;
-      }
-    } else if (isProductionHost && socketUrl.includes('localhost')) {
-      socketUrl = 'https://learning-room-backend.onrender.com';
-    }
-
     const token = typeof localStorage !== 'undefined' ? localStorage.getItem('learningroom_token') || '' : '';
-    return io(socketUrl, {
-      auth: {
-        token,
-      },
+    return io(getSocketUrl(), {
+      auth: { token },
       transports: ['polling', 'websocket'],
       reconnectionAttempts: 20,
       reconnectionDelay: 1000,
@@ -725,9 +718,14 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
   );
 
   // Media Toggles
-  const handleToggleMute = useCallback(() => {
+  const handleToggleMute = useCallback((explicitValue) => {
     setIsMuted((prev) => {
-      const nextMuted = !prev;
+      const nextMuted =
+        typeof explicitValue === 'boolean'
+          ? explicitValue
+          : typeof explicitValue === 'function'
+          ? explicitValue(prev)
+          : !prev;
       socket?.emit('media:toggle-audio', {
         roomId,
         isMuted: nextMuted,
@@ -736,9 +734,14 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     });
   }, [socket, roomId]);
 
-  const handleToggleVideo = useCallback(() => {
+  const handleToggleVideo = useCallback((explicitValue) => {
     setIsVideoOn((prev) => {
-      const nextVideo = !prev;
+      const nextVideo =
+        typeof explicitValue === 'boolean'
+          ? explicitValue
+          : typeof explicitValue === 'function'
+          ? explicitValue(prev)
+          : !prev;
       socket?.emit('media:toggle-video', {
         roomId,
         isVideoOff: !nextVideo,
@@ -747,9 +750,14 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     });
   }, [socket, roomId]);
 
-  const handleToggleHand = useCallback(() => {
+  const handleToggleHand = useCallback((explicitValue) => {
     setIsHandRaised((prev) => {
-      const nextHand = !prev;
+      const nextHand =
+        typeof explicitValue === 'boolean'
+          ? explicitValue
+          : typeof explicitValue === 'function'
+          ? explicitValue(prev)
+          : !prev;
       socket?.emit('media:raise-hand', {
         roomId,
         isHandRaised: nextHand,

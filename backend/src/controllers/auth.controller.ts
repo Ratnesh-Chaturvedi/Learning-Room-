@@ -12,6 +12,14 @@ const getAuthCookieOptions = (): CookieOptions => ({
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 });
 
+const setAuthCookies = (res: Response, accessToken: string, refreshToken: string) => {
+  res.cookie("accessToken", accessToken, getAuthCookieOptions());
+  res.cookie("refreshToken", refreshToken, {
+    ...getAuthCookieOptions(),
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  });
+};
+
 /**
  * Initiates the Google OAuth 2.0 flow by redirecting the user to Google.
  * Route: GET /api/v1/auth/google
@@ -40,11 +48,7 @@ export const googleCallback = asyncHandler(async (req: Request, res: Response) =
     const { user, accessToken, refreshToken } = await AuthService.processGoogleCallback(code);
 
     // Set HTTP-only secure cookies
-    res.cookie("accessToken", accessToken, getAuthCookieOptions());
-    res.cookie("refreshToken", refreshToken, {
-      ...getAuthCookieOptions(),
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    });
+    setAuthCookies(res, accessToken, refreshToken);
 
     // Redirect to frontend dashboard with session data for immediate client sync
     const userParam = encodeURIComponent(JSON.stringify(user));
@@ -69,11 +73,7 @@ export const googleCredentialLogin = asyncHandler(async (req: Request, res: Resp
 
   const { user, accessToken, refreshToken } = await AuthService.processGoogleIdToken(idToken);
 
-  res.cookie("accessToken", accessToken, getAuthCookieOptions());
-  res.cookie("refreshToken", refreshToken, {
-    ...getAuthCookieOptions(),
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-  });
+  setAuthCookies(res, accessToken, refreshToken);
 
   res.status(200).json(
     new ApiResponse(200, "Signed in successfully with Google", {
@@ -120,11 +120,7 @@ export const devLogin = asyncHandler(async (req: Request, res: Response) => {
   const userNum = req.body?.userNum === 2 ? 2 : 1;
   const { user, accessToken, refreshToken } = await AuthService.processDevLogin(userNum);
 
-  res.cookie("accessToken", accessToken, getAuthCookieOptions());
-  res.cookie("refreshToken", refreshToken, {
-    ...getAuthCookieOptions(),
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-  });
+  setAuthCookies(res, accessToken, refreshToken);
 
   res.status(200).json(
     new ApiResponse(200, `Logged in as Dev User ${userNum} successfully`, {

@@ -7,7 +7,33 @@ import {
   broadcastRoomUpdated,
 } from "../sockets/services/roomSocket.service.ts";
 
+const userSelect = { id: true, name: true, email: true, avatar: true };
+const roomInclude = {
+  creator: { select: userSelect },
+  participants: { select: userSelect },
+};
+
 export class RoomService {
+  /**
+   * Generates a unique room code, ensuring no collision in DB.
+   */
+  private static async generateUniqueRoomCode(requestedCode?: string): Promise<string> {
+    let roomCode = requestedCode?.trim().toUpperCase() || generateRoomCode();
+    while (await prisma.room.findUnique({ where: { roomCode } })) {
+      roomCode = generateRoomCode();
+    }
+    return roomCode;
+  }
+
+  /**
+   * Normalizes category and customCategory.
+   */
+  private static resolveCategory(category?: RoomCategory, customCategory?: string) {
+    const cat = category || RoomCategory.MEETING;
+    const custom = cat === RoomCategory.CUSTOM ? customCategory?.trim() || null : null;
+    return { category: cat, customCategory: custom };
+  }
+
   /**
    * Creates an instant active collaborative room (Public or Private).
    */
@@ -22,20 +48,11 @@ export class RoomService {
     scheduledEndTime?: Date;
     tools?: Tool[];
   }) {
-    let roomCode = params.roomCode?.trim().toUpperCase() || generateRoomCode();
-    let existing = await prisma.room.findUnique({ where: { roomCode } });
-    while (existing) {
-      roomCode = generateRoomCode();
-      existing = await prisma.room.findUnique({ where: { roomCode } });
-    }
-
-    const category = params.category || RoomCategory.MEETING;
-    const customCategory =
-      category === RoomCategory.CUSTOM ? params.customCategory?.trim() : null;
+    const roomCode = await this.generateUniqueRoomCode(params.roomCode);
+    const { category, customCategory } = this.resolveCategory(params.category, params.customCategory);
     const isPrivate = Boolean(params.isPrivate);
-    const inviteToken = isPrivate ? generateInviteToken() : null;
 
-    const room = await prisma.room.create({
+    return prisma.room.create({
       data: {
         roomCode,
         title: params.title || "Untitled Room",
@@ -43,7 +60,7 @@ export class RoomService {
         category,
         customCategory,
         isPrivate,
-        inviteToken,
+        inviteToken: isPrivate ? generateInviteToken() : null,
         status: RoomStatus.ACTIVE,
         scheduledEndTime: params.scheduledEndTime,
         creatorId: params.userId,
@@ -52,17 +69,8 @@ export class RoomService {
           connect: { id: params.userId },
         },
       },
-      include: {
-        creator: {
-          select: { id: true, name: true, email: true, avatar: true },
-        },
-        participants: {
-          select: { id: true, name: true, email: true, avatar: true },
-        },
-      },
+      include: roomInclude,
     });
-
-    return room;
   }
 
   /**
@@ -80,20 +88,11 @@ export class RoomService {
     scheduledEndTime?: Date;
     tools?: Tool[];
   }) {
-    let roomCode = params.roomCode?.trim().toUpperCase() || generateRoomCode();
-    let existing = await prisma.room.findUnique({ where: { roomCode } });
-    while (existing) {
-      roomCode = generateRoomCode();
-      existing = await prisma.room.findUnique({ where: { roomCode } });
-    }
-
-    const category = params.category || RoomCategory.MEETING;
-    const customCategory =
-      category === RoomCategory.CUSTOM ? params.customCategory?.trim() : null;
+    const roomCode = await this.generateUniqueRoomCode(params.roomCode);
+    const { category, customCategory } = this.resolveCategory(params.category, params.customCategory);
     const isPrivate = Boolean(params.isPrivate);
-    const inviteToken = isPrivate ? generateInviteToken() : null;
 
-    const room = await prisma.room.create({
+    return prisma.room.create({
       data: {
         roomCode,
         title: params.title,
@@ -101,7 +100,7 @@ export class RoomService {
         category,
         customCategory,
         isPrivate,
-        inviteToken,
+        inviteToken: isPrivate ? generateInviteToken() : null,
         status: RoomStatus.SCHEDULED,
         scheduledAt: params.scheduledAt,
         scheduledEndTime: params.scheduledEndTime,
@@ -111,17 +110,8 @@ export class RoomService {
           connect: { id: params.userId },
         },
       },
-      include: {
-        creator: {
-          select: { id: true, name: true, email: true, avatar: true },
-        },
-        participants: {
-          select: { id: true, name: true, email: true, avatar: true },
-        },
-      },
+      include: roomInclude,
     });
-
-    return room;
   }
 
   /**
@@ -199,14 +189,7 @@ export class RoomService {
           skip,
           take: limit,
           orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-          include: {
-            creator: {
-              select: { id: true, name: true, email: true, avatar: true },
-            },
-            participants: {
-              select: { id: true, name: true, email: true, avatar: true },
-            },
-          },
+          include: roomInclude,
         }),
       ]);
     } catch {
@@ -256,27 +239,27 @@ export class RoomService {
   }
 
   /**
+   * Helper to query room by either its UUID id or short roomCode.
+   */
+  public static async findRoomByIdOrCode(identifier: string) {
+    if (!identifier) return null;
+    const clean = identifier.trim();
+    return prisma.room.findFirst({
+      where: {
+        OR: [{ id: clean }, { roomCode: clean.toUpperCase() }],
+      },
+      include: roomInclude,
+    });
+  }
+
+  /**
    * Finds a room by its shareable code or ID, auto-terminating if scheduledEndTime has passed.
    */
   public static async getRoomByCode(roomCode: string) {
-    const cleanCode = roomCode.trim().toUpperCase();
-
-    const room = await prisma.room.findFirst({
-      where: {
-        OR: [{ roomCode: cleanCode }, { id: roomCode }],
-      },
-      include: {
-        creator: {
-          select: { id: true, name: true, email: true, avatar: true },
-        },
-        participants: {
-          select: { id: true, name: true, email: true, avatar: true },
-        },
-      },
-    });
+    const room = await this.findRoomByIdOrCode(roomCode);
 
     if (!room) {
-      throw new ApiError(404, `Room with code '${cleanCode}' does not exist.`);
+      throw new ApiError(404, `Room with code '${roomCode.trim().toUpperCase()}' does not exist.`);
     }
 
     // Auto-terminate check
@@ -298,10 +281,7 @@ export class RoomService {
           endedAt,
           duration,
         },
-        include: {
-          creator: { select: { id: true, name: true, email: true, avatar: true } },
-          participants: { select: { id: true, name: true, email: true, avatar: true } },
-        },
+        include: roomInclude,
       });
 
       broadcastRoomTerminated(
@@ -326,10 +306,7 @@ export class RoomService {
         data: {
           status: RoomStatus.ACTIVE,
         },
-        include: {
-          creator: { select: { id: true, name: true, email: true, avatar: true } },
-          participants: { select: { id: true, name: true, email: true, avatar: true } },
-        },
+        include: roomInclude,
       });
 
       broadcastRoomUpdated(room.id, room.roomCode, {
@@ -365,24 +342,15 @@ export class RoomService {
       );
     }
 
-    const updatedRoom = await prisma.room.update({
+    return prisma.room.update({
       where: { id: room.id },
       data: {
         participants: {
           connect: { id: userId },
         },
       },
-      include: {
-        creator: {
-          select: { id: true, name: true, email: true, avatar: true },
-        },
-        participants: {
-          select: { id: true, name: true, email: true, avatar: true },
-        },
-      },
+      include: roomInclude,
     });
-
-    return updatedRoom;
   }
 
   /**
@@ -409,21 +377,8 @@ export class RoomService {
   }
 
   /**
-   * Helper to query room by either its UUID id or short roomCode.
+   * Starts a scheduled room early (Host only).
    */
-  public static async findRoomByIdOrCode(identifier: string) {
-    if (!identifier) return null;
-    const clean = identifier.trim();
-    return prisma.room.findFirst({
-      where: {
-        OR: [{ id: clean }, { roomCode: clean.toUpperCase() }],
-      },
-      include: {
-        creator: { select: { id: true, name: true, email: true, avatar: true } },
-        participants: { select: { id: true, name: true, email: true, avatar: true } },
-      },
-    });
-  }
   public static async startRoom(roomId: string, userId: string) {
     const room = await this.findRoomByIdOrCode(roomId);
 
@@ -442,10 +397,7 @@ export class RoomService {
     const updated = await prisma.room.update({
       where: { id: room.id },
       data: { status: RoomStatus.ACTIVE },
-      include: {
-        creator: { select: { id: true, name: true, email: true, avatar: true } },
-        participants: { select: { id: true, name: true, email: true, avatar: true } },
-      },
+      include: roomInclude,
     });
 
     broadcastRoomUpdated(updated.id, updated.roomCode, {
@@ -488,10 +440,7 @@ export class RoomService {
         duration,
         participants: { set: [] }, // Disconnects all participants from the room in DB
       },
-      include: {
-        creator: { select: { id: true, name: true, email: true, avatar: true } },
-        participants: { select: { id: true, name: true, email: true, avatar: true } },
-      },
+      include: roomInclude,
     });
 
     broadcastRoomTerminated(
@@ -564,10 +513,7 @@ export class RoomService {
     const updatedRoom = await prisma.room.update({
       where: { id: room.id },
       data,
-      include: {
-        creator: { select: { id: true, name: true, email: true, avatar: true } },
-        participants: { select: { id: true, name: true, email: true, avatar: true } },
-      },
+      include: roomInclude,
     });
 
     broadcastRoomUpdated(updatedRoom.id, updatedRoom.roomCode, updatedRoom);
@@ -597,10 +543,7 @@ export class RoomService {
         isPrivate: true,
         inviteToken: newInviteToken,
       },
-      include: {
-        creator: { select: { id: true, name: true, email: true, avatar: true } },
-        participants: { select: { id: true, name: true, email: true, avatar: true } },
-      },
+      include: roomInclude,
     });
   }
 

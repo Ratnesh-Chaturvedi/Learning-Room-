@@ -72,10 +72,51 @@ function RemoteAudioTrack({ stream }) {
   React.useEffect(() => {
     const el = audioRef.current;
     if (!el || !stream) return;
+
     if (el.srcObject !== stream) {
       el.srcObject = stream;
     }
-    el.play().catch(() => {});
+    el.volume = 1.0;
+
+    const playAudio = () => {
+      if (el && el.paused) {
+        el.play().catch((err) => {
+          // Autoplay blocked: will be unlocked on user interaction
+          console.warn('[Audio] Autoplay waiting for user interaction:', err?.name);
+        });
+      }
+    };
+
+    playAudio();
+
+    // Browser Autoplay Policy unlocker: as soon as user taps or clicks anywhere, resume playback
+    const unlockAutoplay = () => {
+      playAudio();
+    };
+
+    window.addEventListener('click', unlockAutoplay, { once: true });
+    window.addEventListener('pointerdown', unlockAutoplay, { once: true });
+    window.addEventListener('keydown', unlockAutoplay, { once: true });
+
+    // When tracks are added or unmuted, trigger playback
+    const handleTrackActive = () => {
+      playAudio();
+    };
+
+    stream.addEventListener('addtrack', handleTrackActive);
+    stream.getAudioTracks().forEach((track) => {
+      track.addEventListener('unmute', handleTrackActive);
+    });
+
+    return () => {
+      window.removeEventListener('click', unlockAutoplay);
+      window.removeEventListener('pointerdown', unlockAutoplay);
+      window.removeEventListener('keydown', unlockAutoplay);
+      stream.removeEventListener('addtrack', handleTrackActive);
+      stream.getAudioTracks().forEach((track) => {
+        track.removeEventListener('unmute', handleTrackActive);
+      });
+    };
   }, [stream]);
 
   return <audio ref={audioRef} autoPlay playsInline />;
@@ -332,7 +373,7 @@ function RoomView() {
     >
       {/* 🔔 HOST NOTIFICATION MODAL: Knock Requests Queue */}
       {knockRequests.length > 0 && (
-        <div className="fixed top-20 right-6 z-[100002] max-w-sm w-full bg-[var(--color-surface)] border-2 border-[#543FE3] rounded-2xl shadow-2xl p-4 animate-in slide-in-from-top duration-300">
+        <div className="fixed top-16 left-3 right-3 sm:left-auto sm:right-6 sm:top-20 z-[100002] sm:max-w-sm w-auto bg-[var(--color-surface)] border-2 border-[#543FE3] rounded-2xl shadow-2xl p-4 animate-in slide-in-from-top duration-300">
           <div className="flex items-start justify-between gap-2 pb-2 border-b border-[var(--color-border)]">
             <div className="flex items-center gap-2">
               <span className="text-base">🔔</span>
@@ -404,7 +445,7 @@ function RoomView() {
       <ParticipantsModal />
 
       {/* 3. Interactive Multiplayer Collaborative Canvas */}
-      <main className="flex-1 relative w-full h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] overflow-hidden">
+      <main className="flex-1 relative w-full h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4rem)] overflow-hidden">
         <section className="w-full h-full relative overflow-hidden">
           <div className="absolute inset-0">
             <RoomErrorBoundary
@@ -435,7 +476,7 @@ function RoomView() {
           {floatingReactions.map((reaction) => (
             <div
               key={reaction.id}
-              className="absolute pointer-events-none z-50 text-3xl animate-bounce"
+              className="absolute pointer-events-none z-50 text-2xl sm:text-3xl animate-bounce"
               style={{
                 left: `${reaction.startX}%`,
                 bottom: '12%',
@@ -451,10 +492,10 @@ function RoomView() {
             <button
               type="button"
               onClick={() => setIsChatOpen(true)}
-              className="absolute top-4 right-4 flex items-center gap-2 px-3.5 py-2 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] shadow-lg hover:shadow-xl text-xs font-bold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-all z-30 cursor-pointer animate-in fade-in slide-in-from-right-4"
+              className="absolute bottom-4 right-3 sm:bottom-auto sm:top-4 sm:right-4 flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] shadow-lg hover:shadow-xl text-xs font-bold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-all z-30 cursor-pointer animate-in fade-in"
               title="Open Live Chat"
             >
-              <svg className="w-4 h-4 text-[var(--color-brand)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--color-brand)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
               <span>Live Chat</span>
@@ -471,11 +512,12 @@ function RoomView() {
             <button
               type="button"
               onClick={() => setIsVideoGalleryOpen(true)}
-              className="absolute top-4 left-4 flex items-center gap-2 px-3.5 py-2 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] shadow-lg hover:shadow-xl text-xs font-bold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-all z-30 cursor-pointer animate-in fade-in slide-in-from-left-4"
+              className="absolute bottom-4 left-3 sm:bottom-auto sm:top-4 sm:left-4 flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] shadow-lg hover:shadow-xl text-xs font-bold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-all z-30 cursor-pointer animate-in fade-in"
               title="Open Video Grid"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Show Video Grid</span>
+              <span className="hidden xs:inline">Show Video Grid</span>
+              <span className="xs:hidden">Video</span>
               <span className="w-4 h-4 rounded-full bg-emerald-600 text-white text-[10px] flex items-center justify-center font-bold">
                 {peers.length + 1}
               </span>
