@@ -1,3 +1,2 @@
 # Constants
 Application-wide constants including HTTP status codes, socket event names, user roles, error messages, and regex patterns.
-

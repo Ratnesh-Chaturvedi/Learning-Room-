@@ -18,7 +18,7 @@ export interface CanvasPointerPayload {
   };
 }
 
-export const registerCanvasHandlers = (io: Server, socket: Socket) => {
+export const registerCanvasHandlers = (_io: Server, socket: Socket) => {
   /**
    * 1. Broadcasts real-time canvas drawings / scene modifications to peers.
    */
@@ -26,9 +26,7 @@ export const registerCanvasHandlers = (io: Server, socket: Socket) => {
     const { roomId, elements } = payload;
     if (!roomId || !Array.isArray(elements)) return;
 
-    const canonicalId = socket.data?.canonicalId || roomStateManager.getCanonicalKey(roomId);
-    const meta = roomStateManager.getRoomMeta(canonicalId);
-    const canonicalCode = socket.data?.canonicalCode || meta?.roomCode;
+    const { canonicalId, canonicalCode, targetRooms } = roomStateManager.getRoomChannels(roomId, socket);
 
     // Persist current scene elements in room memory under canonical ID and code
     roomStateManager.setCanvasScene(canonicalId, elements);
@@ -36,14 +34,11 @@ export const registerCanvasHandlers = (io: Server, socket: Socket) => {
       roomStateManager.setCanvasScene(canonicalCode, elements);
     }
 
-    const updatePayload = {
+    // Relay to other peers across all channel aliases (prevent echo to sender)
+    socket.to(targetRooms).emit("canvas:update", {
       elements,
       senderSocketId: socket.id,
-    };
-
-    // Relay to other peers across all channel aliases (prevent echo to sender, deduplicated)
-    const targetRooms = Array.from(new Set([canonicalId, canonicalCode, roomId].filter(Boolean)));
-    socket.to(targetRooms).emit("canvas:update", updatePayload);
+    });
   });
 
   /**
@@ -53,9 +48,7 @@ export const registerCanvasHandlers = (io: Server, socket: Socket) => {
     const { roomId } = payload;
     if (!roomId) return;
 
-    const canonicalId = socket.data?.canonicalId || roomStateManager.getCanonicalKey(roomId);
-    const meta = roomStateManager.getRoomMeta(canonicalId);
-    const canonicalCode = socket.data?.canonicalCode || meta?.roomCode;
+    const { canonicalId, canonicalCode } = roomStateManager.getRoomChannels(roomId, socket);
 
     let elements = roomStateManager.getCanvasScene(canonicalId);
     if ((!elements || elements.length === 0) && canonicalCode) {
@@ -71,21 +64,16 @@ export const registerCanvasHandlers = (io: Server, socket: Socket) => {
     const { roomId, pointer, collaborator, button } = payload;
     if (!roomId || !pointer) return;
 
-    const canonicalId = socket.data?.canonicalId || roomStateManager.getCanonicalKey(roomId);
-    const meta = roomStateManager.getRoomMeta(canonicalId);
-    const canonicalCode = socket.data?.canonicalCode || meta?.roomCode;
+    const { targetRooms } = roomStateManager.getRoomChannels(roomId, socket);
 
-    const pointerPayload = {
+    socket.to(targetRooms).emit("canvas:pointer", {
       collaborator: {
         ...collaborator,
         pointer,
         button,
       },
       senderSocketId: socket.id,
-    };
-
-    const targetRooms = Array.from(new Set([canonicalId, canonicalCode, roomId].filter(Boolean)));
-    socket.to(targetRooms).emit("canvas:pointer", pointerPayload);
+    });
   });
 };
 

@@ -19,6 +19,60 @@ export interface GoogleUserProfile {
 
 export class AuthService {
   /**
+   * Resiliently finds or creates a user from verified Google payload and signs JWTs.
+   */
+  private static async upsertGoogleUser(payload: {
+    sub: string;
+    email: string;
+    name?: string;
+    picture?: string;
+  }) {
+    let user;
+    try {
+      user = await prisma.user.findFirst({
+        where: {
+          OR: [{ email: payload.email }, { googleId: payload.sub }],
+        },
+      });
+
+      if (user) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            googleId: payload.sub,
+            name: payload.name || user.name,
+            avatar: payload.picture || user.avatar,
+            email: payload.email,
+          },
+        });
+      } else {
+        user = await prisma.user.create({
+          data: {
+            googleId: payload.sub,
+            email: payload.email,
+            name: payload.name || "LearningRoom User",
+            avatar: payload.picture,
+          },
+        });
+      }
+    } catch (dbError) {
+      console.warn("[AuthService] Database unreachable, using local session user fallback:", dbError);
+      user = {
+        id: `usr_${payload.sub.slice(0, 16)}`,
+        googleId: payload.sub,
+        email: payload.email,
+        name: payload.name || "LearningRoom User",
+        avatar: payload.picture || null,
+      };
+    }
+
+    const accessToken = generateAccessToken({ userId: user.id, email: user.email });
+    const refreshToken = generateRefreshToken({ userId: user.id, email: user.email });
+
+    return { user, accessToken, refreshToken };
+  }
+
+  /**
    * Generates Google OAuth consent screen redirect URL.
    */
   public static getGoogleAuthUrl(redirectUri?: string): string {
@@ -82,51 +136,13 @@ export class AuthService {
         throw new ApiError(400, "Invalid Google profile data received.");
       }
 
-      // 3. Upsert user in PostgreSQL (with resilient dev fallback if DB connection fails)
-      let user;
-      try {
-        user = await prisma.user.findFirst({
-          where: {
-            OR: [{ email: payload.email }, { googleId: payload.sub }],
-          },
-        });
-
-        if (user) {
-          user = await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              googleId: payload.sub,
-              name: payload.name || user.name,
-              avatar: payload.picture || user.avatar,
-              email: payload.email,
-            },
-          });
-        } else {
-          user = await prisma.user.create({
-            data: {
-              googleId: payload.sub,
-              email: payload.email,
-              name: payload.name || "LearningRoom User",
-              avatar: payload.picture,
-            },
-          });
-        }
-      } catch (dbError) {
-        console.warn("[AuthService] Database unreachable, using local session user fallback:", dbError);
-        user = {
-          id: `usr_${payload.sub.slice(0, 16)}`,
-          googleId: payload.sub,
-          email: payload.email,
-          name: payload.name || "LearningRoom User",
-          avatar: payload.picture || null,
-        };
-      }
-
-      // 4. Generate application JWT tokens
-      const accessToken = generateAccessToken({ userId: user.id, email: user.email });
-      const refreshToken = generateRefreshToken({ userId: user.id, email: user.email });
-
-      return { user, accessToken, refreshToken };
+      // 3. Upsert user in PostgreSQL & generate JWT tokens
+      return this.upsertGoogleUser({
+        sub: payload.sub,
+        email: payload.email,
+        name: payload.name,
+        picture: payload.picture,
+      });
     } catch (error: unknown) {
       if (error instanceof ApiError) throw error;
       const message = error instanceof Error ? error.message : "Google authentication failed";
@@ -153,49 +169,12 @@ export class AuthService {
         throw new ApiError(400, "Invalid Google ID token payload.");
       }
 
-      let user;
-      try {
-        user = await prisma.user.findFirst({
-          where: {
-            OR: [{ email: payload.email }, { googleId: payload.sub }],
-          },
-        });
-
-        if (user) {
-          user = await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              googleId: payload.sub,
-              name: payload.name || user.name,
-              avatar: payload.picture || user.avatar,
-              email: payload.email,
-            },
-          });
-        } else {
-          user = await prisma.user.create({
-            data: {
-              googleId: payload.sub,
-              email: payload.email,
-              name: payload.name || "LearningRoom User",
-              avatar: payload.picture,
-            },
-          });
-        }
-      } catch (dbError) {
-        console.warn("[AuthService] Database unreachable, using local session user fallback:", dbError);
-        user = {
-          id: `usr_${payload.sub.slice(0, 16)}`,
-          googleId: payload.sub,
-          email: payload.email,
-          name: payload.name || "LearningRoom User",
-          avatar: payload.picture || null,
-        };
-      }
-
-      const accessToken = generateAccessToken({ userId: user.id, email: user.email });
-      const refreshToken = generateRefreshToken({ userId: user.id, email: user.email });
-
-      return { user, accessToken, refreshToken };
+      return this.upsertGoogleUser({
+        sub: payload.sub,
+        email: payload.email,
+        name: payload.name,
+        picture: payload.picture,
+      });
     } catch (error: unknown) {
       if (error instanceof ApiError) throw error;
       const message = error instanceof Error ? error.message : "Google ID token validation failed";

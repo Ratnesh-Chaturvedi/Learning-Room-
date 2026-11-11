@@ -212,15 +212,58 @@ class RoomStateManager {
   }
 
   /**
+   * Helper to retrieve the active peers map for a canonical room ID or alias.
+   */
+  private getPeersMap(roomId: string): Map<string, PeerUser> | undefined {
+    const key = this.getCanonicalKey(roomId);
+    let map = this.rooms.get(key);
+    if (!map) {
+      const meta = this.getRoomMeta(roomId);
+      if (meta?.id && this.rooms.has(meta.id)) {
+        map = this.rooms.get(meta.id);
+      } else if (meta?.roomCode && this.rooms.has(meta.roomCode.toUpperCase())) {
+        map = this.rooms.get(meta.roomCode.toUpperCase());
+      }
+    }
+    return map;
+  }
+
+  /**
+   * Resolves canonical keys and all channel aliases for multi-room event broadcasts.
+   */
+  public getRoomChannels(roomId?: string, socket?: { id: string; data?: { canonicalId?: string; canonicalCode?: string } }): {
+    canonicalId: string;
+    canonicalCode?: string;
+    targetRooms: string[];
+  } {
+    const raw = roomId || (socket ? this.socketToRoom.get(socket.id) : undefined) || "";
+    const canonicalId = (socket?.data?.canonicalId as string) || this.getCanonicalKey(raw);
+    const meta = this.getRoomMeta(canonicalId);
+    const canonicalCode = (socket?.data?.canonicalCode as string) || meta?.roomCode;
+    const targetRooms = Array.from(
+      new Set(
+        [
+          canonicalId,
+          canonicalCode,
+          canonicalCode?.toUpperCase(),
+          raw,
+          raw.trim().toUpperCase(),
+          socket?.data?.canonicalId,
+          socket?.data?.canonicalCode,
+        ].filter(Boolean) as string[]
+      )
+    );
+    return { canonicalId, canonicalCode, targetRooms };
+  }
+
+  /**
    * Gets a specific active peer in a room.
    */
   public getPeer(roomId: string, socketId: string): PeerUser | undefined {
-    const key = this.getCanonicalKey(roomId);
-    let peer = this.rooms.get(key)?.get(socketId);
+    let peer = this.getPeersMap(roomId)?.get(socketId);
     if (!peer) {
-      const meta = this.getRoomMeta(roomId);
-      if (meta?.id) peer = this.rooms.get(meta.id)?.get(socketId);
-      if (!peer && meta?.roomCode) peer = this.rooms.get(meta.roomCode.toUpperCase())?.get(socketId);
+      const fallbackRoom = this.socketToRoom.get(socketId);
+      if (fallbackRoom) peer = this.rooms.get(fallbackRoom)?.get(socketId);
     }
     return peer;
   }
@@ -229,18 +272,8 @@ class RoomStateManager {
    * Gets all active peers in a room.
    */
   public getRoomPeers(roomId: string): PeerUser[] {
-    const key = this.getCanonicalKey(roomId);
-    let roomPeers = this.rooms.get(key);
-    if (!roomPeers) {
-      const meta = this.getRoomMeta(roomId);
-      if (meta?.id && this.rooms.has(meta.id)) {
-        roomPeers = this.rooms.get(meta.id);
-      } else if (meta?.roomCode && this.rooms.has(meta.roomCode.toUpperCase())) {
-        roomPeers = this.rooms.get(meta.roomCode.toUpperCase());
-      }
-    }
-    if (!roomPeers) return [];
-    return Array.from(roomPeers.values());
+    const peers = this.getPeersMap(roomId);
+    return peers ? Array.from(peers.values()) : [];
   }
 
   /**
@@ -251,15 +284,9 @@ class RoomStateManager {
     socketId: string,
     updates: Partial<Pick<PeerUser, "isAudioMuted" | "isVideoOff" | "isHandRaised" | "isScreenSharing">>
   ): PeerUser | null {
-    const key = this.getCanonicalKey(roomId);
-    const peer = this.rooms.get(key)?.get(socketId);
+    const peer = this.getPeer(roomId, socketId);
     if (!peer) return null;
-
-    if (updates.isAudioMuted !== undefined) peer.isAudioMuted = updates.isAudioMuted;
-    if (updates.isVideoOff !== undefined) peer.isVideoOff = updates.isVideoOff;
-    if (updates.isHandRaised !== undefined) peer.isHandRaised = updates.isHandRaised;
-    if (updates.isScreenSharing !== undefined) peer.isScreenSharing = updates.isScreenSharing;
-
+    Object.assign(peer, updates);
     return peer;
   }
 

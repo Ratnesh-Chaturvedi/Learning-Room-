@@ -42,8 +42,8 @@ export const userApi = {
   /**
    * Fetch rooms created and joined by the user.
    */
-  getMyRooms: async () => {
-    return apiClient.get('/users/my-rooms');
+  getMyRooms: async (filter = 'all') => {
+    return apiClient.get('/users/my-rooms', { params: { filter } });
   },
 };
 

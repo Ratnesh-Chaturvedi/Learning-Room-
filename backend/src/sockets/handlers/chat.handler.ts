@@ -15,10 +15,7 @@ export const registerChatHandlers = (io: Server, socket: Socket) => {
     const { roomId, text } = payload;
     if (!roomId || !text || !text.trim()) return;
 
-    const canonicalId = socket.data?.canonicalId || roomStateManager.getCanonicalKey(roomId);
-    const meta = roomStateManager.getRoomMeta(canonicalId);
-    const canonicalCode = socket.data?.canonicalCode || meta?.roomCode;
-
+    const { canonicalId, targetRooms } = roomStateManager.getRoomChannels(roomId, socket);
     const authUser = socket.data?.user;
     const peer = roomStateManager.getPeer(canonicalId, socket.id);
 
@@ -34,11 +31,7 @@ export const registerChatHandlers = (io: Server, socket: Socket) => {
       timestamp: new Date().toISOString(),
     };
 
-    // Store in ephemeral memory history under canonical room key
     roomStateManager.addChatMessage(canonicalId, message);
-
-    // Broadcast across all room channel aliases (deduplicated)
-    const targetRooms = Array.from(new Set([canonicalId, canonicalCode, roomId].filter(Boolean)));
     io.to(targetRooms).emit("chat:new-message", message);
   });
 
@@ -49,20 +42,15 @@ export const registerChatHandlers = (io: Server, socket: Socket) => {
     const { roomId, isTyping } = payload;
     if (!roomId) return;
 
-    const canonicalId = socket.data?.canonicalId || roomStateManager.getCanonicalKey(roomId);
-    const meta = roomStateManager.getRoomMeta(canonicalId);
-    const canonicalCode = socket.data?.canonicalCode || meta?.roomCode;
-
+    const { canonicalId, targetRooms } = roomStateManager.getRoomChannels(roomId, socket);
     const peer = roomStateManager.getPeer(canonicalId, socket.id);
-    const typingPayload = {
+
+    socket.to(targetRooms).emit("chat:user-typing", {
       socketId: socket.id,
       userId: peer?.userId || socket.id,
       name: peer?.name || "Someone",
       isTyping,
-    };
-
-    const targetRooms = Array.from(new Set([canonicalId, canonicalCode, roomId].filter(Boolean)));
-    socket.to(targetRooms).emit("chat:user-typing", typingPayload);
+    });
   });
 
   /**
@@ -72,20 +60,15 @@ export const registerChatHandlers = (io: Server, socket: Socket) => {
     const { roomId, emoji, startX } = payload;
     if (!roomId || !emoji) return;
 
-    const canonicalId = socket.data?.canonicalId || roomStateManager.getCanonicalKey(roomId);
-    const meta = roomStateManager.getRoomMeta(canonicalId);
-    const canonicalCode = socket.data?.canonicalCode || meta?.roomCode;
-
+    const { canonicalId, targetRooms } = roomStateManager.getRoomChannels(roomId, socket);
     const peer = roomStateManager.getPeer(canonicalId, socket.id);
-    const reactionPayload = {
+
+    io.to(targetRooms).emit("chat:emoji-reaction", {
       id: crypto.randomUUID(),
       emoji,
       senderName: peer?.name || "Collaborator",
       startX: startX || Math.floor(40 + Math.random() * 20),
-    };
-
-    const targetRooms = Array.from(new Set([canonicalId, canonicalCode, roomId].filter(Boolean)));
-    io.to(targetRooms).emit("chat:emoji-reaction", reactionPayload);
+    });
   });
 };
 

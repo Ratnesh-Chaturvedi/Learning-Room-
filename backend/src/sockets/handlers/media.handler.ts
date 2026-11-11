@@ -1,114 +1,54 @@
 import type { Server, Socket } from "socket.io";
 import { roomStateManager } from "../state/roomState.manager.ts";
-import type { ToggleMediaPayload } from "../types/socket.types.ts";
+import type { ToggleMediaPayload, PeerUser } from "../types/socket.types.ts";
 
 export const registerMediaHandlers = (io: Server, socket: Socket) => {
+  const broadcastMediaUpdate = (
+    rawRoomId: string | undefined,
+    updates: Partial<Pick<PeerUser, "isAudioMuted" | "isVideoOff" | "isHandRaised" | "isScreenSharing">>,
+    eventName: string
+  ) => {
+    const targetRoom = rawRoomId || roomStateManager.getRoomIdBySocketId(socket.id);
+    if (!targetRoom) return;
+
+    const { canonicalId, targetRooms } = roomStateManager.getRoomChannels(targetRoom, socket);
+    const updated = roomStateManager.updatePeerMedia(canonicalId, socket.id, updates);
+
+    if (updated) {
+      io.to(targetRooms).emit(eventName, {
+        socketId: socket.id,
+        userId: updated.userId,
+        ...updates,
+      });
+    }
+  };
+
   /**
    * Toggles microphone mute state across peers in room.
    */
   socket.on("media:toggle-audio", (payload: ToggleMediaPayload) => {
-    const rawRoomId = payload.roomId || roomStateManager.getRoomIdBySocketId(socket.id);
-    if (!rawRoomId) return;
-
-    const canonicalId = socket.data?.canonicalId || roomStateManager.getCanonicalKey(rawRoomId);
-    const meta = roomStateManager.getRoomMeta(canonicalId);
-    const canonicalCode = socket.data?.canonicalCode || meta?.roomCode;
-
-    const updated = roomStateManager.updatePeerMedia(canonicalId, socket.id, {
-      isAudioMuted: payload.isMuted,
-    });
-
-    if (updated) {
-      const statusPayload = {
-        socketId: socket.id,
-        userId: updated.userId,
-        isAudioMuted: updated.isAudioMuted,
-      };
-
-      const targetRooms = Array.from(new Set([canonicalId, canonicalCode, rawRoomId].filter(Boolean)));
-      io.to(targetRooms).emit("media:audio-status-changed", statusPayload);
-    }
+    broadcastMediaUpdate(payload.roomId, { isAudioMuted: payload.isMuted }, "media:audio-status-changed");
   });
 
   /**
    * Toggles camera video state across peers in room.
    */
   socket.on("media:toggle-video", (payload: ToggleMediaPayload) => {
-    const rawRoomId = payload.roomId || roomStateManager.getRoomIdBySocketId(socket.id);
-    if (!rawRoomId) return;
-
-    const canonicalId = socket.data?.canonicalId || roomStateManager.getCanonicalKey(rawRoomId);
-    const meta = roomStateManager.getRoomMeta(canonicalId);
-    const canonicalCode = socket.data?.canonicalCode || meta?.roomCode;
-
-    const updated = roomStateManager.updatePeerMedia(canonicalId, socket.id, {
-      isVideoOff: payload.isVideoOff,
-    });
-
-    if (updated) {
-      const statusPayload = {
-        socketId: socket.id,
-        userId: updated.userId,
-        isVideoOff: updated.isVideoOff,
-      };
-
-      const targetRooms = Array.from(new Set([canonicalId, canonicalCode, rawRoomId].filter(Boolean)));
-      io.to(targetRooms).emit("media:video-status-changed", statusPayload);
-    }
+    broadcastMediaUpdate(payload.roomId, { isVideoOff: payload.isVideoOff }, "media:video-status-changed");
   });
 
   /**
    * Toggles hand raise reaction across peers in room.
    */
   socket.on("media:raise-hand", (payload: ToggleMediaPayload) => {
-    const rawRoomId = payload.roomId || roomStateManager.getRoomIdBySocketId(socket.id);
-    if (!rawRoomId) return;
-
-    const canonicalId = socket.data?.canonicalId || roomStateManager.getCanonicalKey(rawRoomId);
-    const meta = roomStateManager.getRoomMeta(canonicalId);
-    const canonicalCode = socket.data?.canonicalCode || meta?.roomCode;
-
-    const updated = roomStateManager.updatePeerMedia(canonicalId, socket.id, {
-      isHandRaised: payload.isHandRaised,
-    });
-
-    if (updated) {
-      const statusPayload = {
-        socketId: socket.id,
-        userId: updated.userId,
-        isHandRaised: updated.isHandRaised,
-      };
-
-      const targetRooms = Array.from(new Set([canonicalId, canonicalCode, rawRoomId].filter(Boolean)));
-      io.to(targetRooms).emit("media:hand-raise-changed", statusPayload);
-    }
+    broadcastMediaUpdate(payload.roomId, { isHandRaised: payload.isHandRaised }, "media:hand-raise-changed");
   });
 
   /**
    * Toggles screen sharing state across peers in room.
    */
   socket.on("media:toggle-screenshare", (payload: { roomId?: string; isScreenSharing: boolean }) => {
-    const rawRoomId = payload.roomId || roomStateManager.getRoomIdBySocketId(socket.id);
-    if (!rawRoomId) return;
-
-    const canonicalId = socket.data?.canonicalId || roomStateManager.getCanonicalKey(rawRoomId);
-    const meta = roomStateManager.getRoomMeta(canonicalId);
-    const canonicalCode = socket.data?.canonicalCode || meta?.roomCode;
-
-    const updated = roomStateManager.updatePeerMedia(canonicalId, socket.id, {
-      isScreenSharing: payload.isScreenSharing,
-    });
-
-    if (updated) {
-      const statusPayload = {
-        socketId: socket.id,
-        userId: updated.userId,
-        isScreenSharing: updated.isScreenSharing ?? false,
-      };
-
-      const targetRooms = Array.from(new Set([canonicalId, canonicalCode, rawRoomId].filter(Boolean)));
-      io.to(targetRooms).emit("media:screenshare-status-changed", statusPayload);
-    }
+    broadcastMediaUpdate(payload.roomId, { isScreenSharing: payload.isScreenSharing }, "media:screenshare-status-changed");
   });
 };
 

@@ -1,6 +1,6 @@
 import prisma from "../config/db.ts";
 import { ApiError } from "../utils/apiError.ts";
-import { RoomStatus } from "@prisma/client";
+import { RoomStatus, type Prisma } from "@prisma/client";
 import { CloudinaryService } from "./cloudinary.service.ts";
 
 export class UserService {
@@ -149,78 +149,58 @@ export class UserService {
     filter: "all" | "hosted" | "joined" | "scheduled" | "archived" = "all"
   ) {
     try {
+      let where: Prisma.RoomWhereInput;
+      let orderBy: Prisma.RoomOrderByWithRelationInput = { createdAt: "desc" };
+
       switch (filter) {
         case "hosted":
-          return await prisma.room.findMany({
-            where: { creatorId: userId },
-            orderBy: { createdAt: "desc" },
-            include: {
-              creator: { select: { id: true, name: true, email: true, avatar: true } },
-              participants: { select: { id: true, name: true, email: true, avatar: true } },
-            },
-          });
-
+          where = { creatorId: userId };
+          break;
         case "joined":
-          return await prisma.room.findMany({
-            where: {
-              participants: { some: { id: userId } },
-              creatorId: { not: userId },
-            },
-            orderBy: { createdAt: "desc" },
-            include: {
-              creator: { select: { id: true, name: true, email: true, avatar: true } },
-              participants: { select: { id: true, name: true, email: true, avatar: true } },
-            },
-          });
-
+          where = {
+            participants: { some: { id: userId } },
+            creatorId: { not: userId },
+          };
+          break;
         case "scheduled":
-          return await prisma.room.findMany({
-            where: {
-              status: RoomStatus.SCHEDULED,
-              OR: [
-                { creatorId: userId },
-                { participants: { some: { id: userId } } },
-              ],
-            },
-            orderBy: { scheduledAt: "asc" },
-            include: {
-              creator: { select: { id: true, name: true, email: true, avatar: true } },
-              participants: { select: { id: true, name: true, email: true, avatar: true } },
-            },
-          });
-
+          where = {
+            status: RoomStatus.SCHEDULED,
+            OR: [
+              { creatorId: userId },
+              { participants: { some: { id: userId } } },
+            ],
+          };
+          orderBy = { scheduledAt: "asc" };
+          break;
         case "archived":
-          return await prisma.room.findMany({
-            where: {
-              status: RoomStatus.ENDED,
-              OR: [
-                { creatorId: userId },
-                { participants: { some: { id: userId } } },
-              ],
-            },
-            orderBy: { endedAt: "desc" },
-            include: {
-              creator: { select: { id: true, name: true, email: true, avatar: true } },
-              participants: { select: { id: true, name: true, email: true, avatar: true } },
-            },
-          });
-
+          where = {
+            status: RoomStatus.ENDED,
+            OR: [
+              { creatorId: userId },
+              { participants: { some: { id: userId } } },
+            ],
+          };
+          orderBy = { endedAt: "desc" };
+          break;
         case "all":
         default:
-          return await prisma.room.findMany({
-            where: {
-              OR: [
-                { creatorId: userId },
-                { participants: { some: { id: userId } } },
-              ],
-            },
-            orderBy: { createdAt: "desc" },
-            include: {
-              creator: { select: { id: true, name: true, email: true, avatar: true } },
-              participants: { select: { id: true, name: true, email: true, avatar: true } },
-            },
-          });
+          where = {
+            OR: [
+              { creatorId: userId },
+              { participants: { some: { id: userId } } },
+            ],
+          };
+          break;
       }
+
+      return await prisma.room.findMany({
+        where,
+        orderBy,
+        include: {
+          creator: { select: { id: true, name: true, email: true, avatar: true } },
+          participants: { select: { id: true, name: true, email: true, avatar: true } },
+        },
+      });
     } catch {
       return [];
     }

@@ -208,6 +208,29 @@ export default function SideChat(props = {}) {
 
   const displayOnline = onlineCount || 1;
 
+  const renderChatContent = (heightClass) => (
+    <>
+      <ChatMessageList
+        messages={messages}
+        isTyping={isTyping}
+        messagesEndRef={messagesEndRef}
+        customHeightClass={heightClass}
+      />
+      <ChatInputForm
+        inputText={inputText}
+        setInputText={setInputText}
+        onSendMessage={handleSendMessage}
+      />
+    </>
+  );
+
+  const OnlineBadge = (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+      {displayOnline} online
+    </span>
+  );
+
   // MODE 1: MOBILE BOTTOM SHEET (< 640px)
   if (floating && isMobile) {
     return (
@@ -226,10 +249,7 @@ export default function SideChat(props = {}) {
               <span className="font-heading font-bold text-sm text-[var(--color-text-primary)]">
                 Live Chat
               </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                {displayOnline} online
-              </span>
+              {OnlineBadge}
             </div>
             <button
               type="button"
@@ -241,18 +261,7 @@ export default function SideChat(props = {}) {
             </button>
           </div>
 
-          <ChatMessageList
-            messages={messages}
-            isTyping={isTyping}
-            messagesEndRef={messagesEndRef}
-            customHeightClass="h-[260px] max-h-[45vh] flex-1"
-          />
-
-          <ChatInputForm
-            inputText={inputText}
-            setInputText={setInputText}
-            onSendMessage={handleSendMessage}
-          />
+          {renderChatContent("h-[260px] max-h-[45vh] flex-1")}
         </div>
       </div>
     );
@@ -298,10 +307,7 @@ export default function SideChat(props = {}) {
                 <span className="font-heading font-bold text-xs text-[var(--color-text-primary)]">
                   Live Chat
                 </span>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  {displayOnline} online
-                </span>
+                {OnlineBadge}
               </div>
 
               <div className="flex items-center gap-1">
@@ -324,21 +330,7 @@ export default function SideChat(props = {}) {
               </div>
             </div>
 
-            {!isMinimized && (
-              <>
-                <ChatMessageList
-                  messages={messages}
-                  isTyping={isTyping}
-                  messagesEndRef={messagesEndRef}
-                  customHeightClass="h-[340px] max-h-[50vh]"
-                />
-                <ChatInputForm
-                  inputText={inputText}
-                  setInputText={setInputText}
-                  onSendMessage={handleSendMessage}
-                />
-              </>
-            )}
+            {!isMinimized && renderChatContent("h-[340px] max-h-[50vh]")}
           </div>
         </div>
       </>
@@ -362,10 +354,7 @@ export default function SideChat(props = {}) {
             <span className="font-heading font-bold text-sm text-[var(--color-text-primary)]">
               Side chat
             </span>
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              {displayOnline} online
-            </span>
+            {OnlineBadge}
           </div>
           <button
             type="button"
@@ -382,18 +371,7 @@ export default function SideChat(props = {}) {
           </button>
         </div>
 
-        <ChatMessageList
-          messages={messages}
-          isTyping={isTyping}
-          messagesEndRef={messagesEndRef}
-          customHeightClass="flex-1 max-h-none"
-        />
-
-        <ChatInputForm
-          inputText={inputText}
-          setInputText={setInputText}
-          onSendMessage={handleSendMessage}
-        />
+        {renderChatContent("flex-1 max-h-none")}
       </div>
     </aside>
   );

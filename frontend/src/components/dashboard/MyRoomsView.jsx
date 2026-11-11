@@ -23,70 +23,19 @@ export default function MyRoomsView({ onOpenRoom, onOpenCreateRoom }) {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const response = await userApi.getMyRooms();
-      const allRooms = response.data?.rooms || [];
-
-      // Filter locally or pass query param
-      let filtered = allRooms;
-      if (activeFilter === 'hosted') {
-        filtered = allRooms.filter((r) => r.creatorId === user?.id);
-      } else if (activeFilter === 'joined') {
-        filtered = allRooms.filter((r) => r.creatorId !== user?.id);
-      } else if (activeFilter === 'scheduled') {
-        filtered = allRooms.filter((r) => r.status === 'SCHEDULED');
-      } else if (activeFilter === 'archived') {
-        filtered = allRooms.filter((r) => r.status === 'ENDED');
-      }
-
-      setRooms(filtered);
+      const response = await userApi.getMyRooms(activeFilter);
+      setRooms(response.data?.rooms || []);
     } catch (err) {
       setErrorMessage(err.message || 'Failed to load your rooms.');
       setRooms([]);
     } finally {
       setIsLoading(false);
     }
-  }, [activeFilter, user?.id]);
+  }, [activeFilter]);
 
   useEffect(() => {
-    let isMounted = true;
-    const loadRooms = async () => {
-      setIsLoading(true);
-      setErrorMessage('');
-      try {
-        const response = await userApi.getMyRooms();
-        const allRooms = response.data?.rooms || [];
-
-        let filtered = allRooms;
-        if (activeFilter === 'hosted') {
-          filtered = allRooms.filter((r) => r.creatorId === user?.id);
-        } else if (activeFilter === 'joined') {
-          filtered = allRooms.filter((r) => r.creatorId !== user?.id);
-        } else if (activeFilter === 'scheduled') {
-          filtered = allRooms.filter((r) => r.status === 'SCHEDULED');
-        } else if (activeFilter === 'archived') {
-          filtered = allRooms.filter((r) => r.status === 'ENDED');
-        }
-
-        if (isMounted) {
-          setRooms(filtered);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setErrorMessage(err.message || 'Failed to load your rooms.');
-          setRooms([]);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadRooms();
-    return () => {
-      isMounted = false;
-    };
-  }, [activeFilter, user?.id]);
+    fetchMyRooms();
+  }, [fetchMyRooms]);
 
   const handleCopyLink = (room) => {
     const origin = window.location.origin;
