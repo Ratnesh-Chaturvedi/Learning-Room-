@@ -195,7 +195,7 @@ export class AuthService {
           avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80",
         }
       : {
-          googleId: "dev-google-maya-id-102",
+          googleId: "dev-google-user-2",
           name: "Ruchi Chaturvedi",
           email: "ruchi@learningroom.app",
           avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120&auto=format&fit=crop&q=80",

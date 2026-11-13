@@ -76,14 +76,20 @@ function RemoteAudioTrack({ stream }) {
     if (el.srcObject !== stream) {
       el.srcObject = stream;
     }
+    el.muted = false;
     el.volume = 1.0;
 
     const playAudio = () => {
-      if (el && el.paused) {
-        el.play().catch((err) => {
-          // Autoplay blocked: will be unlocked on user interaction
-          console.warn('[Audio] Autoplay waiting for user interaction:', err?.name);
-        });
+      if (el) {
+        el.muted = false;
+        el.volume = 1.0;
+        const playPromise = el.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            // Autoplay blocked: will be unlocked on user interaction
+            console.warn('[Audio] Autoplay waiting for user interaction:', err?.name);
+          });
+        }
       }
     };
 
@@ -91,12 +97,15 @@ function RemoteAudioTrack({ stream }) {
 
     // Browser Autoplay Policy unlocker: as soon as user taps or clicks anywhere, resume playback
     const unlockAutoplay = () => {
-      playAudio();
+      if (el && el.paused) {
+        el.play().catch(() => {});
+      }
     };
 
-    window.addEventListener('click', unlockAutoplay, { once: true });
-    window.addEventListener('pointerdown', unlockAutoplay, { once: true });
-    window.addEventListener('keydown', unlockAutoplay, { once: true });
+    window.addEventListener('click', unlockAutoplay);
+    window.addEventListener('pointerdown', unlockAutoplay);
+    window.addEventListener('keydown', unlockAutoplay);
+    window.addEventListener('touchstart', unlockAutoplay);
 
     // When tracks are added or unmuted, trigger playback
     const handleTrackActive = () => {
@@ -112,6 +121,7 @@ function RemoteAudioTrack({ stream }) {
       window.removeEventListener('click', unlockAutoplay);
       window.removeEventListener('pointerdown', unlockAutoplay);
       window.removeEventListener('keydown', unlockAutoplay);
+      window.removeEventListener('touchstart', unlockAutoplay);
       stream.removeEventListener('addtrack', handleTrackActive);
       stream.getAudioTracks().forEach((track) => {
         track.removeEventListener('unmute', handleTrackActive);
@@ -173,8 +183,13 @@ function ScheduledRoomHoldingScreen({
       <div className="absolute w-96 h-96 rounded-full bg-[#543FE3]/10 blur-3xl pointer-events-none" />
 
       <div className="relative z-10 max-w-lg w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-8 shadow-2xl space-y-6 animate-in zoom-in-95 duration-200">
-        <div className="w-16 h-16 rounded-full bg-[#543FE3]/15 text-[#543FE3] flex items-center justify-center mx-auto text-3xl shadow-inner">
-          📅
+        <div className="w-16 h-16 rounded-full bg-[#543FE3]/15 text-[#543FE3] flex items-center justify-center mx-auto shadow-inner">
+          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+            <line x1="16" x2="16" y1="2" y2="6" />
+            <line x1="8" x2="8" y1="2" y2="6" />
+            <line x1="3" x2="21" y1="10" y2="10" />
+          </svg>
         </div>
 
         <div className="space-y-2">
@@ -230,7 +245,7 @@ function ScheduledRoomHoldingScreen({
               onClick={onCopyInvite}
               className="flex-1 py-2.5 px-4 rounded-xl border border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-all cursor-pointer"
             >
-              {copiedLink ? '✓ Copied Link' : '📋 Copy Invite Link'}
+              {copiedLink ? '✓ Copied Link' : 'Copy Invite Link'}
             </button>
             <button
               type="button"
@@ -265,7 +280,6 @@ function RoomView() {
     chatMessages,
     isVideoGalleryOpen,
     setIsVideoGalleryOpen,
-    floatingReactions,
     roomTheme,
     isRoomTerminated,
     terminationInfo,
@@ -276,7 +290,7 @@ function RoomView() {
     copiedLink,
   } = useRoom();
 
-  // 📅 SCHEDULED HOLDING ROOM OVERLAY (When room is scheduled for a future time)
+  // SCHEDULED HOLDING ROOM OVERLAY (When room is scheduled for a future time)
   if (isRoomScheduled) {
     return (
       <ScheduledRoomHoldingScreen
@@ -290,15 +304,18 @@ function RoomView() {
     );
   }
 
-  // 🛑 INSTANT LIVE ROOM TERMINATION OVERLAY
+  // LIVE ROOM TERMINATION OVERLAY
   if (isRoomTerminated) {
     return (
       <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-[var(--color-background)] text-center relative overflow-hidden select-none">
         <div className="absolute w-96 h-96 rounded-full bg-rose-500/10 blur-3xl pointer-events-none" />
 
         <div className="relative z-10 max-w-md w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-8 shadow-2xl space-y-6 animate-in zoom-in-95 duration-200">
-          <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto text-3xl shadow-inner">
-            🛑
+          <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-inner">
+            <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+            </svg>
           </div>
 
           <div className="space-y-2">
@@ -327,15 +344,19 @@ function RoomView() {
     );
   }
 
-  // 🔒 WAITING ROOM OVERLAY (When waiting for host admission)
+  // WAITING ROOM OVERLAY (When waiting for host admission)
   if (isWaiting) {
     return (
       <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-[var(--color-background)] text-center relative overflow-hidden">
         <div className="absolute w-96 h-96 rounded-full bg-[#543FE3]/10 blur-3xl pointer-events-none" />
 
         <div className="relative z-10 max-w-md w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-8 shadow-2xl space-y-6 animate-in zoom-in-95 duration-200">
-          <div className="w-16 h-16 rounded-full bg-[#F3EEFE] dark:bg-[#252238] flex items-center justify-center mx-auto text-3xl">
-            🚪
+          <div className="w-16 h-16 rounded-full bg-[#F3EEFE] dark:bg-[#252238] text-[#543FE3] flex items-center justify-center mx-auto shadow-inner">
+            <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+              <polyline points="10 17 15 12 10 7" />
+              <line x1="15" x2="3" y1="12" y2="12" />
+            </svg>
           </div>
 
           <div className="space-y-2">
@@ -371,12 +392,15 @@ function RoomView() {
       data-theme={roomTheme}
       className="w-full max-w-full h-screen flex flex-col overflow-hidden bg-[var(--color-background)] select-none text-[var(--color-text-primary)]"
     >
-      {/* 🔔 HOST NOTIFICATION MODAL: Knock Requests Queue */}
+      {/* HOST NOTIFICATION MODAL: Knock Requests Queue */}
       {knockRequests.length > 0 && (
         <div className="fixed top-16 left-3 right-3 sm:left-auto sm:right-6 sm:top-20 z-[100002] sm:max-w-sm w-auto bg-[var(--color-surface)] border-2 border-[#543FE3] rounded-2xl shadow-2xl p-4 animate-in slide-in-from-top duration-300">
           <div className="flex items-start justify-between gap-2 pb-2 border-b border-[var(--color-border)]">
             <div className="flex items-center gap-2">
-              <span className="text-base">🔔</span>
+              <svg className="w-4 h-4 text-[#543FE3]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
               <h4 className="font-heading font-bold text-xs text-[var(--color-text-primary)]">
                 Knock Request ({knockRequests.length})
               </h4>
@@ -429,7 +453,7 @@ function RoomView() {
       )}
 
       {/* 0. Permanent Background Audio for Remote Peers (Plays even if VideoGalleryModal is closed) */}
-      <div className="fixed -top-[9999px] -left-[9999px] w-px h-px opacity-0 pointer-events-none" aria-hidden="true">
+      <div className="fixed top-0 left-0 w-px h-px overflow-hidden pointer-events-none opacity-5" aria-hidden="true">
         {Object.entries(remoteStreams || {}).map(([peerSocketId, stream]) => (
           <RemoteAudioTrack key={peerSocketId} stream={stream} />
         ))}
@@ -471,21 +495,6 @@ function RoomView() {
               />
             </RoomErrorBoundary>
           </div>
-
-          {/* Floating Emoji Reactions */}
-          {floatingReactions.map((reaction) => (
-            <div
-              key={reaction.id}
-              className="absolute pointer-events-none z-50 text-2xl sm:text-3xl animate-bounce"
-              style={{
-                left: `${reaction.startX}%`,
-                bottom: '12%',
-                animationDuration: '1.2s',
-              }}
-            >
-              {reaction.emoji}
-            </div>
-          ))}
 
           {/* Re-open Chat Floating Pill */}
           {!isChatOpen && (

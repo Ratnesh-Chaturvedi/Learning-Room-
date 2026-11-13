@@ -4,6 +4,7 @@ import { roomStateManager } from "../state/roomState.manager.ts";
 export interface CanvasUpdatePayload {
   roomId: string;
   elements: unknown[];
+  files?: Record<string, unknown>;
   appState?: Record<string, unknown>;
 }
 
@@ -20,29 +21,30 @@ export interface CanvasPointerPayload {
 
 export const registerCanvasHandlers = (_io: Server, socket: Socket) => {
   /**
-   * 1. Broadcasts real-time canvas drawings / scene modifications to peers.
+   * 1. Broadcasts real-time canvas drawings, images, and scene modifications to peers.
    */
   socket.on("canvas:update", (payload: CanvasUpdatePayload) => {
-    const { roomId, elements } = payload;
+    const { roomId, elements, files } = payload;
     if (!roomId || !Array.isArray(elements)) return;
 
     const { canonicalId, canonicalCode, targetRooms } = roomStateManager.getRoomChannels(roomId, socket);
 
-    // Persist current scene elements in room memory under canonical ID and code
-    roomStateManager.setCanvasScene(canonicalId, elements);
+    // Persist current scene elements and binary image files in room memory under canonical ID and code
+    roomStateManager.setCanvasScene(canonicalId, elements, files);
     if (canonicalCode && canonicalCode !== canonicalId) {
-      roomStateManager.setCanvasScene(canonicalCode, elements);
+      roomStateManager.setCanvasScene(canonicalCode, elements, files);
     }
 
     // Relay to other peers across all channel aliases (prevent echo to sender)
     socket.to(targetRooms).emit("canvas:update", {
       elements,
+      files: files || {},
       senderSocketId: socket.id,
     });
   });
 
   /**
-   * 2. Delivers initial canvas scene to newly joined peer.
+   * 2. Delivers initial canvas scene and binary files (photos/images) to newly joined peer.
    */
   socket.on("canvas:get-init", (payload: { roomId: string }) => {
     const { roomId } = payload;
@@ -51,10 +53,15 @@ export const registerCanvasHandlers = (_io: Server, socket: Socket) => {
     const { canonicalId, canonicalCode } = roomStateManager.getRoomChannels(roomId, socket);
 
     let elements = roomStateManager.getCanvasScene(canonicalId);
+    let files = roomStateManager.getCanvasFiles(canonicalId);
     if ((!elements || elements.length === 0) && canonicalCode) {
       elements = roomStateManager.getCanvasScene(canonicalCode);
+      files = roomStateManager.getCanvasFiles(canonicalCode);
     }
-    socket.emit("canvas:init", { elements: elements || [] });
+    socket.emit("canvas:init", {
+      elements: elements || [],
+      files: files || {},
+    });
   });
 
   /**

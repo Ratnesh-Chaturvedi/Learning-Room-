@@ -36,9 +36,6 @@ export default function RoomHeader(props = {}) {
   const handleToggleVideo = props.setIsVideoOn ?? room.handleToggleVideo;
   const isHandRaised = props.isHandRaised ?? room.isHandRaised;
   const handleToggleHand = props.setIsHandRaised ?? room.handleToggleHand;
-  const activeCallTime = props.activeCallTime ?? room.activeCallTime ?? 0;
-  const formatCallTime = props.formatCallTime ?? room.formatCallTime;
-  const triggerReaction = props.triggerReaction ?? room.triggerReaction;
   const isChatOpen = props.isChatOpen ?? room.isChatOpen;
   const setIsChatOpen = props.setIsChatOpen ?? room.setIsChatOpen;
   const unreadChatCount = props.unreadChatCount ?? room.chatMessages?.length ?? 0;
@@ -129,12 +126,12 @@ export default function RoomHeader(props = {}) {
         </div>
       </div>
 
-      {/* Center: Sleek Call Timer & Connected Collaborators (Desktop & Laptop) */}
-      <div className="hidden lg:flex items-center gap-3 shrink-0">
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-surface-secondary)] border border-[var(--color-border)] text-xs font-semibold shadow-2xs">
-          <span className={`w-2 h-2 rounded-full ${isSocketConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500 animate-ping'}`} />
-          <span className="font-mono text-[11px] font-bold text-[var(--color-text-primary)]">
-            {formatCallTime(activeCallTime)}
+      {/* Center: Connected Collaborators (Desktop & Laptop) */}
+      <div className="hidden lg:flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-surface-secondary)] border border-[var(--color-border)] text-xs font-semibold shadow-2xs">
+          <span className={`w-2 h-2 rounded-full ${isSocketConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+          <span className="text-[11px] font-medium text-[var(--color-text-secondary)]">
+            {isSocketConnected ? 'Live' : 'Connecting'}
           </span>
         </div>
 
@@ -320,37 +317,25 @@ export default function RoomHeader(props = {}) {
           </span>
         </button>
 
-        {/* Hand Raise Reaction (Desktop & Tablet) */}
+        {/* Hand Raise (Desktop & Tablet) */}
         <button
           type="button"
-          onClick={() => {
-            handleToggleHand();
-            triggerReaction('✋');
-          }}
+          onClick={handleToggleHand}
           className={`hidden sm:flex p-1.5 sm:p-2 rounded-full transition-all cursor-pointer ${
             isHandRaised
               ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 ring-2 ring-amber-400'
               : 'bg-[var(--color-surface-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]'
           }`}
-          title="Raise Hand"
+          title={isHandRaised ? 'Lower Hand' : 'Raise Hand'}
+          aria-label={isHandRaised ? 'Lower Hand' : 'Raise Hand'}
         >
-          <span className="text-sm">✋</span>
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+            <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
+            <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+            <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+          </svg>
         </button>
-
-        {/* Quick Reaction Emojis Dropdown (Desktop & Laptop) */}
-        <div className="hidden md:flex items-center gap-0.5 bg-[var(--color-surface-secondary)] rounded-full px-1.5 py-0.5 border border-[var(--color-border)]">
-          {['❤️', '👏', '💡', '🔥', '🚀'].map((emoji) => (
-            <button
-              key={emoji}
-              type="button"
-              onClick={() => triggerReaction(emoji)}
-              className="hover:scale-125 transition-transform text-xs p-1 cursor-pointer"
-              title={`Send ${emoji} reaction`}
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
 
         {/* Side Chat Toggle Button */}
         <button
@@ -415,14 +400,14 @@ export default function RoomHeader(props = {}) {
           {/* Mobile Dropdown Popup */}
           {isMobileMenuOpen && (
             <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 animate-in fade-in zoom-in-95">
-              {/* Call Timer indicator on mobile */}
+              {/* Connection indicator on mobile */}
               <div className="flex items-center justify-between px-2.5 py-1.5 text-xs border-b border-[var(--color-border)] text-[var(--color-text-secondary)]">
                 <span className="flex items-center gap-1.5">
                   <span className={`w-2 h-2 rounded-full ${isSocketConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-                  <span>Call time</span>
+                  <span>Status</span>
                 </span>
-                <span className="font-mono font-bold text-[var(--color-text-primary)]">
-                  {formatCallTime(activeCallTime)}
+                <span className="font-semibold text-[var(--color-text-primary)]">
+                  {isSocketConnected ? 'Live' : 'Connecting'}
                 </span>
               </div>
 
@@ -437,13 +422,16 @@ export default function RoomHeader(props = {}) {
                   className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
-                    <span>📹</span>
+                    <svg className="w-4 h-4 text-[var(--color-brand)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="23 7 16 12 23 17 23 7" />
+                      <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                    </svg>
                     <span>Video Gallery</span>
                   </span>
                   {isVideoGalleryOpen ? (
                     <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Open</span>
                   ) : (
-                    <span className="text-[10px] text-gray-400">Closed</span>
+                    <span className="text-[10px] text-[var(--color-text-secondary)]">Closed</span>
                   )}
                 </button>
               )}
@@ -459,7 +447,11 @@ export default function RoomHeader(props = {}) {
                   className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
-                    <span>🖥️</span>
+                    <svg className="w-4 h-4 text-[var(--color-brand)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                      <line x1="8" y1="21" x2="16" y2="21" />
+                      <line x1="12" y1="17" x2="12" y2="21" />
+                    </svg>
                     <span>Screen Share</span>
                   </span>
                   {isScreenSharing && (
@@ -478,7 +470,12 @@ export default function RoomHeader(props = {}) {
                 className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] cursor-pointer"
               >
                 <span className="flex items-center gap-2">
-                  <span>👥</span>
+                  <svg className="w-4 h-4 text-[var(--color-brand)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
                   <span>Room Members</span>
                 </span>
                 <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-[#543FE3]/15 text-[#543FE3]">
@@ -491,13 +488,17 @@ export default function RoomHeader(props = {}) {
                 type="button"
                 onClick={() => {
                   handleToggleHand();
-                  triggerReaction('✋');
                   setIsMobileMenuOpen(false);
                 }}
                 className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] cursor-pointer"
               >
                 <span className="flex items-center gap-2">
-                  <span>✋</span>
+                  <svg className="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+                    <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
+                    <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+                    <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+                  </svg>
                   <span>Raise Hand</span>
                 </span>
                 {isHandRaised && <span className="text-[10px] text-amber-600 font-bold">Active</span>}
@@ -512,29 +513,25 @@ export default function RoomHeader(props = {}) {
                 }}
                 className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] cursor-pointer"
               >
-                <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
+                {theme === 'dark' ? (
+                  <svg className="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="5" />
+                    <line x1="12" y1="1" x2="12" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="23" />
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                    <line x1="1" y1="12" x2="3" y2="12" />
+                    <line x1="21" y1="12" x2="23" y2="12" />
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                  </svg>
+                )}
                 <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
               </button>
-
-              {/* Reactions */}
-              <div className="pt-1.5 border-t border-[var(--color-border)]">
-                <span className="text-[10px] text-[var(--color-text-secondary)] px-1 font-semibold">Reactions</span>
-                <div className="flex items-center justify-between pt-1">
-                  {['❤️', '👏', '💡', '🔥', '🚀'].map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => {
-                        triggerReaction(emoji);
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className="text-sm p-1 hover:scale-125 transition-transform cursor-pointer"
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
           )}
         </div>

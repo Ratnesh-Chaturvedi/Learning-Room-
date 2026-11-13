@@ -17,18 +17,15 @@ export const authenticate = asyncHandler(
     }
 
     if (env.NODE_ENV !== "production" && (token.startsWith("dev_token") || token.startsWith("dev_jwt_"))) {
-      const isMaya = token.includes("maya");
-      const devEmail = isMaya ? "maya@learningroom.app" : "ratnesh@learningroom.app";
+      const userNum = token.includes("2") ? 2 : 1;
+      const devEmail = `dev${userNum}@learningroom.app`;
       let user = await prisma.user.findFirst({ where: { email: devEmail } });
       if (!user) {
         user = await prisma.user.create({
           data: {
-            googleId: isMaya ? "dev-google-maya-id-102" : "dev-google-ratnesh-id-101",
-            name: isMaya ? "Maya Sharma" : "Ratnesh Tiwari",
+            googleId: `dev-google-user-${userNum}`,
+            name: `Dev User ${userNum}`,
             email: devEmail,
-            avatar: isMaya
-              ? "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120&auto=format&fit=crop&q=80"
-              : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80",
           },
         });
       }

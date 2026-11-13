@@ -98,8 +98,7 @@ export default function ExcalidrawCanvas({
   const [excalidrawAPI, setExcalidrawAPI] = useState(null);
 
   const storageKey = `excalidraw_room_${roomId}`;
-
-  // 1. Initialize room elements from localStorage or defaults without extra effect
+  // 1. Initialize room elements and photos/images from localStorage or defaults
   const [initialData] = useState(() => {
     try {
       const saved = localStorage.getItem(`excalidraw_room_${roomId}`);
@@ -111,6 +110,7 @@ export default function ExcalidrawCanvas({
             viewBackgroundColor: theme === 'dark' ? '#171815' : '#ffffff',
             theme: theme === 'dark' ? 'dark' : 'light',
           },
+          files: parsed.files || {},
         };
       }
     } catch (_e) {
@@ -124,6 +124,7 @@ export default function ExcalidrawCanvas({
           viewBackgroundColor: theme === 'dark' ? '#171815' : '#ffffff',
           theme: theme === 'dark' ? 'dark' : 'light',
         },
+        files: {},
       };
     }
 
@@ -133,8 +134,11 @@ export default function ExcalidrawCanvas({
         viewBackgroundColor: theme === 'dark' ? '#171815' : '#ffffff',
         theme: theme === 'dark' ? 'dark' : 'light',
       },
+      files: {},
     };
   });
+
+  const filesRef = useRef(initialData.files || {});
 
   const isRemoteUpdateRef = useRef(false);
   const lastElementsSignatureRef = useRef('');
@@ -155,13 +159,25 @@ export default function ExcalidrawCanvas({
     socket.emit('canvas:get-init', { roomId });
 
     const handleCanvasInit = (data) => {
+      if (data?.files && typeof data.files === 'object' && Object.keys(data.files).length > 0 && excalidrawAPI) {
+        Object.assign(filesRef.current, data.files);
+        try {
+          excalidrawAPI.addFiles(Object.values(data.files));
+        } catch (err) {
+          console.warn('[Excalidraw] Failed to add files on init:', err);
+        }
+      }
+
       if (data?.elements && Array.isArray(data.elements) && data.elements.length > 0 && excalidrawAPI) {
         const sig = getElementsSignature(data.elements);
         lastElementsSignatureRef.current = sig;
         isRemoteUpdateRef.current = true;
         excalidrawAPI.updateScene({ elements: data.elements });
         try {
-          localStorage.setItem(storageKey, JSON.stringify({ elements: data.elements }));
+          localStorage.setItem(
+            storageKey,
+            JSON.stringify({ elements: data.elements, files: filesRef.current })
+          );
         } catch (_e) {
           // Ignore storage quota errors
         }
@@ -169,6 +185,15 @@ export default function ExcalidrawCanvas({
     };
 
     const handleCanvasUpdate = (data) => {
+      if (data?.files && typeof data.files === 'object' && Object.keys(data.files).length > 0 && excalidrawAPI) {
+        Object.assign(filesRef.current, data.files);
+        try {
+          excalidrawAPI.addFiles(Object.values(data.files));
+        } catch (err) {
+          console.warn('[Excalidraw] Failed to add files on update:', err);
+        }
+      }
+
       if (data?.elements && Array.isArray(data.elements) && excalidrawAPI) {
         const sig = getElementsSignature(data.elements);
         if (sig === lastElementsSignatureRef.current) return;
@@ -176,7 +201,10 @@ export default function ExcalidrawCanvas({
         isRemoteUpdateRef.current = true;
         excalidrawAPI.updateScene({ elements: data.elements });
         try {
-          localStorage.setItem(storageKey, JSON.stringify({ elements: data.elements }));
+          localStorage.setItem(
+            storageKey,
+            JSON.stringify({ elements: data.elements, files: filesRef.current })
+          );
         } catch (_e) {
           // Ignore storage quota errors
         }
@@ -222,10 +250,14 @@ export default function ExcalidrawCanvas({
     }
   }, [theme, excalidrawAPI]);
 
-  // Handle local changes & broadcast to room participants
+  // Handle local changes & broadcast to room participants (elements and photos/images)
   const handleChange = useCallback(
-    (elements, _appState, _files) => {
+    (elements, _appState, files) => {
       if (!elements || !Array.isArray(elements)) return;
+
+      if (files && typeof files === 'object' && Object.keys(files).length > 0) {
+        Object.assign(filesRef.current, files);
+      }
 
       const currentSig = getElementsSignature(elements);
 
@@ -246,7 +278,10 @@ export default function ExcalidrawCanvas({
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = setTimeout(() => {
         try {
-          localStorage.setItem(storageKey, JSON.stringify({ elements }));
+          localStorage.setItem(
+            storageKey,
+            JSON.stringify({ elements, files: filesRef.current })
+          );
         } catch (_e) {
           // Ignore storage write failure
         }
@@ -259,6 +294,7 @@ export default function ExcalidrawCanvas({
           socket.emit('canvas:update', {
             roomId,
             elements,
+            files: filesRef.current,
           });
         }, 30);
       }

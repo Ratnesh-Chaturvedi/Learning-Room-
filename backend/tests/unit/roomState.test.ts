@@ -85,14 +85,28 @@ const c0 = chatFromUUID[0];
 assert(Boolean(c0 && c0.text === "Hello Bob!"), "Chat content must match");
 console.log("✔ Real-time chat sync verified across canonical channel aliases");
 
-// 7. Test Canvas scene canonical synchronization
+// 7. Test Canvas scene & binary files (photos/images) canonical synchronization
 const dummyScene = [{ id: "shape-1", type: "rectangle", x: 10, y: 20 }];
-roomStateManager.setCanvasScene(shortCode, dummyScene);
+const dummyFiles = {
+  "img-file-1": {
+    id: "img-file-1",
+    mimeType: "image/png",
+    dataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+  },
+};
+roomStateManager.setCanvasScene(shortCode, dummyScene, dummyFiles);
 
 const sceneFromUUID = roomStateManager.getCanvasScene(canonicalUUID);
 const sceneFromCode = roomStateManager.getCanvasScene(shortCode);
 assert(sceneFromUUID.length === 1 && sceneFromCode.length === 1, "Canvas scene must be identical across both identifiers");
-console.log("✔ Canvas scene sync verified across canonical channel aliases");
+
+const filesFromUUID = roomStateManager.getCanvasFiles(canonicalUUID);
+const filesFromCode = roomStateManager.getCanvasFiles(shortCode);
+assert(
+  Boolean(filesFromUUID["img-file-1"] && filesFromCode["img-file-1"]),
+  "Canvas binary files must be accessible across both canonical identifiers"
+);
+console.log("✔ Canvas scene and binary files (photos/images) sync verified across canonical channel aliases");
 
 // 8. Test Room Termination & Blocked Join
 roomStateManager.markRoomEnded(shortCode);

@@ -49,7 +49,12 @@ export default function ParticipantsModal() {
         <div className="px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-surface-secondary)]/50">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-[#543FE3]/10 dark:bg-[#543FE3]/25 text-[#543FE3] flex items-center justify-center text-sm font-bold">
-              👥
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
             </div>
             <div>
               <h3 className="font-heading font-extrabold text-sm text-[var(--color-text-primary)] flex items-center gap-2">
@@ -128,18 +133,18 @@ export default function ParticipantsModal() {
                   </span>
                   {isHost && (
                     <span className="px-1.5 py-0.2 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400">
-                      Host 👑
+                      Host
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-2 mt-0.5 text-[10px] text-[var(--color-text-secondary)]">
-                  <span>{isMuted ? '🔇 Muted' : '🎙️ Mic on'}</span>
+                  <span>{isMuted ? 'Muted' : 'Mic on'}</span>
                   <span>•</span>
-                  <span>{isVideoOn ? '📹 Camera on' : '🚫 Camera off'}</span>
+                  <span>{isVideoOn ? 'Camera on' : 'Camera off'}</span>
                   {isScreenSharing && (
                     <>
                       <span>•</span>
-                      <span className="text-[#543FE3] font-semibold">🖥️ Presenting</span>
+                      <span className="text-[#543FE3] font-semibold">Presenting</span>
                     </>
                   )}
                 </div>
@@ -148,8 +153,25 @@ export default function ParticipantsModal() {
 
             {/* Quick Status Icons */}
             <div className="flex items-center gap-1.5 shrink-0 text-xs">
-              {isHandRaised && <span title="Hand Raised">✋</span>}
-              {isScreenSharing && <span title="Sharing Screen">🖥️</span>}
+              {isHandRaised && (
+                <span title="Hand Raised" className="text-amber-500">
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+                    <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
+                    <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+                    <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+                  </svg>
+                </span>
+              )}
+              {isScreenSharing && (
+                <span title="Sharing Screen" className="text-[#543FE3]">
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                    <line x1="8" y1="21" x2="16" y2="21" />
+                    <line x1="12" y1="17" x2="12" y2="21" />
+                  </svg>
+                </span>
+              )}
             </div>
           </div>
 
@@ -185,13 +207,13 @@ export default function ParticipantsModal() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5 text-[10px] text-[var(--color-text-secondary)]">
-                    <span>{peer.isAudioMuted ? '🔇 Muted' : '🎙️ Mic on'}</span>
+                    <span>{peer.isAudioMuted ? 'Muted' : 'Mic on'}</span>
                     <span>•</span>
-                    <span>{peer.isVideoOff ? '🚫 Camera off' : '📹 Camera on'}</span>
+                    <span>{peer.isVideoOff ? 'Camera off' : 'Camera on'}</span>
                     {peer.isScreenSharing && (
                       <>
                         <span>•</span>
-                        <span className="text-[#543FE3] font-semibold">🖥️ Presenting</span>
+                        <span className="text-[#543FE3] font-semibold">Presenting</span>
                       </>
                     )}
                   </div>
@@ -200,10 +222,27 @@ export default function ParticipantsModal() {
 
               {/* Action Buttons: Status Icons & Host Kick Button */}
               <div className="flex items-center gap-2 shrink-0">
-                {peer.isHandRaised && <span className="text-sm" title="Hand Raised">✋</span>}
-                {peer.isScreenSharing && <span className="text-sm" title="Presenting Screen">🖥️</span>}
+                {peer.isHandRaised && (
+                  <span title="Hand Raised" className="text-amber-500">
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+                      <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
+                      <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+                      <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+                    </svg>
+                  </span>
+                )}
+                {peer.isScreenSharing && (
+                  <span title="Presenting Screen" className="text-[#543FE3]">
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                      <line x1="8" y1="21" x2="16" y2="21" />
+                      <line x1="12" y1="17" x2="12" y2="21" />
+                    </svg>
+                  </span>
+                )}
 
-                {/* 🔴 HOST MODERATION: KICK OUT PARTICIPANT */}
+                {/* Host Moderation: Kick Participant */}
                 {isHost && (
                   <button
                     type="button"
@@ -225,7 +264,12 @@ export default function ParticipantsModal() {
           {/* Empty State */}
           {filteredPeers.length === 0 && peers.length === 0 && (
             <div className="py-6 px-4 text-center space-y-2">
-              <div className="text-2xl">👋</div>
+              <div className="w-10 h-10 rounded-full bg-[var(--color-surface-secondary)] text-[var(--color-text-secondary)] flex items-center justify-center mx-auto">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                </svg>
+              </div>
               <p className="text-xs font-semibold text-[var(--color-text-primary)]">
                 You're the only one here
               </p>

@@ -20,6 +20,9 @@ class RoomStateManager {
   // In-memory real-time canvas state per room: canonicalRoomId -> elements array
   private canvasScenes: Map<string, unknown[]> = new Map();
 
+  // In-memory real-time canvas binary files per room (photos/images): canonicalRoomId -> Record<fileId, BinaryFileData>
+  private canvasFiles: Map<string, Record<string, unknown>> = new Map();
+
   // Cache of room access & privacy metadata for fast in-memory routing
   private roomMetaCache: Map<string, RoomMeta> = new Map();
 
@@ -77,6 +80,15 @@ class RoomStateManager {
         if (codeCanvas && !this.canvasScenes.has(meta.id)) {
           this.canvasScenes.set(meta.id, codeCanvas);
           this.canvasScenes.set(codeKey, codeCanvas);
+        }
+
+        // Bridge canvas binary files
+        const codeFiles = this.canvasFiles.get(codeKey);
+        if (codeFiles) {
+          const idFiles = this.canvasFiles.get(meta.id) || {};
+          const mergedFiles = { ...idFiles, ...codeFiles };
+          this.canvasFiles.set(meta.id, mergedFiles);
+          this.canvasFiles.set(codeKey, mergedFiles);
         }
       }
     }
@@ -410,11 +422,15 @@ class RoomStateManager {
   }
 
   /**
-   * Stores the latest Excalidraw canvas scene elements for a room.
+   * Stores the latest Excalidraw canvas scene elements and optional binary files for a room.
    */
-  public setCanvasScene(roomId: string, elements: unknown[]): void {
+  public setCanvasScene(roomId: string, elements: unknown[], files?: Record<string, unknown>): void {
     const key = this.getCanonicalKey(roomId);
     this.canvasScenes.set(key, elements);
+    if (files && typeof files === "object" && Object.keys(files).length > 0) {
+      const existing = this.canvasFiles.get(key) || {};
+      this.canvasFiles.set(key, { ...existing, ...files });
+    }
   }
 
   /**
@@ -423,6 +439,14 @@ class RoomStateManager {
   public getCanvasScene(roomId: string): unknown[] {
     const key = this.getCanonicalKey(roomId);
     return this.canvasScenes.get(key) || [];
+  }
+
+  /**
+   * Retrieves the current Excalidraw canvas binary files for a room.
+   */
+  public getCanvasFiles(roomId: string): Record<string, unknown> {
+    const key = this.getCanonicalKey(roomId);
+    return this.canvasFiles.get(key) || {};
   }
 
   /**

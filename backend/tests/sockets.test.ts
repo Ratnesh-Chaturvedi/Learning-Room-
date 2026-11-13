@@ -88,14 +88,26 @@ async function runSocketVerification() {
   });
   const testCanvasElements = [
     { id: "elem-1", type: "rectangle", x: 10, y: 20, width: 100, height: 50, version: 1 },
+    { id: "img-1", type: "image", fileId: "file-photo-1", x: 120, y: 20, width: 200, height: 150 },
   ];
+  const testCanvasFiles = {
+    "file-photo-1": {
+      id: "file-photo-1",
+      mimeType: "image/png",
+      dataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    },
+  };
   client1.emit("canvas:update", {
     roomId,
     elements: testCanvasElements,
+    files: testCanvasFiles,
     appState: { viewBackgroundColor: "#ffffff" },
   });
   const canvasReceived = await c2CanvasPromise;
-  console.log(`✔ Real-time Canvas sync received by Client 2: ${canvasReceived.elements.length} element(s)`);
+  console.log(`✔ Real-time Canvas sync received by Client 2: ${canvasReceived.elements.length} element(s), files: ${Object.keys(canvasReceived.files || {}).length}`);
+  if (!canvasReceived.files || !canvasReceived.files["file-photo-1"]) {
+    throw new Error("Client 2 did not receive canvas image file dataURL!");
+  }
 
   // Test 5: Live Chat Message
   const c2ChatPromise = new Promise<any>((resolve) => {

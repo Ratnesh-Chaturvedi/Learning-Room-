@@ -34,8 +34,31 @@ export default function MyRoomsView({ onOpenRoom, onOpenCreateRoom }) {
   }, [activeFilter]);
 
   useEffect(() => {
-    fetchMyRooms();
-  }, [fetchMyRooms]);
+    let ignore = false;
+    const load = async () => {
+      setIsLoading(true);
+      setErrorMessage('');
+      try {
+        const response = await userApi.getMyRooms(activeFilter);
+        if (!ignore) {
+          setRooms(response.data?.rooms || []);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setErrorMessage(err.message || 'Failed to load your rooms.');
+          setRooms([]);
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    };
+    load();
+    return () => {
+      ignore = true;
+    };
+  }, [activeFilter]);
 
   const handleCopyLink = (room) => {
     const origin = window.location.origin;

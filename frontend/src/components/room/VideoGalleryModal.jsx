@@ -537,7 +537,26 @@ export default function VideoGalleryModal(props = {}) {
                 : 'bg-white/10 text-white border border-white/10 hover:bg-white/20'
             }`}
           >
-            {isMuted ? '🔇 Unmute' : '🎙️ Mute'}
+            {isMuted ? (
+              <>
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="2" x2="22" y1="2" y2="22" />
+                  <path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2" />
+                  <path d="M5 10v2a7 7 0 0 0 12 5" />
+                  <line x1="12" x2="12" y1="19" y2="22" />
+                </svg>
+                <span>Unmute</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                  <line x1="12" x2="12" y1="19" y2="22" />
+                </svg>
+                <span>Mute</span>
+              </>
+            )}
           </button>
 
           {/* Video Button */}
@@ -550,7 +569,24 @@ export default function VideoGalleryModal(props = {}) {
                 : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500/30'
             }`}
           >
-            {isVideoOn ? '📹 Stop Video' : '📷 Start Video'}
+            {isVideoOn ? (
+              <>
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="23 7 16 12 23 17 23 7" />
+                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                </svg>
+                <span>Stop Video</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="2" x2="22" y1="2" y2="22" />
+                  <path d="m16 16 7 5V7l-7 5" />
+                  <rect width="15" height="14" x="1" y="5" rx="2" />
+                </svg>
+                <span>Start Video</span>
+              </>
+            )}
           </button>
 
           {/* Screen Share Button */}
