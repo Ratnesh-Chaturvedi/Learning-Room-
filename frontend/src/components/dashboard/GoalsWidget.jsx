@@ -22,8 +22,26 @@ export default function GoalsWidget({ variant = 'todo', onOpenCreateRoom }) {
   }, []);
 
   useEffect(() => {
-    fetchGoals();
-  }, [fetchGoals]);
+    let ignore = false;
+    const load = async () => {
+      try {
+        const response = await goalApi.getGoals();
+        if (!ignore) {
+          setGoals(response.data?.goals || []);
+        }
+      } catch (err) {
+        console.error('[Goals] Failed to fetch goals:', err);
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    };
+    load();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const handleAddGoal = async (e) => {
     if (e) e.preventDefault();

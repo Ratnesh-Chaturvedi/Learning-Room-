@@ -111,7 +111,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
   const [isVideoOn, setIsVideoOn] = useState(false);
   const [isVideoGalleryOpen, setIsVideoGalleryOpen] = useState(true);
   const [isHandRaised, setIsHandRaised] = useState(false);
-  const [activeCallTime, setActiveCallTime] = useState(0);
+  const [activeCallTime] = useState(0);
 
   // Room Termination State
   const [isRoomTerminated, setIsRoomTerminated] = useState(false);
@@ -244,13 +244,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     (roomDetails.creatorId === currentUser.id || roomDetails.creator?.id === currentUser.id)
   );
 
-  // Call timer increment
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveCallTime((prev) => prev + 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+
 
   // WebRTC Mesh Hook for live camera, microphone streams & screen sharing
   const {

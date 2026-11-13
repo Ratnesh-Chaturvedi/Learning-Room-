@@ -90,200 +90,32 @@ export function useWebRtc({ roomId, socket, user: _user, isMuted, isVideoOn, isE
     return null;
   }, []);
 
-  // 1. Initialize Local Media Stream (Microphone always; camera if isVideoOn is initially true)
-  useEffect(() => {
-    if (!isEnabled) return;
-    let isMounted = true;
-
-    const startLocalMedia = async () => {
+  // Helper: Safely generate and send a renegotiation SDP offer to a specific peer
+  const renegotiate = useCallback(
+    async (pc, targetSocketId) => {
+      if (!pc || !socket || pc.signalingState === 'closed') return;
       try {
-        let audioStream = null;
-        try {
-          audioStream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-              echoCancellation: true,
-              noiseSuppression: true,
-              autoGainControl: true,
-            },
-          });
-        } catch (audioErr) {
-          console.warn('[WebRTC] Microphone unavailable, starting empty stream:', audioErr);
-        }
-
-        if (!isMounted) {
-          audioStream?.getTracks().forEach((t) => t.stop());
-          return;
-        }
-
-        if (audioStream) {
-          const audioTrack = audioStream.getAudioTracks()[0];
-          if (audioTrack) {
-            audioTrack.enabled = !isMutedRef.current;
-            localStreamRef.current.addTrack(audioTrack);
-          }
-        }
-
-        // If video was initially requested, acquire camera video
-        if (isVideoOnRef.current) {
-          try {
-            const videoStream = await navigator.mediaDevices.getUserMedia({
-              video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
-                frameRate: { ideal: 24 },
-              },
-            });
-            if (isMounted) {
-              const videoTrack = videoStream.getVideoTracks()[0];
-              if (videoTrack) {
-                localStreamRef.current.addTrack(videoTrack);
-              }
-            } else {
-              videoStream.getTracks().forEach((t) => t.stop());
-            }
-          } catch (vidErr) {
-            console.warn('[WebRTC] Camera unavailable on startup:', vidErr);
-          }
-        }
-
-        if (isMounted) {
-          setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
-          setMediaError(null);
-        }
+        if (pc.signalingState !== 'stable') return;
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socket.emit('webrtc:offer', {
+          targetSocketId,
+          sdp: offer,
+        });
       } catch (err) {
-        console.error('[WebRTC] Failed to capture microphone or camera:', err);
-        if (isMounted) {
-          setMediaError('Microphone or Camera access was denied or not found.');
-        }
+        console.warn('[WebRTC] Renegotiation offer error for peer:', targetSocketId, err);
       }
-    };
+    },
+    [socket]
+  );
 
-    startLocalMedia();
-
-    return () => {
-      isMounted = false;
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((t) => t.stop());
-      }
-      if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach((t) => t.stop());
-        screenStreamRef.current = null;
-      }
-      Object.values(peerConnectionsRef.current).forEach((pc) => {
-        try {
-          pc.close();
-        } catch (_e) {}
-      });
-      peerConnectionsRef.current = {};
-      pendingCandidatesRef.current = {};
-    };
-  }, [isEnabled]);
-
-  // 2. Synchronize Mute (Audio Track) state
-  useEffect(() => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getAudioTracks().forEach((track) => {
-        track.enabled = !isMuted;
-      });
+  // Helper: Renegotiate with all currently connected peers
+  const renegotiateAllPeers = useCallback(async () => {
+    const entries = Object.entries(peerConnectionsRef.current);
+    for (const [targetSocketId, pc] of entries) {
+      await renegotiate(pc, targetSocketId);
     }
-  }, [isMuted]);
-
-  // 3. Synchronize Video (Camera Track) state with true hardware release & LED turn-off
-  const isTogglingVideoRef = useRef(false);
-  useEffect(() => {
-    const handleVideoSync = async () => {
-      if (!localStreamRef.current || isTogglingVideoRef.current) return;
-      isTogglingVideoRef.current = true;
-      try {
-        const stream = localStreamRef.current;
-        const currentVideoTracks = stream.getVideoTracks();
-
-        if (!isVideoOn) {
-          // Camera turned OFF: Stop all video tracks so webcam hardware LED immediately turns OFF!
-          if (currentVideoTracks.length > 0) {
-            currentVideoTracks.forEach((t) => {
-              t.stop();
-              stream.removeTrack(t);
-            });
-
-            // If not screen sharing, replace video sender with null across all active peer connections
-            if (!screenStreamRef.current) {
-              Object.values(peerConnectionsRef.current).forEach((pc) => {
-                const videoT = getVideoTransceiver(pc);
-                if (videoT?.sender) {
-                  videoT.sender.replaceTrack(null).catch(() => {});
-                }
-              });
-            }
-            setLocalStream(new MediaStream(stream.getTracks()));
-          }
-        } else {
-          // Camera turned ON: If no active live video track, acquire fresh camera hardware
-          const activeTrack = currentVideoTracks.find((t) => t.readyState === 'live');
-          if (!activeTrack) {
-            try {
-              const freshMedia = await navigator.mediaDevices.getUserMedia({
-                video: {
-                  width: { ideal: 640 },
-                  height: { ideal: 480 },
-                  frameRate: { ideal: 24 },
-                },
-              });
-              const newVideoTrack = freshMedia.getVideoTracks()[0];
-              if (newVideoTrack) {
-                stream.addTrack(newVideoTrack);
-
-                // If not screen sharing, replace video sender with new camera track across all peer connections
-                if (!screenStreamRef.current) {
-                  Object.values(peerConnectionsRef.current).forEach((pc) => {
-                    const videoT = getVideoTransceiver(pc);
-                    if (videoT) {
-                      try {
-                        videoT.direction = 'sendrecv';
-                      } catch {}
-                      if (videoT.sender) {
-                        videoT.sender.replaceTrack(newVideoTrack).catch(() => {});
-                      }
-                    }
-                  });
-                }
-                setLocalStream(new MediaStream(stream.getTracks()));
-              }
-            } catch (err) {
-              console.warn('[WebRTC] Unable to re-acquire camera video track:', err);
-            }
-          }
-        }
-      } finally {
-        isTogglingVideoRef.current = false;
-      }
-    };
-
-    handleVideoSync();
-  }, [isVideoOn]);
-
-  // 4. Attach local tracks to all existing peer connections whenever local stream changes
-  useEffect(() => {
-    if (!localStream) return;
-    const audioTrack = localStream.getAudioTracks().find((t) => t.readyState === 'live');
-    const activeVideoTrack = getActiveLocalVideoTrack();
-
-    Object.entries(peerConnectionsRef.current).forEach(([targetSocketId, pc]) => {
-      const audioT = getAudioTransceiver(pc);
-      const videoT = getVideoTransceiver(pc);
-
-      if (audioT && audioTrack) {
-        audioT.sender.replaceTrack(audioTrack).catch((err) => {
-          console.warn('[WebRTC] Error replacing audio track:', targetSocketId, err);
-        });
-      }
-      if (videoT && activeVideoTrack) {
-        videoT.sender.replaceTrack(activeVideoTrack).catch((err) => {
-          console.warn('[WebRTC] Error replacing video track:', targetSocketId, err);
-        });
-      }
-    });
-  }, [localStream, getActiveLocalVideoTrack]);
+  }, [renegotiate]);
 
   // Helper: Create and configure RTCPeerConnection for a specific remote peer
   const createPeerConnection = useCallback(
@@ -302,9 +134,8 @@ export function useWebRtc({ roomId, socket, user: _user, isMuted, isVideoOn, isE
       const pc = new RTCPeerConnection(ICE_SERVERS);
       peerConnectionsRef.current[targetSocketId] = pc;
 
-      // Always pre-allocate audio and video transceivers with stable stream reference
-      // so initial SDP offer/answer ALWAYS includes both m=audio and m=video sections
-      // with matching msid stream attributes.
+      // Pre-allocate audio and video transceivers with stable stream reference
+      // so initial SDP offer/answer always contains both m=audio and m=video sections.
       try {
         const stream = localStreamRef.current;
         pc.addTransceiver('audio', { direction: 'sendrecv', streams: [stream] });
@@ -345,9 +176,12 @@ export function useWebRtc({ roomId, socket, user: _user, isMuted, isVideoOn, isE
             stream = event.streams && event.streams[0] ? event.streams[0] : new MediaStream();
           }
 
-          // Clean up ended tracks of same kind
+          // Clean up ended or replaced tracks of same kind
           stream.getTracks().forEach((existingTrack) => {
-            if (existingTrack.kind === event.track.kind && existingTrack.readyState === 'ended') {
+            if (
+              existingTrack.kind === event.track.kind &&
+              (existingTrack.readyState === 'ended' || existingTrack.id !== event.track.id)
+            ) {
               stream.removeTrack(existingTrack);
             }
           });
@@ -363,7 +197,7 @@ export function useWebRtc({ roomId, socket, user: _user, isMuted, isVideoOn, isE
           };
         });
 
-        // Listen for track unmute / mute / ended events (e.g. when sender calls replaceTrack)
+        // Listen for track unmute / mute / ended events
         // and immediately refresh the MediaStream reference so React state updates and video/audio play!
         const triggerStreamRefresh = () => {
           setRemoteStreams((prev) => {
@@ -400,6 +234,206 @@ export function useWebRtc({ roomId, socket, user: _user, isMuted, isVideoOn, isE
     },
     [socket, getActiveLocalVideoTrack]
   );
+
+  // 1. Initialize Local Media Stream (Microphone always; camera if isVideoOn is initially true)
+  useEffect(() => {
+    if (!isEnabled) return;
+    let isMounted = true;
+    const localStreamInstance = localStreamRef.current;
+
+    const startLocalMedia = async () => {
+      try {
+        let audioStream = null;
+        try {
+          audioStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            },
+          });
+        } catch (audioErr) {
+          console.warn('[WebRTC] Microphone unavailable, starting empty stream:', audioErr);
+        }
+
+        if (!isMounted) {
+          audioStream?.getTracks().forEach((t) => t.stop());
+          return;
+        }
+
+        if (audioStream) {
+          const audioTrack = audioStream.getAudioTracks()[0];
+          if (audioTrack) {
+            audioTrack.enabled = !isMutedRef.current;
+            localStreamInstance.addTrack(audioTrack);
+          }
+        }
+
+        // If video was initially requested, acquire camera video
+        if (isVideoOnRef.current) {
+          try {
+            const videoStream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                frameRate: { ideal: 24 },
+              },
+            });
+            if (isMounted) {
+              const videoTrack = videoStream.getVideoTracks()[0];
+              if (videoTrack) {
+                localStreamInstance.addTrack(videoTrack);
+              }
+            } else {
+              videoStream.getTracks().forEach((t) => t.stop());
+            }
+          } catch (vidErr) {
+            console.warn('[WebRTC] Camera unavailable on startup:', vidErr);
+          }
+        }
+
+        if (isMounted) {
+          setLocalStream(new MediaStream(localStreamInstance.getTracks()));
+          setMediaError(null);
+        }
+      } catch (err) {
+        console.error('[WebRTC] Failed to capture microphone or camera:', err);
+        if (isMounted) {
+          setMediaError('Microphone or Camera access was denied or not found.');
+        }
+      }
+    };
+
+    startLocalMedia();
+
+    return () => {
+      isMounted = false;
+      const screenStreamInstance = screenStreamRef.current;
+      if (localStreamInstance) {
+        localStreamInstance.getTracks().forEach((t) => t.stop());
+      }
+      if (screenStreamInstance) {
+        screenStreamInstance.getTracks().forEach((t) => t.stop());
+        screenStreamRef.current = null;
+      }
+      Object.values(peerConnectionsRef.current).forEach((pc) => {
+        try {
+          pc.close();
+        } catch (_e) {}
+      });
+      peerConnectionsRef.current = {};
+      pendingCandidatesRef.current = {};
+    };
+  }, [isEnabled]);
+
+  // 2. Synchronize Mute (Audio Track) state
+  useEffect(() => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getAudioTracks().forEach((track) => {
+        track.enabled = !isMuted;
+      });
+    }
+  }, [isMuted]);
+
+  // 3. Synchronize Video (Camera Track) state with true hardware release & LED turn-off, and renegotiate
+  const isTogglingVideoRef = useRef(false);
+  useEffect(() => {
+    const handleVideoSync = async () => {
+      if (!localStreamRef.current || isTogglingVideoRef.current) return;
+      isTogglingVideoRef.current = true;
+      try {
+        const stream = localStreamRef.current;
+        const currentVideoTracks = stream.getVideoTracks();
+
+        if (!isVideoOn) {
+          // Camera turned OFF: Stop all video tracks so webcam hardware LED immediately turns OFF!
+          if (currentVideoTracks.length > 0) {
+            currentVideoTracks.forEach((t) => {
+              t.stop();
+              stream.removeTrack(t);
+            });
+
+            // If not screen sharing, replace video sender with null and renegotiate across all peers
+            if (!screenStreamRef.current) {
+              for (const pc of Object.values(peerConnectionsRef.current)) {
+                const videoT = getVideoTransceiver(pc);
+                if (videoT?.sender) {
+                  await videoT.sender.replaceTrack(null).catch(() => {});
+                }
+              }
+              await renegotiateAllPeers();
+            }
+            setLocalStream(new MediaStream(stream.getTracks()));
+          }
+        } else {
+          // Camera turned ON: If no active live video track, acquire fresh camera hardware
+          const activeTrack = currentVideoTracks.find((t) => t.readyState === 'live');
+          if (!activeTrack) {
+            try {
+              const freshMedia = await navigator.mediaDevices.getUserMedia({
+                video: {
+                  width: { ideal: 640 },
+                  height: { ideal: 480 },
+                  frameRate: { ideal: 24 },
+                },
+              });
+              const newVideoTrack = freshMedia.getVideoTracks()[0];
+              if (newVideoTrack) {
+                stream.addTrack(newVideoTrack);
+
+                // If not screen sharing, replace video sender with new camera track and renegotiate
+                if (!screenStreamRef.current) {
+                  for (const pc of Object.values(peerConnectionsRef.current)) {
+                    const videoT = getVideoTransceiver(pc);
+                    if (videoT) {
+                      try {
+                        videoT.direction = 'sendrecv';
+                      } catch {}
+                      if (videoT.sender) {
+                        await videoT.sender.replaceTrack(newVideoTrack).catch(() => {});
+                      }
+                    }
+                  }
+                  await renegotiateAllPeers();
+                }
+                setLocalStream(new MediaStream(stream.getTracks()));
+              }
+            } catch (err) {
+              console.warn('[WebRTC] Unable to re-acquire camera video track:', err);
+            }
+          }
+        }
+      } finally {
+        isTogglingVideoRef.current = false;
+      }
+    };
+
+    handleVideoSync();
+  }, [isVideoOn, renegotiateAllPeers]);
+
+  // 4. Attach local tracks to all existing peer connections whenever local stream changes & renegotiate
+  useEffect(() => {
+    if (!localStream) return;
+    const audioTrack = localStream.getAudioTracks().find((t) => t.readyState === 'live');
+    const activeVideoTrack = getActiveLocalVideoTrack();
+
+    Object.entries(peerConnectionsRef.current).forEach(([targetSocketId, pc]) => {
+      const audioT = getAudioTransceiver(pc);
+      const videoT = getVideoTransceiver(pc);
+
+      if (audioT && audioTrack) {
+        audioT.sender.replaceTrack(audioTrack).catch((err) => {
+          console.warn('[WebRTC] Error replacing audio track:', targetSocketId, err);
+        });
+      }
+      if (videoT && activeVideoTrack) {
+        videoT.sender.replaceTrack(activeVideoTrack).catch((err) => {
+          console.warn('[WebRTC] Error replacing video track:', targetSocketId, err);
+        });
+      }
+      renegotiate(pc, targetSocketId);
+    });
+  }, [localStream, getActiveLocalVideoTrack, renegotiate]);
 
   // 5. WebRTC Signaling Listeners
   useEffect(() => {
@@ -452,6 +486,18 @@ export function useWebRtc({ roomId, socket, user: _user, isMuted, isVideoOn, isE
         if (audioT && audioTrack) audioT.sender.replaceTrack(audioTrack).catch(() => {});
         if (videoT && activeVideoTrack) videoT.sender.replaceTrack(activeVideoTrack).catch(() => {});
 
+        // Handle offer collision with polite rollback
+        if (pc.signalingState !== 'stable') {
+          if (socket.id && callerSocketId && socket.id > callerSocketId) {
+            try {
+              await pc.setLocalDescription({ type: 'rollback' });
+            } catch (_e) {}
+          } else {
+            // Impolite peer ignores colliding incoming offer
+            return;
+          }
+        }
+
         await pc.setRemoteDescription(new RTCSessionDescription(sdp));
 
         // Flush any queued ICE candidates
@@ -482,7 +528,7 @@ export function useWebRtc({ roomId, socket, user: _user, isMuted, isVideoOn, isE
 
       try {
         const pc = peerConnectionsRef.current[responderSocketId];
-        if (pc) {
+        if (pc && pc.signalingState === 'have-local-offer') {
           await pc.setRemoteDescription(new RTCSessionDescription(sdp));
 
           // Flush queued candidates
@@ -519,7 +565,13 @@ export function useWebRtc({ roomId, socket, user: _user, isMuted, isVideoOn, isE
       }
     };
 
-    // E. Handle peer disconnecting
+    // E. Handle peer joined (pre-allocate peer connection)
+    const handlePeerJoined = ({ socketId }) => {
+      if (!socketId || socketId === socket.id) return;
+      createPeerConnection(socketId);
+    };
+
+    // F. Handle peer disconnecting
     const handlePeerLeft = ({ socketId }) => {
       if (socketId === 'all') {
         Object.values(peerConnectionsRef.current).forEach((pc) => {
@@ -548,6 +600,7 @@ export function useWebRtc({ roomId, socket, user: _user, isMuted, isVideoOn, isE
 
     socket.on('webrtc:room-peers', handleRoomPeers);
     socket.on('room:knock-approved', handleRoomPeers);
+    socket.on('webrtc:peer-joined', handlePeerJoined);
     socket.on('webrtc:offer', handleOffer);
     socket.on('webrtc:answer', handleAnswer);
     socket.on('webrtc:ice-candidate', handleIceCandidate);
@@ -556,6 +609,7 @@ export function useWebRtc({ roomId, socket, user: _user, isMuted, isVideoOn, isE
     return () => {
       socket.off('webrtc:room-peers', handleRoomPeers);
       socket.off('room:knock-approved', handleRoomPeers);
+      socket.off('webrtc:peer-joined', handlePeerJoined);
       socket.off('webrtc:offer', handleOffer);
       socket.off('webrtc:answer', handleAnswer);
       socket.off('webrtc:ice-candidate', handleIceCandidate);
@@ -564,7 +618,7 @@ export function useWebRtc({ roomId, socket, user: _user, isMuted, isVideoOn, isE
   }, [socket, createPeerConnection, getActiveLocalVideoTrack, isEnabled]);
 
   // Stop screen sharing and restore camera video track
-  const stopScreenShare = useCallback(() => {
+  const stopScreenShare = useCallback(async () => {
     if (screenStreamRef.current) {
       screenStreamRef.current.getTracks().forEach((track) => track.stop());
       screenStreamRef.current = null;
@@ -577,19 +631,20 @@ export function useWebRtc({ roomId, socket, user: _user, isMuted, isVideoOn, isE
       ? localStreamRef.current?.getVideoTracks().find((t) => t.readyState === 'live') || null
       : null;
 
-    Object.entries(peerConnectionsRef.current).forEach(([targetSocketId, pc]) => {
+    for (const [targetSocketId, pc] of Object.entries(peerConnectionsRef.current)) {
       const videoT = getVideoTransceiver(pc);
       if (videoT?.sender) {
-        videoT.sender.replaceTrack(cameraTrack).catch((err) => {
+        await videoT.sender.replaceTrack(cameraTrack).catch((err) => {
           console.warn('[WebRTC] Error restoring camera track:', targetSocketId, err);
         });
       }
-    });
+    }
+    await renegotiateAllPeers();
 
     if (socket && roomId) {
       socket.emit('media:toggle-screenshare', { roomId, isScreenSharing: false });
     }
-  }, [socket, roomId]);
+  }, [socket, roomId, renegotiateAllPeers]);
 
   // Start screen sharing (Google Meet style display capture)
   const startScreenShare = useCallback(async () => {
@@ -612,19 +667,20 @@ export function useWebRtc({ roomId, socket, user: _user, isMuted, isVideoOn, isE
       setIsScreenSharing(true);
 
       // Replace video track with screen track across all active peer connections
-      Object.entries(peerConnectionsRef.current).forEach(([targetSocketId, pc]) => {
+      for (const [targetSocketId, pc] of Object.entries(peerConnectionsRef.current)) {
         const videoT = getVideoTransceiver(pc);
         if (videoT) {
           try {
             videoT.direction = 'sendrecv';
           } catch {}
           if (videoT.sender) {
-            videoT.sender.replaceTrack(screenTrack).catch((err) => {
+            await videoT.sender.replaceTrack(screenTrack).catch((err) => {
               console.warn('[WebRTC] Error replacing with screen track:', targetSocketId, err);
             });
           }
         }
-      });
+      }
+      await renegotiateAllPeers();
 
       // Notify other peers in the room
       if (socket && roomId) {
@@ -641,7 +697,7 @@ export function useWebRtc({ roomId, socket, user: _user, isMuted, isVideoOn, isE
       console.warn('[WebRTC] Screen sharing cancelled or failed:', err);
       return false;
     }
-  }, [socket, roomId, stopScreenShare]);
+  }, [socket, roomId, stopScreenShare, renegotiateAllPeers]);
 
   const toggleScreenShare = useCallback(async () => {
     if (isScreenSharing) {

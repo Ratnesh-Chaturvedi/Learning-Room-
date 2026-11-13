@@ -129,16 +129,12 @@ export const AuthProvider = ({ children }) => {
       return devUser;
     } catch (err) {
       console.warn('[DevLogin] Backend dev login fallback:', err);
-      const isMaya = userNum === 2;
       const fallbackUser = {
-        id: isMaya ? 'dev-user-maya' : 'dev-user-ratnesh',
-        name: isMaya ? 'Maya Sharma' : 'Ratnesh Tiwari',
-        email: isMaya ? 'maya@learningroom.app' : 'ratnesh@learningroom.app',
-        avatar: isMaya
-          ? 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120&auto=format&fit=crop&q=80'
-          : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
+        id: `dev-user-${userNum}`,
+        name: `Dev User ${userNum}`,
+        email: `dev${userNum}@learningroom.app`,
       };
-      const fallbackToken = `dev_jwt_${isMaya ? 'maya' : 'ratnesh'}`;
+      const fallbackToken = `dev_jwt_user_${userNum}`;
       saveSession(fallbackToken, fallbackUser);
       return fallbackUser;
     } finally {

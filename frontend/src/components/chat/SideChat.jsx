@@ -23,7 +23,7 @@ export default function SideChat(props = {}) {
   const [internalMessages, setInternalMessages] = useState([
     {
       id: 1,
-      sender: 'Maya',
+      sender: 'Sarah',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=96&h=96&fit=crop&crop=faces&q=80',
       time: 'now',
       text: 'Did someone leave a message on the canvas? 🤝',
@@ -176,7 +176,7 @@ export default function SideChat(props = {}) {
         const randomReply = replies[Math.floor(Math.random() * replies.length)];
         const replyMsg = {
           id: Date.now() + 1,
-          sender: Math.random() > 0.5 ? 'Maya' : 'Rohan',
+          sender: Math.random() > 0.5 ? 'Sarah' : 'Rohan',
           avatar:
             Math.random() > 0.5
               ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=96&h=96&fit=crop&crop=faces&q=80'
