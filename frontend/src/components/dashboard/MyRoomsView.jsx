@@ -106,7 +106,7 @@ export default function MyRoomsView({ onOpenRoom, onOpenCreateRoom }) {
       </div>
 
       {/* 2. Filter Navigation Chips */}
-      <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
         {filterTabs.map((tab) => {
           const isActive = activeFilter === tab.key;
           return (

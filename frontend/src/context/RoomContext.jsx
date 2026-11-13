@@ -46,8 +46,18 @@ function getSocketUrl() {
  */
 export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const { theme: globalTheme } = useTheme();
+
+  // Authentication Guard: Disallow unauthenticated guests from joining live rooms
+  useEffect(() => {
+    if (!isAuthLoading && !isAuthenticated) {
+      navigate('/login', {
+        state: { from: { pathname: window.location.pathname } },
+        replace: true,
+      });
+    }
+  }, [isAuthLoading, isAuthenticated, navigate]);
 
   // Normalize room code to uppercase for guaranteed matching across participants
   const roomId = useMemo(() => (rawRoomId || '').trim().toUpperCase(), [rawRoomId]);
@@ -88,10 +98,15 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
   // Room metadata state
   const [roomTitle, setRoomTitle] = useState('Learning Room');
   const [roomDetails, setRoomDetails] = useState(null);
+  const [roomMeta, setRoomMeta] = useState(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [isMembersOpen, setIsMembersOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Non-existent Room State (e.g. user entered random LR-1002 that doesn't exist)
+  const [isRoomNotFound, setIsRoomNotFound] = useState(false);
+  const [notFoundMessage, setNotFoundMessage] = useState('');
 
   // Private Waiting Room & Knock states
   const [isWaiting, setIsWaiting] = useState(false);
@@ -176,6 +191,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
         const res = await roomApi.getRoomDetails(roomId);
         const room = res.data?.room || res.data?.data || res.data;
         if (isMounted && room && (room.id || room.roomCode)) {
+          setIsRoomNotFound(false);
           if (room.status === 'ENDED') {
             setIsRoomTerminated(true);
             setTerminationInfo({
@@ -216,8 +232,20 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
           setRoomDetails(room);
           setRoomTitle(room.title || 'Learning Room');
         }
-      } catch {
-        // Fallback for custom codes
+      } catch (err) {
+        const msg = err?.message || '';
+        console.warn('[Room Details] Error fetching room details:', msg);
+        if (
+          msg.includes('404') ||
+          msg.includes('does not exist') ||
+          msg.includes('not exist') ||
+          msg.includes('not found')
+        ) {
+          if (isMounted) {
+            setIsRoomNotFound(true);
+            setNotFoundMessage(msg || `The room '${roomId}' does not exist.`);
+          }
+        }
       }
     };
     fetchRoom();
@@ -226,25 +254,24 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     };
   }, [roomId, navigate]);
 
-  const [guestId] = useState(() => `guest-${Math.random().toString(36).substring(2, 9)}`);
   const currentUser = useMemo(
     () => ({
-      id: user?.id || guestId,
+      id: user?.id || '',
       name: user?.name || 'Collaborator',
       avatar: user?.avatar,
       color: '#635bdb',
     }),
-    [user?.id, user?.name, user?.avatar, guestId]
+    [user?.id, user?.name, user?.avatar]
   );
 
   // Determine whether current user is the host / creator
   const isHost = Boolean(
     currentUser?.id &&
-    roomDetails &&
-    (roomDetails.creatorId === currentUser.id || roomDetails.creator?.id === currentUser.id)
+    (
+      (roomDetails && (roomDetails.creatorId === currentUser.id || roomDetails.creator?.id === currentUser.id)) ||
+      (roomMeta && roomMeta.creatorId === currentUser.id)
+    )
   );
-
-
 
   // WebRTC Mesh Hook for live camera, microphone streams & screen sharing
   const {
@@ -261,7 +288,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     user: currentUser,
     isMuted,
     isVideoOn,
-    isEnabled: !isRoomScheduled && !isRoomTerminated,
+    isEnabled: !isRoomScheduled && !isRoomTerminated && !isRoomNotFound && Boolean(currentUser?.id),
   });
 
   // Keep refs to latest stream values so socket event handlers
@@ -394,6 +421,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     if (!socket) return;
 
     const emitJoinRoom = () => {
+      if (isRoomNotFound || isRoomTerminated || !currentUser?.id) return;
       socket.emit('webrtc:join-room', {
         roomId,
         inviteToken,
@@ -414,6 +442,26 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       emitJoinRoom();
     }
     socket.on('connect', emitJoinRoom);
+
+    // 🔍 ROOM NOT FOUND (e.g. user entered random LR-1002 that doesn't exist)
+    const handleRoomNotFound = (data) => {
+      setIsRoomNotFound(true);
+      setNotFoundMessage(data?.message || `The room '${roomId}' does not exist.`);
+    };
+
+    // 📋 ROOM META (Host info & canonical identifiers)
+    const handleRoomMeta = (meta) => {
+      if (meta) {
+        setRoomMeta(meta);
+      }
+    };
+
+    // 🎯 KICK SUCCESS (Host confirmed kick)
+    const handleKickSuccess = (data) => {
+      if (data?.targetSocketId) {
+        setPeers((prev) => prev.filter((p) => p.socketId !== data.targetSocketId));
+      }
+    };
 
     // 🔒 WAITING ROOM: Intercepted because room is private
     const handleWaiting = (data) => {
@@ -520,7 +568,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       } catch (_e) {
         // Ignore disconnect error
       }
-      setTimeout(() => navigate('/dashboard'), 3000);
+      setTimeout(() => navigate('/dashboard'), 2500);
     };
 
     // 💬 REAL-TIME CHAT: Map real sender names and dynamic avatars
@@ -619,10 +667,20 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
 
     // ⚠️ ROOM ERROR
     const handleRoomError = (data) => {
+      if (data?.code === 'AUTH_REQUIRED') {
+        navigate('/login', {
+          state: { from: { pathname: window.location.pathname } },
+          replace: true,
+        });
+        return;
+      }
       alert(data?.message || 'Room error or session expired.');
       navigate('/dashboard');
     };
 
+    socket.on('room:not-found', handleRoomNotFound);
+    socket.on('room:meta', handleRoomMeta);
+    socket.on('room:kick-success', handleKickSuccess);
     socket.on('room:waiting', handleWaiting);
     socket.on('room:knock-approved', handleKnockApproved);
     socket.on('room:knock-denied', handleKnockDenied);
@@ -646,6 +704,9 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
 
     return () => {
       socket.off('connect', emitJoinRoom);
+      socket.off('room:not-found', handleRoomNotFound);
+      socket.off('room:meta', handleRoomMeta);
+      socket.off('room:kick-success', handleKickSuccess);
       socket.off('room:waiting', handleWaiting);
       socket.off('room:knock-approved', handleKnockApproved);
       socket.off('room:knock-denied', handleKnockDenied);
@@ -675,6 +736,8 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     currentUser.name,
     currentUser.avatar,
     roomTitle,
+    isRoomNotFound,
+    isRoomTerminated,
     navigate,
     triggerReaction,
   ]);
@@ -796,14 +859,18 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
   const handleKickPeer = useCallback(
     (targetSocketId, peerName = 'Participant') => {
       if (!isHost) return;
-      // Emit kick immediately — no blocking confirm dialog
+      const targetPeer = peers.find((p) => p.socketId === targetSocketId);
+      // Emit kick immediately
       socket?.emit('room:kick-peer', {
         roomId,
         targetSocketId,
+        targetUserId: targetPeer?.userId,
         reason: `${peerName} was removed from the meeting by the host.`,
       });
+      // Optimistically remove peer from local state immediately for instant host UI feedback
+      setPeers((prev) => prev.filter((p) => p.socketId !== targetSocketId));
     },
-    [isHost, socket, roomId]
+    [isHost, socket, roomId, peers]
   );
 
   // Host terminates room for all participants
@@ -845,7 +912,9 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       handleCopyInvite,
       isHost,
       handleEndRoomForAll,
-      // Room Termination
+      // Room Termination & Existence
+      isRoomNotFound,
+      notFoundMessage,
       isRoomTerminated,
       terminationInfo,
       // Scheduled Room State
@@ -911,6 +980,8 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       handleEndRoomForAll,
       isRoomTerminated,
       terminationInfo,
+      isRoomNotFound,
+      notFoundMessage,
       isRoomScheduled,
       scheduledInfo,
       handleStartScheduledRoomEarly,

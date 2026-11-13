@@ -41,9 +41,23 @@ export default function App() {
                 }
               />
 
-              {/* Live Collaborative Room (Accessible to logged-in users and guest collaborators) */}
-              <Route path="/room/:roomId" element={<RoomPage />} />
-              <Route path="/r/:roomId" element={<RoomPage />} />
+              {/* Protected Collaborative Rooms (Requires verified authentication) */}
+              <Route
+                path="/room/:roomId"
+                element={
+                  <ProtectedRoute>
+                    <RoomPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/r/:roomId"
+                element={
+                  <ProtectedRoute>
+                    <RoomPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/room" element={<Navigate to="/dashboard" replace />} />
 
               {/* Fallback route redirects to landing page */}

@@ -313,7 +313,7 @@ export default function VideoGalleryModal(props = {}) {
           ? 'inset-0 w-screen h-screen max-w-none rounded-none'
           : isMobile
           ? isMinimized
-            ? 'bottom-4 right-3 left-3 sm:left-auto sm:w-72'
+            ? 'bottom-20 right-3 left-3 sm:left-auto sm:w-72'
             : 'top-16 inset-x-2 w-auto max-w-[calc(100vw-1rem)]'
           : isMinimized
           ? 'w-72'
@@ -523,7 +523,7 @@ export default function VideoGalleryModal(props = {}) {
 
         {/* Bottom Floating Google Meet Style Quick Media Bar */}
         <div
-          className={`px-3 sm:px-4 py-2.5 sm:py-3 bg-[#151720] border-t border-[#262833] flex items-center justify-center gap-2 sm:gap-3 flex-wrap ${
+          className={`px-2.5 sm:px-4 py-2 sm:py-3 bg-[#151720] border-t border-[#262833] flex items-center justify-center gap-1.5 sm:gap-3 flex-wrap ${
             isFullscreen ? 'py-4 shadow-lg' : ''
           }`}
         >
@@ -531,7 +531,7 @@ export default function VideoGalleryModal(props = {}) {
           <button
             type="button"
             onClick={onToggleMute}
-            className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-semibold transition-all cursor-pointer ${
               isMuted
                 ? 'bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30'
                 : 'bg-white/10 text-white border border-white/10 hover:bg-white/20'
@@ -563,7 +563,7 @@ export default function VideoGalleryModal(props = {}) {
           <button
             type="button"
             onClick={onToggleVideo}
-            className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-semibold transition-all cursor-pointer ${
               !isVideoOn
                 ? 'bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30'
                 : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500/30'
@@ -593,7 +593,7 @@ export default function VideoGalleryModal(props = {}) {
           <button
             type="button"
             onClick={onToggleScreenShare}
-            className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-semibold transition-all cursor-pointer ${
               isScreenSharing
                 ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30 border border-blue-400 hover:bg-blue-700'
                 : 'bg-white/10 text-white border border-white/10 hover:bg-white/20'
@@ -612,7 +612,7 @@ export default function VideoGalleryModal(props = {}) {
           <button
             type="button"
             onClick={handleToggleFullscreen}
-            className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-semibold transition-all cursor-pointer ${
               isFullscreen
                 ? 'bg-purple-600/30 text-purple-300 border border-purple-500/50 hover:bg-purple-600/40'
                 : 'bg-white/10 text-white border border-white/10 hover:bg-white/20'

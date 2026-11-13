@@ -91,7 +91,7 @@ export default function HeroSection({ onStartRoom, onJoinRoom }) {
             {/* Room Code Input with embedded Join Button */}
             <form
               onSubmit={handleJoinSubmit}
-              className="flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] py-1 pl-4 pr-1.5 shadow-sm focus-within:border-[var(--color-brand)] focus-within:ring-2 focus-within:ring-[var(--color-brand)]/20 transition-all"
+              className="flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] py-1 pl-4 pr-1.5 shadow-sm focus-within:border-[var(--color-brand)] focus-within:ring-2 focus-within:ring-[var(--color-brand)]/20 transition-all max-w-full"
             >
               <input
                 type="text"
@@ -99,13 +99,13 @@ export default function HeroSection({ onStartRoom, onJoinRoom }) {
                 value={roomCode}
                 onChange={(e) => setRoomCode(e.target.value)}
                 maxLength={12}
-                className="w-36 bg-transparent text-sm outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] font-mono"
+                className="w-28 xs:w-36 bg-transparent text-base sm:text-sm outline-none text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] font-mono"
                 aria-label="Room code"
               />
               <button
                 type="submit"
                 disabled={!roomCode.trim()}
-                className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-secondary)] hover:bg-[var(--color-surface-hover)] px-4 py-1.5 text-xs font-semibold text-[var(--color-text-primary)] disabled:opacity-50 transition-all cursor-pointer"
+                className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-secondary)] hover:bg-[var(--color-surface-hover)] px-4 py-1.5 text-xs font-semibold text-[var(--color-text-primary)] disabled:opacity-50 transition-all cursor-pointer shrink-0"
               >
                 Join
               </button>

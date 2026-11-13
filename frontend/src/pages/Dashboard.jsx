@@ -352,7 +352,7 @@ export default function Dashboard({ theme: propTheme, onToggleTheme: propToggle 
               ref={searchInputRef}
               type="text"
               placeholder="Search rooms, topics, or members..."
-              className="w-full pl-10 pr-12 py-2 rounded-full bg-[#EAE6DF] dark:bg-[#1E2026] text-xs sm:text-sm text-[#18191E] dark:text-[#FFFFFF] placeholder-gray-500 dark:placeholder-gray-400 border border-transparent focus:border-[#543FE3] focus:bg-white dark:focus:bg-[#18191E] focus:outline-none transition-all"
+              className="w-full pl-10 pr-12 py-2 rounded-full bg-[#EAE6DF] dark:bg-[#1E2026] text-base sm:text-sm text-[#18191E] dark:text-[#FFFFFF] placeholder-gray-500 dark:placeholder-gray-400 border border-transparent focus:border-[#543FE3] focus:bg-white dark:focus:bg-[#18191E] focus:outline-none transition-all"
             />
             <span className="hidden sm:inline-block absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-gray-400 bg-white/70 dark:bg-gray-800 px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-700">
               ⌘K

@@ -8,6 +8,7 @@ import { roomStateManager } from "./state/roomState.manager.ts";
 import {
   setSocketServerInstance,
   startRoomExpirationWatcher,
+  scheduleEmptyRoomTermination,
 } from "./services/roomSocket.service.ts";
 
 /**
@@ -61,6 +62,11 @@ export const initSocketServer = (io: Server): void => {
         }
 
         console.log(`[Socket] Notified room ${roomId} of disconnected peer: ${removedPeer.name}. Remaining: ${remainingPeers.length}`);
+
+        // If no participants remain in the live room, begin the 5-minute auto-termination countdown
+        if (remainingPeers.length === 0) {
+          scheduleEmptyRoomTermination(roomId);
+        }
       }
     });
   });
