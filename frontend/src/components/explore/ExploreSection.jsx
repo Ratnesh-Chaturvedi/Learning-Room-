@@ -103,7 +103,7 @@ export default function ExploreSection({ onJoinRoom, onStartRoom: _onStartRoom }
               placeholder="Search topics, rooms, or people..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none"
+              className="w-full bg-transparent text-base sm:text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none"
               aria-label="Search topics, rooms, or people"
             />
             {searchQuery && (
@@ -118,8 +118,8 @@ export default function ExploreSection({ onJoinRoom, onStartRoom: _onStartRoom }
           </div>
         </div>
 
-        {/* Filter Category Pills: all in one single line on big screens */}
-        <div className="w-full flex items-center justify-center gap-2 sm:gap-2.5 flex-wrap sm:flex-nowrap">
+        {/* Filter Category Pills: all in one single line on big screens, smooth scroll on mobile */}
+        <div className="w-full flex items-center justify-start sm:justify-center gap-2 sm:gap-2.5 overflow-x-auto no-scrollbar py-1 px-1">
           {categories.map((category) => {
             const isActive = activeCategory === category;
             return (

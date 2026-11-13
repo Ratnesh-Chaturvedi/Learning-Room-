@@ -37,16 +37,19 @@ export default function ParticipantsModal() {
   );
 
   return (
-    <div className="fixed inset-0 sm:inset-auto sm:top-16 sm:right-4 z-[100002] flex items-center justify-center sm:block p-4 sm:p-0">
+    <div className="fixed inset-0 sm:inset-auto sm:top-16 sm:right-4 z-[100002] flex items-end sm:items-start justify-center sm:justify-end p-0 sm:p-0 pointer-events-none sm:pointer-events-auto">
       {/* Backdrop for mobile */}
       <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-xs sm:hidden"
+        className="fixed inset-0 bg-black/50 backdrop-blur-xs sm:hidden pointer-events-auto"
         onClick={() => setIsMembersOpen(false)}
       />
 
-      <div className="relative w-full max-w-sm bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[var(--color-text-primary)] animate-in zoom-in-95 sm:fade-in sm:slide-in-from-top-4 duration-200">
+      <div className="relative w-full max-w-sm bg-[var(--color-surface)] border-t sm:border border-[var(--color-border)] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[var(--color-text-primary)] animate-in slide-in-from-bottom sm:slide-in-from-top-4 duration-200 pointer-events-auto max-h-[85dvh] sm:max-h-none">
+        {/* Mobile drag handle */}
+        <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto my-2 sm:hidden shrink-0" />
+
         {/* Header */}
-        <div className="px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-surface-secondary)]/50">
+        <div className="px-5 py-3 sm:py-4 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-surface-secondary)]/50 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-[#543FE3]/10 dark:bg-[#543FE3]/25 text-[#543FE3] flex items-center justify-center text-sm font-bold">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -81,14 +84,14 @@ export default function ParticipantsModal() {
 
         {/* Search Input (if more than 2 participants) */}
         {totalMembers > 2 && (
-          <div className="p-3 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+          <div className="p-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] shrink-0">
             <div className="relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search member by name..."
-                className="w-full bg-[var(--color-surface-secondary)] border border-[var(--color-border)] rounded-xl px-3 py-1.5 text-xs text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[#543FE3]"
+                className="w-full bg-[var(--color-surface-secondary)] border border-[var(--color-border)] rounded-xl px-3 py-1.5 text-base sm:text-xs text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[#543FE3]"
               />
               {searchQuery && (
                 <button
@@ -104,7 +107,7 @@ export default function ParticipantsModal() {
         )}
 
         {/* Member Roster List */}
-        <div className="max-h-80 overflow-y-auto divide-y divide-[var(--color-border)] p-2">
+        <div className="max-h-72 sm:max-h-80 overflow-y-auto divide-y divide-[var(--color-border)] p-2 custom-scrollbar">
           {/* 1. CURRENT USER (YOU) */}
           <div className="p-2.5 rounded-xl hover:bg-[var(--color-surface-secondary)]/50 transition-colors flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">

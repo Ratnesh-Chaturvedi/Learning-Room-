@@ -15,7 +15,7 @@ export default function ChatInputForm({ inputText, setInputText, onSendMessage }
         placeholder="Type a message to collaborators..."
         value={inputText}
         onChange={(e) => setInputText(e.target.value)}
-        className="flex-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-3 py-1.5 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none focus:border-[var(--color-brand)] transition-colors shadow-2xs"
+        className="flex-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-3 py-1.5 text-base sm:text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none focus:border-[var(--color-brand)] transition-colors shadow-2xs"
         aria-label="Chat message"
       />
       <button

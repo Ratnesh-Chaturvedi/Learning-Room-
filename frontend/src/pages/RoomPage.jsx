@@ -281,6 +281,8 @@ function RoomView() {
     isVideoGalleryOpen,
     setIsVideoGalleryOpen,
     roomTheme,
+    isRoomNotFound,
+    notFoundMessage,
     isRoomTerminated,
     terminationInfo,
     isRoomScheduled,
@@ -289,6 +291,47 @@ function RoomView() {
     handleCopyInvite,
     copiedLink,
   } = useRoom();
+
+  // ROOM NOT FOUND OVERLAY (When room code does not exist)
+  if (isRoomNotFound) {
+    return (
+      <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-[var(--color-background)] text-center relative overflow-hidden select-none">
+        <div className="absolute w-96 h-96 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-md w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-8 shadow-2xl space-y-6 animate-in zoom-in-95 duration-200">
+          <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto shadow-inner">
+            <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="font-heading font-extrabold text-xl text-[var(--color-text-primary)]">
+              Room Not Found
+            </h2>
+            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              {notFoundMessage || `The room '${roomId}' does not exist or has already been removed.`}
+            </p>
+            <p className="text-[11px] text-[var(--color-text-secondary)]/70">
+              Please verify the room code or ask the host for an updated invite link.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard')}
+              className="w-full py-2.5 px-4 rounded-xl bg-[#543FE3] hover:bg-[#4330C8] text-white text-xs font-bold transition-all shadow-md cursor-pointer"
+            >
+              Return to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // SCHEDULED HOLDING ROOM OVERLAY (When room is scheduled for a future time)
   if (isRoomScheduled) {
@@ -469,7 +512,7 @@ function RoomView() {
       <ParticipantsModal />
 
       {/* 3. Interactive Multiplayer Collaborative Canvas */}
-      <main className="flex-1 relative w-full h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4rem)] overflow-hidden">
+      <main className="flex-1 relative w-full h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4rem)] pb-18 sm:pb-0 overflow-hidden">
         <section className="w-full h-full relative overflow-hidden">
           <div className="absolute inset-0">
             <RoomErrorBoundary
@@ -496,12 +539,12 @@ function RoomView() {
             </RoomErrorBoundary>
           </div>
 
-          {/* Re-open Chat Floating Pill */}
+          {/* Re-open Chat Floating Pill (Desktop & Tablet only; mobile uses bottom dock) */}
           {!isChatOpen && (
             <button
               type="button"
               onClick={() => setIsChatOpen(true)}
-              className="absolute bottom-4 right-3 sm:bottom-auto sm:top-4 sm:right-4 flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] shadow-lg hover:shadow-xl text-xs font-bold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-all z-30 cursor-pointer animate-in fade-in"
+              className="hidden sm:flex absolute sm:top-4 sm:right-4 items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] shadow-lg hover:shadow-xl text-xs font-bold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-all z-30 cursor-pointer animate-in fade-in"
               title="Open Live Chat"
             >
               <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--color-brand)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -516,12 +559,12 @@ function RoomView() {
             </button>
           )}
 
-          {/* Re-open Video Gallery Floating Pill if closed */}
+          {/* Re-open Video Gallery Floating Pill if closed (Desktop & Tablet only; mobile uses bottom dock) */}
           {!isVideoGalleryOpen && (
             <button
               type="button"
               onClick={() => setIsVideoGalleryOpen(true)}
-              className="absolute bottom-4 left-3 sm:bottom-auto sm:top-4 sm:left-4 flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] shadow-lg hover:shadow-xl text-xs font-bold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-all z-30 cursor-pointer animate-in fade-in"
+              className="hidden sm:flex absolute sm:top-4 sm:left-4 items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] shadow-lg hover:shadow-xl text-xs font-bold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-all z-30 cursor-pointer animate-in fade-in"
               title="Open Video Grid"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />

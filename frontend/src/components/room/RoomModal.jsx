@@ -276,7 +276,7 @@ export default function RoomModal({ isOpen, onClose, mode = 'create', initialCod
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Distributed Systems & Algorithms"
                   required
-                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-secondary)] px-3.5 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/20 transition-all"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-secondary)] px-3.5 py-2.5 text-base sm:text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/20 transition-all"
                 />
               </div>
 
@@ -430,7 +430,7 @@ export default function RoomModal({ isOpen, onClose, mode = 'create', initialCod
                   placeholder="e.g. LR-3921 or paste invite link"
                   autoFocus
                   required
-                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-secondary)] px-3.5 py-3 text-sm font-mono text-[var(--color-text-primary)] outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/20 transition-all"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-secondary)] px-3.5 py-3 text-base sm:text-sm font-mono text-[var(--color-text-primary)] outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/20 transition-all"
                 />
                 <p className="text-[11px] text-[var(--color-text-secondary)] mt-1.5">
                   Tip: You can paste the full URL (including invite tokens) to join private rooms directly.

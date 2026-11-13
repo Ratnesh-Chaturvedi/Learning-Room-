@@ -11,19 +11,22 @@ export const socketAuthMiddleware = async (
   next: (err?: Error) => void
 ) => {
   try {
-    // 1. Check auth payload or authorization header
+    // 1. Check auth payload, query param, or authorization header
     const token =
       socket.handshake.auth?.token ||
+      (typeof socket.handshake.query?.token === "string" ? socket.handshake.query.token : undefined) ||
       socket.handshake.headers?.authorization?.replace(/^Bearer\s+/i, "");
 
     if (token) {
       try {
         const payload = verifyAccessToken(token);
         // Fast DB lookup with 2.5s timeout so socket handshake never hangs or disconnects
-        const userPromise = prisma.user.findUnique({
-          where: { id: payload.userId },
-          select: { id: true, name: true, email: true, avatar: true },
-        });
+        const userPromise = prisma.user
+          .findUnique({
+            where: { id: payload.userId },
+            select: { id: true, name: true, email: true, avatar: true },
+          })
+          .catch(() => null);
         const timeoutPromise = new Promise<null>((resolve) =>
           setTimeout(() => resolve(null), 2500)
         );
@@ -31,6 +34,13 @@ export const socketAuthMiddleware = async (
 
         if (user) {
           socket.data.user = user;
+        } else if (payload.userId) {
+          socket.data.user = {
+            id: payload.userId,
+            name: "Collaborator",
+            email: payload.email,
+            avatar: null,
+          };
         }
       } catch {
         // Token invalid or DB timeout, proceed without blocking socket connection

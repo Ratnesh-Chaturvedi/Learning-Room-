@@ -1,7 +1,11 @@
 import type { Server, Socket } from "socket.io";
 import prisma from "../../config/db.ts";
 import { roomStateManager } from "../state/roomState.manager.ts";
-import { broadcastRoomUpdated } from "../services/roomSocket.service.ts";
+import {
+  broadcastRoomUpdated,
+  scheduleEmptyRoomTermination,
+  cancelEmptyRoomTermination,
+} from "../services/roomSocket.service.ts";
 import type {
   JoinRoomPayload,
   KnockDecisionPayload,
@@ -21,7 +25,21 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
     if (!roomId) return;
 
     const authUser = socket.data?.user;
-    const userId = authUser?.id || user?.id || `user-${socket.id.slice(0, 5)}`;
+    const userId =
+      authUser?.id ||
+      (user?.id && !user.id.startsWith("guest-") && !user.id.startsWith("anonymous-")
+        ? user.id
+        : null);
+
+    // Authentication is strictly required to join any collaborative room
+    if (!userId) {
+      socket.emit("room:error", {
+        message: "Authentication is required to join this room. Please sign in.",
+        code: "AUTH_REQUIRED",
+      });
+      return;
+    }
+
     const name = authUser?.name || user?.name || "Collaborator";
     const avatar = authUser?.avatar || user?.avatar;
 
@@ -79,22 +97,27 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
       }
     } else {
       try {
-        const dbLookupPromise = prisma.room.findFirst({
-          where: {
-            OR: [
-              { roomCode: roomId.trim().toUpperCase() },
-              { id: roomId.trim() },
-              { id: roomId.trim().toLowerCase() },
-            ],
-          },
-          include: {
-            participants: { select: { id: true } },
-          },
-        });
+        const dbLookupPromise = prisma.room
+          .findFirst({
+            where: {
+              OR: [
+                { roomCode: roomId.trim().toUpperCase() },
+                { id: roomId.trim() },
+                { id: roomId.trim().toLowerCase() },
+              ],
+            },
+            include: {
+              participants: { select: { id: true } },
+            },
+          })
+          .catch((dbErr) => {
+            console.warn("[WebRTC] DB lookup rejected:", dbErr?.message || dbErr);
+            return null;
+          });
 
         // Fast timeout DB lookup (1.5s) to support cold Neon DB connections without breaking sync
-        const timeoutPromise = new Promise<null>((_, reject) =>
-          setTimeout(() => reject(new Error("DB lookup timeout")), 1500)
+        const timeoutPromise = new Promise<null>((resolve) =>
+          setTimeout(() => resolve(null), 1500)
         );
 
         const room = await Promise.race([dbLookupPromise, timeoutPromise]);
@@ -188,34 +211,29 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
           roomStateManager.setRoomMeta(room.roomCode, roomMeta);
           roomStateManager.setRoomMeta(roomId, roomMeta);
         } else {
-          // Room not found in DB: fallback to active collaborative session
-          canonicalId = roomId.trim().toUpperCase();
-          canonicalCode = canonicalId;
-          isPrivate = false;
-
-          roomStateManager.setRoomMeta(canonicalId, {
-            id: canonicalId,
-            roomCode: canonicalCode,
-            isPrivate: false,
-            creatorId: userId,
-            inviteToken: null,
-            status: "ACTIVE",
+          // Room not found in DB: reject join with room:not-found
+          socket.emit("room:not-found", {
+            roomId: roomId.trim().toUpperCase(),
+            message: `The room '${roomId.trim().toUpperCase()}' does not exist.`,
           });
+          return;
         }
       } catch (err) {
-        console.warn("[WebRTC] DB lookup skipped or failed, using in-memory session:", err);
-        canonicalId = roomId.trim().toUpperCase();
-        canonicalCode = canonicalId;
-        isPrivate = false;
-
-        roomStateManager.setRoomMeta(canonicalId, {
-          id: canonicalId,
-          roomCode: canonicalCode,
-          isPrivate: false,
-          creatorId: userId,
-          inviteToken: null,
-          status: "ACTIVE",
-        });
+        console.warn("[WebRTC] DB lookup skipped or failed:", err);
+        const fallbackMeta = roomStateManager.getRoomMeta(roomId);
+        if (fallbackMeta) {
+          canonicalId = fallbackMeta.id;
+          canonicalCode = fallbackMeta.roomCode || fallbackMeta.id || roomId.trim().toUpperCase();
+          hostCreatorId = fallbackMeta.creatorId || null;
+          isPrivate = fallbackMeta.isPrivate;
+          isHost = fallbackMeta.creatorId === userId;
+        } else {
+          socket.emit("room:not-found", {
+            roomId: roomId.trim().toUpperCase(),
+            message: `The room '${roomId.trim().toUpperCase()}' does not exist or is unavailable.`,
+          });
+          return;
+        }
       }
     }
 
@@ -278,6 +296,13 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
 
     const existingPeers = roomStateManager.getRoomPeers(canonicalId);
     roomStateManager.addPeer(canonicalId, peer);
+
+    // Cancel any pending empty-room 5-minute auto-termination countdown
+    cancelEmptyRoomTermination(canonicalId);
+    if (canonicalCode) cancelEmptyRoomTermination(canonicalCode);
+    if (roomId !== canonicalId && roomId !== canonicalCode) {
+      cancelEmptyRoomTermination(roomId);
+    }
 
     // Join all channel aliases
     const { targetRooms } = roomStateManager.getRoomChannels(roomId, socket);
@@ -344,6 +369,13 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
 
     const existingPeers = roomStateManager.getRoomPeers(canonicalId);
     roomStateManager.addPeer(canonicalId, peer);
+
+    // Cancel any pending empty-room 5-minute auto-termination countdown
+    cancelEmptyRoomTermination(canonicalId);
+    if (canonicalCode) cancelEmptyRoomTermination(canonicalCode);
+    if (roomId !== canonicalId && roomId !== canonicalCode) {
+      cancelEmptyRoomTermination(roomId);
+    }
 
     // Join all channel aliases
     const { targetRooms } = roomStateManager.getRoomChannels(roomId, targetSocket);
@@ -460,7 +492,7 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
    * 8. Explicitly leaves the room.
    */
   socket.on("webrtc:leave-room", () => {
-    const { roomId, removedPeer, wasWaiting } = roomStateManager.removePeer(socket.id);
+    const { roomId, removedPeer, wasWaiting, remainingPeers } = roomStateManager.removePeer(socket.id);
     if (roomId) {
       const meta = roomStateManager.getRoomMeta(roomId);
       const canonicalCode = meta?.roomCode;
@@ -477,6 +509,11 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
         io.to(roomId).emit("webrtc:peer-left", leavePayload);
         if (canonicalCode && canonicalCode !== roomId) {
           io.to(canonicalCode).emit("webrtc:peer-left", leavePayload);
+        }
+
+        // If no participants remain in the live room, begin the 5-minute auto-termination countdown
+        if (remainingPeers.length === 0) {
+          scheduleEmptyRoomTermination(roomId);
         }
       }
     }
@@ -560,7 +597,7 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
    */
   socket.on(
     "room:kick-peer",
-    (payload: {
+    async (payload: {
       roomId: string;
       targetSocketId: string;
       targetUserId?: string;
@@ -570,18 +607,45 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
       if (!roomId || !targetSocketId) return;
 
       const canonicalId =
-        socket.data?.canonicalId || roomStateManager.getCanonicalKey(roomId);
-      const meta = roomStateManager.getRoomMeta(canonicalId);
+        socket.data?.canonicalId || roomStateManager.getCanonicalKey(roomId) || roomId.trim().toUpperCase();
+      let meta = roomStateManager.getRoomMeta(canonicalId) || roomStateManager.getRoomMeta(roomId);
       const canonicalCode =
         socket.data?.canonicalCode || meta?.roomCode || canonicalId;
 
       // Verify host permission (sender is room creator, socket.data.user, or socket.data.userId)
       const senderUserId = socket.data?.user?.id || socket.data?.userId;
-      const isHost = meta
-        ? meta.creatorId === senderUserId || meta.creatorId === socket.data?.user?.id
-        : true;
+      let hostCreatorId = meta?.creatorId;
 
-      if (!isHost && meta?.creatorId && senderUserId && meta.creatorId !== senderUserId) {
+      if (!hostCreatorId) {
+        try {
+          const dbRoom = await prisma.room
+            .findFirst({
+              where: {
+                OR: [
+                  { id: canonicalId },
+                  { id: roomId },
+                  { roomCode: canonicalCode.toUpperCase() },
+                  { roomCode: roomId.toUpperCase() },
+                ],
+              },
+              select: { creatorId: true },
+            })
+            .catch(() => null);
+          if (dbRoom) {
+            hostCreatorId = dbRoom.creatorId;
+          }
+        } catch {
+          // DB check ignored
+        }
+      }
+
+      const isHost = Boolean(
+        hostCreatorId &&
+        senderUserId &&
+        (hostCreatorId === senderUserId || hostCreatorId === socket.data?.user?.id)
+      );
+
+      if (!isHost) {
         socket.emit("room:error", {
           message: "Only the room host can remove participants.",
         });
@@ -589,21 +653,31 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
       }
 
       const targetSocket = io.sockets.sockets.get(targetSocketId);
-      const targetPeer = roomStateManager.getPeer(canonicalId, targetSocketId);
+      const targetPeer =
+        roomStateManager.getPeer(canonicalId, targetSocketId) ||
+        roomStateManager.getPeer(roomId, targetSocketId);
       const peerName = targetPeer?.name || "A participant";
 
       // 1. Record ban so kicked user cannot rejoin this session
       const bannedIdentifier = targetUserId || targetPeer?.userId || targetSocketId;
       roomStateManager.banUser(canonicalId, bannedIdentifier);
       if (targetPeer?.userId) roomStateManager.banUser(canonicalId, targetPeer.userId);
+      if (targetUserId) roomStateManager.banUser(canonicalId, targetUserId);
       roomStateManager.banUser(canonicalId, targetSocketId);
+
+      if (canonicalCode && canonicalCode !== canonicalId) {
+        roomStateManager.banUser(canonicalCode, bannedIdentifier);
+        if (targetPeer?.userId) roomStateManager.banUser(canonicalCode, targetPeer.userId);
+        if (targetUserId) roomStateManager.banUser(canonicalCode, targetUserId);
+        roomStateManager.banUser(canonicalCode, targetSocketId);
+      }
 
       // 2. Notify target peer that they were removed
       const kickReason =
         reason || "You were removed from this meeting by the host.";
       if (targetSocket) {
         targetSocket.emit("room:kicked", {
-          roomId,
+          roomId: canonicalCode,
           reason: kickReason,
         });
 
@@ -613,10 +687,19 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
         if (roomId !== canonicalId && roomId !== canonicalCode) {
           targetSocket.leave(roomId);
         }
+
+        // Graceful disconnect of target socket after event delivery
+        setTimeout(() => {
+          try {
+            targetSocket.disconnect(true);
+          } catch {
+            // Ignore disconnect error
+          }
+        }, 500);
       }
 
       // 3. Remove peer from in-memory state manager
-      roomStateManager.removePeer(targetSocketId);
+      const { remainingPeers } = roomStateManager.removePeer(targetSocketId);
 
       // 4. Notify remaining participants across all channel aliases
       const targetRooms = Array.from(
@@ -630,7 +713,7 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
       };
       io.to(targetRooms).emit("webrtc:peer-left", leavePayload);
 
-      // 4. Send system announcement into room chat
+      // 5. Send system announcement into room chat
       const systemMsg = {
         id: crypto.randomUUID(),
         roomId: canonicalId,
@@ -645,8 +728,20 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
       roomStateManager.addChatMessage(canonicalId, systemMsg);
       io.to(targetRooms).emit("chat:new-message", systemMsg);
 
+      // 6. Confirm kick action to host client
+      socket.emit("room:kick-success", {
+        targetSocketId,
+        targetUserId: targetUserId || targetPeer?.userId,
+        name: peerName,
+      });
+
+      // 7. If no participants remain in the room, begin 5-minute empty countdown
+      if (remainingPeers.length === 0) {
+        scheduleEmptyRoomTermination(canonicalId);
+      }
+
       console.log(
-        `[Kick] Host kicked ${peerName} (${targetSocketId}) from room ${canonicalCode}`
+        `[Kick] Host kicked ${peerName} (${targetSocketId}) from room ${canonicalCode}. Remaining: ${remainingPeers.length}`
       );
     }
   );

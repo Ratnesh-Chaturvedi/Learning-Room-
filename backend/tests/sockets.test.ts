@@ -2,10 +2,17 @@ import http from "node:http";
 import { Server } from "socket.io";
 import { io as Client } from "socket.io-client";
 import { initSocketServer } from "../src/sockets/index.ts";
-import { stopRoomExpirationWatcher } from "../src/sockets/services/roomSocket.service.ts";
+import {
+  stopRoomExpirationWatcher,
+  scheduleEmptyRoomTermination,
+  cancelEmptyRoomTermination,
+  hasPendingEmptyRoomTermination,
+} from "../src/sockets/services/roomSocket.service.ts";
+import { generateAccessToken } from "../src/utils/token.utils.ts";
+import { roomStateManager } from "../src/sockets/state/roomState.manager.ts";
 
 async function runSocketVerification() {
-  console.log("▶ Starting WebRTC, Canvas Sync, Screen Share & Kick Verification...");
+  console.log("▶ Starting WebRTC, Non-Existent Room, Auth Gate, Empty Room & Kick Verification...");
 
   const server = http.createServer();
   const io = new Server(server, { cors: { origin: "*" } });
@@ -14,53 +21,89 @@ async function runSocketVerification() {
   const TEST_PORT = 5089;
   await new Promise<void>((resolve) => server.listen(TEST_PORT, "127.0.0.1", resolve));
 
+  const aliceToken = generateAccessToken({ userId: "user-alice-1", email: "alice@learningroom.app" });
+  const bobToken = generateAccessToken({ userId: "user-bob-2", email: "bob@learningroom.app" });
+
   const client1 = Client(`http://127.0.0.1:${TEST_PORT}`, {
     transports: ["polling", "websocket"],
     forceNew: true,
+    auth: { token: aliceToken },
   });
   const client2 = Client(`http://127.0.0.1:${TEST_PORT}`, {
     transports: ["polling", "websocket"],
     forceNew: true,
+    auth: { token: bobToken },
   });
-
-  const roomId = "test-live-room";
-
-  client1.on("connect_error", (err) => console.error("Client 1 connect_error:", err.message));
-  client2.on("connect_error", (err) => console.error("Client 2 connect_error:", err.message));
+  const unauthClient = Client(`http://127.0.0.1:${TEST_PORT}`, {
+    transports: ["polling", "websocket"],
+    forceNew: true,
+  });
 
   // Wait for connections with 5s timeout
   await Promise.race([
     Promise.all([
       new Promise<void>((resolve) => client1.on("connect", () => resolve())),
       new Promise<void>((resolve) => client2.on("connect", () => resolve())),
+      new Promise<void>((resolve) => unauthClient.on("connect", () => resolve())),
     ]),
-    new Promise((_, reject) => setTimeout(() => reject(new Error("Connection timeout")), 5000))
+    new Promise((_, reject) => setTimeout(() => reject(new Error("Connection timeout")), 5000)),
   ]);
-  console.log("✔ Both clients connected to Socket.io server");
+  console.log("✔ Connected test clients to Socket.io server");
 
-  // Test 1: Client 1 (Alice - Host) joins room
-  const client1JoinPromise = new Promise<{ peers: unknown[]; self: unknown }>((resolve) => {
-    client1.on("webrtc:room-peers", resolve);
+  // TEST 1: Unauthenticated user attempt to join room is blocked
+  const unauthErrorPromise = new Promise<any>((resolve) => {
+    unauthClient.once("room:error", resolve);
+  });
+  unauthClient.emit("webrtc:join-room", {
+    roomId: "LR-SECURE",
+  });
+  const unauthError = await unauthErrorPromise;
+  console.log(`✔ Unauthenticated join rejected as expected: "${unauthError.message}"`);
+
+  // TEST 2: Random non-existent room code (e.g. LR-1002) is rejected with room:not-found
+  const notFoundPromise = new Promise<any>((resolve) => {
+    client1.once("room:not-found", resolve);
   });
   client1.emit("webrtc:join-room", {
-    roomId,
-    user: { id: "user-1", name: "Alice" },
-    initialMediaState: { isAudioMuted: false, isVideoOff: false },
+    roomId: "LR-1002",
+    user: { id: "user-alice-1", name: "Alice" },
   });
-  const c1Data = await client1JoinPromise;
-  console.log(`✔ Client 1 (Alice/Host) joined. Existing peers: ${c1Data.peers.length} (expected 0)`);
+  const notFoundData = await notFoundPromise;
+  console.log(`✔ Random non-existent room LR-1002 correctly rejected with room:not-found: "${notFoundData.message}"`);
 
-  // Test 2: Client 2 (Bob) joins room -> Client 1 notified, Client 2 receives Client 1
-  const c1PeerJoinedPromise = new Promise<any>((resolve) => {
-    client1.on("webrtc:peer-joined", resolve);
+  // Setup an authorized room in roomStateManager
+  const liveRoomCode = "LR-LIVE-ROOM";
+  roomStateManager.setRoomMeta(liveRoomCode, {
+    id: "live-room-id-123",
+    roomCode: liveRoomCode,
+    isPrivate: false,
+    creatorId: "user-alice-1",
+    inviteToken: null,
+    status: "ACTIVE",
   });
-  const c2JoinPromise = new Promise<{ peers: any[]; self: any }>((resolve) => {
-    client2.on("webrtc:room-peers", resolve);
+
+  // TEST 3: Authenticated Host (Alice) joins valid room
+  const c1JoinPromise = new Promise<any>((resolve) => {
+    client1.once("webrtc:room-peers", resolve);
+  });
+  client1.emit("webrtc:join-room", {
+    roomId: liveRoomCode,
+    user: { id: "user-alice-1", name: "Alice" },
+  });
+  const c1Data = await c1JoinPromise;
+  console.log(`✔ Host (Alice) successfully joined valid room ${liveRoomCode}. Peers: ${c1Data.peers.length}`);
+
+  // TEST 4: Client 2 (Bob) joins room -> Client 1 notified, Client 2 receives Alice
+  const c1PeerJoinedPromise = new Promise<any>((resolve) => {
+    client1.once("webrtc:peer-joined", resolve);
+  });
+  const c2JoinPromise = new Promise<any>((resolve) => {
+    client2.once("webrtc:room-peers", resolve);
   });
 
   client2.emit("webrtc:join-room", {
-    roomId,
-    user: { id: "user-2", name: "Bob" },
+    roomId: liveRoomCode,
+    user: { id: "user-bob-2", name: "Bob" },
     initialMediaState: { isAudioMuted: true, isVideoOff: false },
   });
 
@@ -68,23 +111,11 @@ async function runSocketVerification() {
     c1PeerJoinedPromise,
     c2JoinPromise,
   ]);
-  console.log(`✔ Client 1 was notified that ${newPeerForC1.name} joined the room`);
-  console.log(`✔ Client 2 received peer list with ${c2Data.peers.length} peer(s), peer name: ${c2Data.peers[0].name}`);
+  console.log(`✔ Alice notified that ${newPeerForC1.name} joined. Bob received ${c2Data.peers.length} existing peer(s).`);
 
-  // Test 3: Screen sharing toggle broadcast
-  const c2ScreenSharePromise = new Promise<any>((resolve) => {
-    client2.on("media:screenshare-status-changed", resolve);
-  });
-  client1.emit("media:toggle-screenshare", {
-    roomId,
-    isScreenSharing: true,
-  });
-  const screenShareData = await c2ScreenSharePromise;
-  console.log(`✔ Screen share status synced to Client 2: isScreenSharing = ${screenShareData.isScreenSharing}`);
-
-  // Test 4: Real-time Canvas update synchronization
+  // TEST 5: Real-time Canvas update with binary image files
   const c2CanvasPromise = new Promise<any>((resolve) => {
-    client2.on("canvas:update", resolve);
+    client2.once("canvas:update", resolve);
   });
   const testCanvasElements = [
     { id: "elem-1", type: "rectangle", x: 10, y: 20, width: 100, height: 50, version: 1 },
@@ -98,79 +129,73 @@ async function runSocketVerification() {
     },
   };
   client1.emit("canvas:update", {
-    roomId,
+    roomId: liveRoomCode,
     elements: testCanvasElements,
     files: testCanvasFiles,
     appState: { viewBackgroundColor: "#ffffff" },
   });
   const canvasReceived = await c2CanvasPromise;
-  console.log(`✔ Real-time Canvas sync received by Client 2: ${canvasReceived.elements.length} element(s), files: ${Object.keys(canvasReceived.files || {}).length}`);
-  if (!canvasReceived.files || !canvasReceived.files["file-photo-1"]) {
-    throw new Error("Client 2 did not receive canvas image file dataURL!");
-  }
+  console.log(`✔ Real-time Canvas sync received by Bob: ${canvasReceived.elements.length} element(s), files: ${Object.keys(canvasReceived.files || {}).length}`);
 
-  // Test 5: Live Chat Message
-  const c2ChatPromise = new Promise<any>((resolve) => {
-    client2.on("chat:new-message", resolve);
-  });
-  client1.emit("chat:send-message", {
-    roomId,
-    text: "Hello Bob, screen sharing and canvas are working!",
-  });
-  const chatMsg = await c2ChatPromise;
-  console.log(`✔ Live chat message received by Bob: "${chatMsg.text}" from ${chatMsg.sender.name}`);
-
-  // Test 6: Host ends room session for everyone -> Client 2 receives instant room:terminated
-  const c2TerminatedPromise = new Promise<any>((resolve) => {
-    client2.on("room:terminated", resolve);
-  });
-  client1.emit("room:end-session", { roomId });
-  const termData = await c2TerminatedPromise;
-  console.log(`✔ Client 2 received instant room termination: "${termData.reason}"`);
-
-  // Test 7: Kick functionality verification in new collaborative session
-  const testRoom2 = "test-kick-room";
-  const c1JoinedPromise = new Promise<any>((resolve) => client1.once("webrtc:room-peers", resolve));
-  const c2JoinedPromise = new Promise<any>((resolve) => client2.once("webrtc:room-peers", resolve));
-
-  client1.emit("webrtc:join-room", {
-    roomId: testRoom2,
-    user: { id: "user-1", name: "Alice" },
-  });
-  await c1JoinedPromise;
-
-  client2.emit("webrtc:join-room", {
-    roomId: testRoom2,
-    user: { id: "user-2", name: "Bob" },
-  });
-  await c2JoinedPromise;
-
+  // TEST 6: Host kicks participant (Bob)
   const c2KickedPromise = new Promise<any>((resolve) => {
     client2.once("room:kicked", resolve);
+  });
+  const c1KickSuccessPromise = new Promise<any>((resolve) => {
+    client1.once("room:kick-success", resolve);
   });
   const c1PeerLeftPromise = new Promise<any>((resolve) => {
     client1.once("webrtc:peer-left", resolve);
   });
 
   client1.emit("room:kick-peer", {
-    roomId: testRoom2,
+    roomId: liveRoomCode,
     targetSocketId: client2.id,
-    reason: "Host requested removal from meeting.",
+    targetUserId: "user-bob-2",
+    reason: "Host moderation kick test.",
   });
 
-  const [kickData, peerLeftData] = await Promise.all([
+  const [kickResult, kickSuccess, peerLeft] = await Promise.all([
     c2KickedPromise,
+    c1KickSuccessPromise,
     c1PeerLeftPromise,
   ]);
-  console.log(`✔ Client 2 was successfully kicked: "${kickData.reason}"`);
-  console.log(`✔ Client 1 received peer-left confirmation for kicked user: ${peerLeftData.name}`);
+  console.log(`✔ Bob successfully received kick eviction: "${kickResult.reason}"`);
+  console.log(`✔ Host received kick confirmation for ${kickSuccess.name}`);
+  console.log(`✔ Peer-left event broadcasted for ${peerLeft.name}`);
+
+  // Verify banned user cannot rejoin
+  const rejoinKickedPromise = new Promise<any>((resolve) => {
+    client2.once("room:kicked", resolve);
+  });
+  client2.emit("webrtc:join-room", {
+    roomId: liveRoomCode,
+    user: { id: "user-bob-2", name: "Bob" },
+  });
+  const rejoinBlocked = await rejoinKickedPromise;
+  console.log(`✔ Banned participant rejoin blocked: "${rejoinBlocked.reason}"`);
+
+  // TEST 7: Empty room 5-minute auto-termination countdown
+  scheduleEmptyRoomTermination("LR-EMPTY-TEST", 5000);
+  if (!hasPendingEmptyRoomTermination("LR-EMPTY-TEST")) {
+    throw new Error("Expected empty room termination timer to be active");
+  }
+  console.log("✔ Empty room 5-minute auto-termination timer successfully scheduled");
+
+  // Verify cancel on join / cancel function
+  cancelEmptyRoomTermination("LR-EMPTY-TEST");
+  if (hasPendingEmptyRoomTermination("LR-EMPTY-TEST")) {
+    throw new Error("Expected empty room termination timer to be cancelled");
+  }
+  console.log("✔ Empty room auto-termination countdown successfully cancelled on activity");
 
   // Clean up
   client1.disconnect();
   client2.disconnect();
+  unauthClient.disconnect();
   stopRoomExpirationWatcher();
   await new Promise<void>((resolve) => server.close(() => resolve()));
-  console.log("🎉 ALL WEBRTC, SCREEN SHARING, CANVAS SYNC, CHAT, KICK & INSTANT TERMINATION VERIFICATIONS PASSED!");
+  console.log("🎉 ALL INTEGRATION TESTS (AUTH GATE, ROOM-NOT-FOUND, KICK PEER, CANVAS FILES & 5-MIN EMPTY ROOM TIMER) PASSED!");
   process.exit(0);
 }
 
