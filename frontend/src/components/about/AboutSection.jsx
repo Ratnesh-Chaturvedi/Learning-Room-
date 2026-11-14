@@ -29,9 +29,7 @@ export default function AboutSection({ onStartRoom: _onStartRoom }) {
         aria-hidden="true"
       />
 
-      {/* ===================================================================
-          1. HERO HEADER & COLLABORATION ILLUSTRATION
-          =================================================================== */}
+      {/* Hero header & collaboration illustration */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center mb-16 sm:mb-20">
         
         {/* Left Column: Heading, Subhead, Description & CTA */}
@@ -217,9 +215,7 @@ export default function AboutSection({ onStartRoom: _onStartRoom }) {
 
       </div>
 
-      {/* ===================================================================
-          2. THREE PASTEL CARDS ROW (Mission, Vision, Values)
-          =================================================================== */}
+      {/* Mission, vision, and values cards */}
       <div id="our-mission-cards" className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 mb-20 sm:mb-24 scroll-mt-24">
         
         {/* CARD 1: Our Mission (Soft Warm Peach) */}
@@ -340,9 +336,7 @@ export default function AboutSection({ onStartRoom: _onStartRoom }) {
 
       </div>
 
-      {/* ===================================================================
-          3. TEAM & IMPACT METRICS (Lower Showcase Section)
-          =================================================================== */}
+      {/* Team & impact metrics showcase */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
         
         {/* Left: Heading & Story (Cols 1 to 4) */}

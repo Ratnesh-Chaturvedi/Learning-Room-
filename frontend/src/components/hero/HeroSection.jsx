@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 
-/**
- * HeroSection Component
- * Visual headline, tactile call-to-actions, room code form, and social proof
- */
+// Landing page hero section
 export default function HeroSection({ onStartRoom, onJoinRoom }) {
   const [roomCode, setRoomCode] = useState('');
 

@@ -20,19 +20,13 @@ const setAuthCookies = (res: Response, accessToken: string, refreshToken: string
   });
 };
 
-/**
- * Initiates the Google OAuth 2.0 flow by redirecting the user to Google.
- * Route: GET /api/v1/auth/google
- */
+// GET /api/v1/auth/google - Redirect to Google OAuth
 export const googleRedirect = asyncHandler(async (_req: Request, res: Response) => {
   const url = AuthService.getGoogleAuthUrl();
   res.redirect(url);
 });
 
-/**
- * Handles the redirect callback from Google after user grants permission.
- * Route: GET /api/v1/auth/google/callback
- */
+// GET /api/v1/auth/google/callback - Process Google OAuth callback
 export const googleCallback = asyncHandler(async (req: Request, res: Response) => {
   const { code, error } = req.query;
 
@@ -60,10 +54,7 @@ export const googleCallback = asyncHandler(async (req: Request, res: Response) =
   }
 });
 
-/**
- * Handles Google One-Tap or Google Identity Services credential from frontend popup/button.
- * Route: POST /api/v1/auth/google
- */
+// POST /api/v1/auth/google - Login via Google credential token
 export const googleCredentialLogin = asyncHandler(async (req: Request, res: Response) => {
   const idToken = req.body?.idToken || req.body?.credential;
 
@@ -88,10 +79,7 @@ export const googleCredentialLogin = asyncHandler(async (req: Request, res: Resp
   );
 });
 
-/**
- * Returns the currently authenticated user's profile.
- * Route: GET /api/v1/auth/me
- */
+// GET /api/v1/auth/me - Current user profile
 export const getCurrentUser = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) {
     throw new ApiError(401, "Not authenticated");
@@ -108,10 +96,7 @@ export const getCurrentUser = asyncHandler(async (req: Request, res: Response) =
   );
 });
 
-/**
- * Developer login for local development / testing without live Google Client ID.
- * Route: POST /api/v1/auth/dev-login
- */
+// POST /api/v1/auth/dev-login - Development login bypass
 export const devLogin = asyncHandler(async (req: Request, res: Response) => {
   if (env.NODE_ENV === "production") {
     throw new ApiError(403, "Dev login is disabled in production.");
@@ -135,10 +120,7 @@ export const devLogin = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-/**
- * Clears authentication cookies and logs out the user.
- * Route: POST /api/v1/auth/logout
- */
+// POST /api/v1/auth/logout - Clear auth cookies
 export const logout = asyncHandler(async (_req: Request, res: Response) => {
   res.clearCookie("accessToken", getAuthCookieOptions());
   res.clearCookie("refreshToken", getAuthCookieOptions());

@@ -20,9 +20,7 @@ export interface UploadImageOptions {
 }
 
 export class CloudinaryService {
-  /**
-   * Uploads an image (Multer file, Buffer, base64 Data URI, or URL) to Cloudinary.
-   */
+  // Upload image (Multer file, Buffer, base64 Data URI, or URL) to Cloudinary
   public static async uploadImage(
     file: Express.Multer.File | Buffer | string,
     options: UploadImageOptions = {}
@@ -82,9 +80,7 @@ export class CloudinaryService {
     throw new ApiError(400, "Invalid image data provided for Cloudinary upload.");
   }
 
-  /**
-   * Streams a buffer directly to Cloudinary using upload_stream.
-   */
+  // Stream buffer directly to Cloudinary
   private static uploadStream(
     buffer: Buffer,
     options: UploadApiOptions

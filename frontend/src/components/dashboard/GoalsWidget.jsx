@@ -139,9 +139,7 @@ export default function GoalsWidget({ variant = 'todo', onOpenCreateRoom }) {
   const totalCount = goals.length;
   const overallPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  // -------------------------------------------------------------
-  // VARIANT: "todo" (For Dashboard Home Sidebar)
-  // -------------------------------------------------------------
+  // Todo list variant
   if (variant === 'todo') {
     return (
       <div className="bg-white dark:bg-[#1C1E25] border border-[#EAE5DE] dark:border-[#2D303A] rounded-3xl p-5 shadow-xs space-y-4">
@@ -306,9 +304,7 @@ export default function GoalsWidget({ variant = 'todo', onOpenCreateRoom }) {
     );
   }
 
-  // -------------------------------------------------------------
-  // VARIANT: "milestones" (For Activity Page Milestones & Goals)
-  // -------------------------------------------------------------
+  // Milestones & goals variant
   return (
     <div className="bg-white dark:bg-[#1D1F26] border border-[#EAE5DE] dark:border-[#2D303A] rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
       {/* Header */}

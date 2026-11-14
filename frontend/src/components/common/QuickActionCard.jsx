@@ -1,9 +1,6 @@
 import React from 'react';
 
-/**
- * QuickActionCard Component
- * Reusable actionable card with icon, title, description, and hover chevron.
- */
+// Actionable card with icon, title, description, and hover chevron
 export default function QuickActionCard({
   title,
   description,

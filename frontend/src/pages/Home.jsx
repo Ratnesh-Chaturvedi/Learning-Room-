@@ -11,12 +11,7 @@ import RoomModal from '../components/room/RoomModal';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
-/**
- * HomePage Component
- * Main landing page, live interactive room showcase, features, and explore rooms section.
- * Visible to everyone. When unauthenticated visitors click to create/join rooms,
- * they are prompted to sign in with Google first.
- */
+// Landing page with hero, features, and room showcase
 export default function Home({ theme: propTheme, onToggleTheme: propToggle } = {}) {
   const { theme: contextTheme, toggleTheme: contextToggle } = useTheme();
   const theme = propTheme || contextTheme;

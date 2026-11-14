@@ -15,10 +15,7 @@ const getParamString = (param: string | string[] | undefined, name: string): str
   return Array.isArray(param) ? param[0]! : param;
 };
 
-/**
- * Searches and filters rooms by standard enum category, customCategory, keyword query, status, and tools.
- * Route: GET /api/v1/rooms?category=STUDY&query=Algorithms&page=1&limit=20
- */
+// GET /api/v1/rooms - Search and filter rooms
 export const searchRooms = asyncHandler(async (req: Request, res: Response) => {
   const validation = searchRoomsQuerySchema.safeParse(req.query);
   if (!validation.success) {
@@ -30,19 +27,13 @@ export const searchRooms = asyncHandler(async (req: Request, res: Response) => {
   res.status(200).json(new ApiResponse(200, "Rooms retrieved successfully", results));
 });
 
-/**
- * Retrieves all unique room categories (both standard RoomCategory enums and active custom types).
- * Route: GET /api/v1/rooms/categories
- */
+// GET /api/v1/rooms/categories - Unique room categories
 export const getCategories = asyncHandler(async (_req: Request, res: Response) => {
   const categories = await RoomService.getCategories();
   res.status(200).json(new ApiResponse(200, "Categories retrieved successfully", categories));
 });
 
-/**
- * Creates an active instant collaborative room (Public or Private).
- * Route: POST /api/v1/rooms/instant
- */
+// POST /api/v1/rooms/instant - Create instant room
 export const createInstantRoom = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Unauthorized");
 
@@ -66,10 +57,7 @@ export const createInstantRoom = asyncHandler(async (req: Request, res: Response
   res.status(201).json(new ApiResponse(201, "Room created successfully", room));
 });
 
-/**
- * Schedules a room for a future date/time (Public or Private).
- * Route: POST /api/v1/rooms/schedule
- */
+// POST /api/v1/rooms/schedule - Create scheduled room
 export const scheduleRoom = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Unauthorized");
 
@@ -94,10 +82,7 @@ export const scheduleRoom = asyncHandler(async (req: Request, res: Response) => 
   res.status(201).json(new ApiResponse(201, "Room scheduled successfully", room));
 });
 
-/**
- * Retrieves details of a room by room code or ID.
- * Route: GET /api/v1/rooms/:roomCode
- */
+// GET /api/v1/rooms/:roomCode - Get room details
 export const getRoomDetails = asyncHandler(async (req: Request, res: Response) => {
   const roomCode = getParamString(req.params.roomCode, "Room code");
   const room = await RoomService.getRoomByCode(roomCode);
@@ -105,10 +90,7 @@ export const getRoomDetails = asyncHandler(async (req: Request, res: Response) =
   res.status(200).json(new ApiResponse(200, "Room retrieved successfully", room));
 });
 
-/**
- * Adds the authenticated user to the room's participant list with Private room verification.
- * Route: POST /api/v1/rooms/:roomCode/join
- */
+// POST /api/v1/rooms/:roomCode/join - Join room
 export const joinRoom = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Unauthorized");
 
@@ -123,10 +105,7 @@ export const joinRoom = asyncHandler(async (req: Request, res: Response) => {
   res.status(200).json(new ApiResponse(200, "Joined room successfully", room));
 });
 
-/**
- * Removes the authenticated user from the room's participant list.
- * Route: POST /api/v1/rooms/:roomCode/leave
- */
+// POST /api/v1/rooms/:roomCode/leave - Leave room
 export const leaveRoom = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Unauthorized");
 
@@ -136,10 +115,7 @@ export const leaveRoom = asyncHandler(async (req: Request, res: Response) => {
   res.status(200).json(new ApiResponse(200, "Left room successfully", room));
 });
 
-/**
- * Starts a scheduled room (Host only).
- * Route: PATCH /api/v1/rooms/:id/start
- */
+// PATCH /api/v1/rooms/:id/start - Start scheduled room
 export const startRoom = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Unauthorized");
 
@@ -149,11 +125,7 @@ export const startRoom = asyncHandler(async (req: Request, res: Response) => {
   res.status(200).json(new ApiResponse(200, "Room started successfully", room));
 });
 
-/**
- * Ends an active room and records the duration (Host only).
- * Terminates all live WebRTC sessions and connected sockets.
- * Route: PATCH /api/v1/rooms/:id/end
- */
+// PATCH /api/v1/rooms/:id/end - End active room
 export const endRoom = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Unauthorized");
 
@@ -163,10 +135,7 @@ export const endRoom = asyncHandler(async (req: Request, res: Response) => {
   res.status(200).json(new ApiResponse(200, "Room ended successfully", room));
 });
 
-/**
- * Modifies any room settings (title, description, category, isPrivate, scheduledAt, scheduledEndTime, tools) (Host only).
- * Route: PATCH /api/v1/rooms/:id
- */
+// PATCH /api/v1/rooms/:id - Update room settings
 export const updateRoom = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Unauthorized");
 
@@ -182,10 +151,7 @@ export const updateRoom = asyncHandler(async (req: Request, res: Response) => {
   res.status(200).json(new ApiResponse(200, "Room updated successfully", room));
 });
 
-/**
- * Regenerates the private room invite link token (Host only).
- * Route: POST /api/v1/rooms/:id/regenerate-invite
- */
+// POST /api/v1/rooms/:id/regenerate-invite - Regenerate invite token
 export const regenerateInviteToken = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Unauthorized");
 
@@ -200,10 +166,7 @@ export const regenerateInviteToken = asyncHandler(async (req: Request, res: Resp
   );
 });
 
-/**
- * Deletes or cancels a room (Host only).
- * Route: DELETE /api/v1/rooms/:id
- */
+// DELETE /api/v1/rooms/:id - Delete room
 export const deleteRoom = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, "Unauthorized");
 

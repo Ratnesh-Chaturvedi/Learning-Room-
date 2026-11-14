@@ -6,10 +6,7 @@ import { UserService } from "../services/user.service.ts";
 import { CloudinaryService } from "../services/cloudinary.service.ts";
 import { updateProfileSchema } from "../validators/user.validator.ts";
 
-/**
- * Retrieves the profile and activity stats of the authenticated user.
- * Route: GET /api/v1/users/profile
- */
+// GET /api/v1/users/profile - Get profile and activity stats
 export const getProfile = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) {
     throw new ApiError(401, "Unauthorized");
@@ -22,11 +19,7 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-/**
- * Updates user profile details (name, avatar).
- * Supports both JSON payloads (with base64 avatar) and multipart/form-data image uploads.
- * Route: PATCH /api/v1/users/profile
- */
+// PATCH /api/v1/users/profile - Update user profile (name, avatar)
 export const updateProfile = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) {
     throw new ApiError(401, "Unauthorized");
@@ -66,10 +59,7 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
   );
 });
 
-/**
- * Uploads a profile picture directly to Cloudinary and updates user profile.
- * Route: POST /api/v1/users/avatar
- */
+// POST /api/v1/users/avatar - Upload profile picture to Cloudinary
 export const uploadAvatar = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) {
     throw new ApiError(401, "Unauthorized");
@@ -87,10 +77,7 @@ export const uploadAvatar = asyncHandler(async (req: Request, res: Response) => 
   );
 });
 
-/**
- * Retrieves all rooms created by or joined by the authenticated user.
- * Route: GET /api/v1/users/my-rooms?filter=all|hosted|joined|scheduled|archived
- */
+// GET /api/v1/users/my-rooms - Get user's created and joined rooms
 export const getMyRooms = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) {
     throw new ApiError(401, "Unauthorized");

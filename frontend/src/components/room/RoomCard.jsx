@@ -1,13 +1,7 @@
 import React from 'react';
 import AvatarStack from '../common/AvatarStack';
 
-/**
- * RoomCard Component
- * Versatile room card with 3 variants:
- * - 'grid' (standard vertical card with thumbnail, status, and members)
- * - 'horizontal' (featured/active room banner with side thumbnail and join button)
- * - 'compact' (minimal list row for recently joined / quick access rooms)
- */
+// Room card component supporting grid, horizontal, and compact variants
 export default function RoomCard({
   variant = 'grid',
   title,

@@ -1,11 +1,7 @@
 import React from 'react';
 import { burstLines } from '../../assets';
 
-/**
- * TactileStationery Component
- * Surrounding playful desk elements (sticky notes, stickers, doodles, ruled pads)
- * Perfectly positioned closely hugging the workspace without overflowing
- */
+// Surrounding playful desk elements (sticky notes, stickers, doodles)
 export default function TactileStationery() {
   return (
     <div className="pointer-events-none select-none" aria-hidden="true">

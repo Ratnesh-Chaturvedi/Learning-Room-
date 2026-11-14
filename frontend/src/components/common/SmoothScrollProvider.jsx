@@ -1,29 +1,15 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 
-/**
- * SmoothScrollContext & Hook
- * Exposes the active Lenis instance for programmatic smooth scrolling:
- *   const lenis = useLenis();
- *   lenis?.scrollTo('#features', { offset: -70 });
- */
+// Smooth scroll context and hook
 const SmoothScrollContext = createContext(null);
 
 export const useLenis = () => useContext(SmoothScrollContext);
 
-/**
- * Standard Lenis exponential easing function:
- * Produces the signature luxury inertia / deceleration curve.
- */
+// Exponential easing function
 const defaultEasing = (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t));
 
-/**
- * Built-in High-Performance Lenis-Compatible Smooth Scroll Engine
- * - Smoothly scrolls the main window (e.g. Landing Page)
- * - Intelligently detects and smoothly scrolls inner scrollable containers (e.g. Dashboard)
- * - Respects [data-lenis-prevent] for containers that opt out (e.g. Whiteboard canvas, chat list)
- * - Safe boundary checks: NEVER freezes scrolling when limit is 0
- */
+// Lenis-compatible smooth scroll engine for window and containers
 class BuiltinLenisEngine {
   constructor(options = {}) {
     this.options = {

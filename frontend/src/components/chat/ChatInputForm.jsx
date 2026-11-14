@@ -1,9 +1,6 @@
 import React from 'react';
 
-/**
- * ChatInputForm Component
- * Text message input field with send icon button.
- */
+// Chat text input form component
 export default function ChatInputForm({ inputText, setInputText, onSendMessage }) {
   return (
     <form

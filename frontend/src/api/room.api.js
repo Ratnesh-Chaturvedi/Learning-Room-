@@ -1,79 +1,57 @@
 import apiClient from './client';
 
 export const roomApi = {
-  /**
-   * Search and filter rooms by category, keyword query, and status.
-   */
+  // Search and filter rooms
   searchRooms: async (params = {}) => {
     return apiClient.get('/rooms', { params });
   },
 
-  /**
-   * Fetch standard enum categories supported by the platform.
-   */
+  // Fetch standard room categories
   getCategories: async () => {
     return apiClient.get('/rooms/categories');
   },
 
-  /**
-   * Get complete details of a room by roomCode or UUID.
-   */
+  // Get complete room details by code or ID
   getRoomDetails: async (roomCode) => {
     return apiClient.get(`/rooms/${encodeURIComponent(roomCode)}`);
   },
 
-  /**
-   * Create an instant live room.
-   */
+  // Create instant room
   createInstantRoom: async (payload) => {
     return apiClient.post('/rooms/instant', payload);
   },
 
-  /**
-   * Schedule a future collaborative room with start and end times.
-   */
+  // Schedule future collaborative room
   scheduleRoom: async (payload) => {
     return apiClient.post('/rooms/schedule', payload);
   },
 
-  /**
-   * Register user as participant in a room.
-   */
+  // Register user as room participant
   joinRoom: async (roomCode) => {
     return apiClient.post(`/rooms/${encodeURIComponent(roomCode)}/join`);
   },
 
-  /**
-   * Remove user from room participants.
-   */
+  // Remove user from room participants
   leaveRoom: async (roomCode) => {
     return apiClient.post(`/rooms/${encodeURIComponent(roomCode)}/leave`);
   },
 
-  /**
-   * Host modifies room settings (title, description, category, times, privacy).
-   */
+  // Update room settings (Host only)
   updateRoom: async (roomId, updates) => {
     return apiClient.patch(`/rooms/${roomId}`, updates);
   },
 
-  /**
-   * Host starts a scheduled room early.
-   */
+  // Start scheduled room early (Host only)
   startRoom: async (roomId) => {
     return apiClient.patch(`/rooms/${roomId}/start`);
   },
 
-  /**
-   * Host terminates the meeting room.
-   */
+  // End meeting room (Host only)
   endRoom: async (roomId) => {
     return apiClient.patch(`/rooms/${roomId}/end`);
   },
 
-  /**
-   * Host regenerates the private invite token.
-   */
+  // Regenerate private invite token (Host only)
   regenerateInvite: async (roomId) => {
     return apiClient.post(`/rooms/${roomId}/regenerate-invite`);
   },

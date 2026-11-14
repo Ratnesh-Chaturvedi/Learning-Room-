@@ -18,9 +18,7 @@ export interface GoogleUserProfile {
 }
 
 export class AuthService {
-  /**
-   * Resiliently finds or creates a user from verified Google payload and signs JWTs.
-   */
+  // Find or create user from verified Google payload and sign JWTs
   private static async upsertGoogleUser(payload: {
     sub: string;
     email: string;
@@ -72,9 +70,7 @@ export class AuthService {
     return { user, accessToken, refreshToken };
   }
 
-  /**
-   * Generates Google OAuth consent screen redirect URL.
-   */
+  // Generate Google OAuth consent redirect URL
   public static getGoogleAuthUrl(redirectUri?: string): string {
     const callback = redirectUri || env.GOOGLE_CALLBACK_URL;
     return googleClient.generateAuthUrl({
@@ -88,9 +84,7 @@ export class AuthService {
     });
   }
 
-  /**
-   * Exchanges authorization code for Google user profile and issues JWT tokens.
-   */
+  // Exchange auth code for Google user profile and issue JWT tokens
   public static async processGoogleCallback(code: string, redirectUri?: string) {
     if (!code) {
       throw new ApiError(400, "Authorization code is required from Google.");
@@ -150,9 +144,7 @@ export class AuthService {
     }
   }
 
-  /**
-   * Verifies Google One-Tap or ID Token sent directly from frontend Google SDK.
-   */
+  // Verify Google One-Tap or ID Token from frontend
   public static async processGoogleIdToken(idToken: string) {
     if (!idToken) {
       throw new ApiError(400, "Google ID token is required.");
@@ -182,9 +174,7 @@ export class AuthService {
     }
   }
 
-  /**
-   * Generates a valid database user & authentic signed JWT for dev testing.
-   */
+  // Generate database user & signed JWT for dev testing
   public static async processDevLogin(userNum: number = 1) {
     const isUser1 = userNum !== 2;
     const profile = isUser1

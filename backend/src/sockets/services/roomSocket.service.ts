@@ -9,9 +9,7 @@ export const setSocketServerInstance = (io: Server) => {
   socketServerInstance = io;
 };
 
-/**
- * Broadcasts room termination event to all connected peers in that room and cleans up active connections.
- */
+// Broadcast room termination to active peers and clean up sockets
 export const broadcastRoomTerminated = (
   roomId: string,
   roomCode: string,
@@ -49,9 +47,7 @@ export const broadcastRoomTerminated = (
   console.log(`[Room Lifecycle] Room ${roomCode} (${roomId}) terminated: ${reason}`);
 };
 
-/**
- * Broadcasts room configuration changes (title, tools, schedule) to active peers.
- */
+// Broadcast room configuration changes to active peers
 export const broadcastRoomUpdated = (
   roomId: string,
   roomCode: string,
@@ -75,10 +71,7 @@ export const broadcastRoomUpdated = (
   socketServerInstance.to(roomCode).emit("room:updated", updatedData);
 };
 
-/**
- * Periodic background task that auto-terminates rooms when their scheduledEndTime is reached
- * and auto-activates scheduled rooms when their scheduledAt start time is reached.
- */
+// Auto-terminate expired rooms and activate scheduled rooms
 export const checkAndTerminateExpiredRooms = async () => {
   try {
     const now = new Date();
@@ -144,17 +137,10 @@ export const checkAndTerminateExpiredRooms = async () => {
 
 let watcherInterval: NodeJS.Timeout | null = null;
 
-/**
- * Registry of active auto-termination timers for empty rooms.
- * Maps canonical room key to NodeJS.Timeout.
- */
+// Active empty-room auto-termination timers
 const emptyRoomTimers = new Map<string, NodeJS.Timeout>();
 
-/**
- * Schedules an empty room auto-termination timer (defaults to 5 minutes / 300,000 ms).
- * If no participant enters the room before the timer fires, the room is permanently
- * transitioned to ENDED status in the database and active state manager.
- */
+// Schedule 5-minute empty room auto-termination countdown
 export const scheduleEmptyRoomTermination = (
   roomId: string,
   timeoutMs: number = 5 * 60 * 1000
@@ -259,10 +245,7 @@ export const scheduleEmptyRoomTermination = (
   }
 };
 
-/**
- * Cancels any pending empty-room termination countdown for a room.
- * Invoked as soon as any authenticated participant joins the room.
- */
+// Cancel pending empty-room termination countdown
 export const cancelEmptyRoomTermination = (roomId: string): boolean => {
   if (!roomId) return false;
   const canonicalKey = roomStateManager.getCanonicalKey(roomId) || roomId.trim().toUpperCase();
@@ -294,17 +277,13 @@ export const cancelEmptyRoomTermination = (roomId: string): boolean => {
   return cancelled;
 };
 
-/**
- * Returns whether an empty room auto-termination countdown is currently pending.
- */
+// Check if empty-room auto-termination is pending
 export const hasPendingEmptyRoomTermination = (roomId: string): boolean => {
   const canonicalKey = roomStateManager.getCanonicalKey(roomId) || roomId.trim().toUpperCase();
   return emptyRoomTimers.has(canonicalKey);
 };
 
-/**
- * Starts periodic room expiration supervisor.
- */
+// Start periodic room expiration supervisor
 export const startRoomExpirationWatcher = (intervalMs: number = 30000) => {
   if (watcherInterval) {
     clearInterval(watcherInterval);

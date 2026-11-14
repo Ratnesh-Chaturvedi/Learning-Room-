@@ -586,23 +586,23 @@ function RoomView() {
         </div>
       )}
 
-      {/* 0. Permanent Background Audio for Remote Peers (Plays even if VideoGalleryModal is closed) */}
+      {/* Background audio */}
       <div className="fixed top-0 left-0 w-px h-px overflow-hidden pointer-events-none opacity-5" aria-hidden="true">
         {Object.entries(remoteStreams || {}).map(([peerSocketId, stream]) => (
           <RemoteAudioTrack key={peerSocketId} stream={stream} />
         ))}
       </div>
 
-      {/* 1. Immersive Top Room Header (Context-connected) */}
+      {/* Room header */}
       <RoomHeader />
 
-      {/* 2. Floating Live Video Gallery Popup (Context-connected) */}
+      {/* Video gallery modal */}
       <VideoGalleryModal />
 
-      {/* 3. Room Participants Roster & Moderation Modal */}
+      {/* Participants modal */}
       <ParticipantsModal />
 
-      {/* 3. Interactive Multiplayer Collaborative Canvas */}
+      {/* Collaborative canvas */}
       <main className="flex-1 relative w-full h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4rem)] pb-18 sm:pb-0 overflow-hidden">
         <section className="w-full h-full relative overflow-hidden">
           <div className="absolute inset-0">
@@ -630,7 +630,7 @@ function RoomView() {
             </RoomErrorBoundary>
           </div>
 
-          {/* Re-open Chat Floating Pill (Desktop & Tablet only; mobile uses bottom dock) */}
+          {/* Open chat button */}
           {!isChatOpen && (
             <button
               type="button"
@@ -650,7 +650,7 @@ function RoomView() {
             </button>
           )}
 
-          {/* Re-open Video Gallery Floating Pill if closed (Desktop & Tablet only; mobile uses bottom dock) */}
+          {/* Open video gallery button */}
           {!isVideoGalleryOpen && (
             <button
               type="button"
@@ -669,16 +669,13 @@ function RoomView() {
         </section>
       </main>
 
-      {/* 4. Real-time Live Chat (Context-connected) */}
+      {/* Live chat sidebar */}
       <SideChat floating={true} />
     </div>
   );
 }
 
-/**
- * Collaborative Room Page
- * Wraps room lifecycle with RoomProvider for clean Context-driven architecture.
- */
+// Main room page wrapped in RoomProvider
 export default function RoomPage() {
   const { roomId } = useParams();
   const [searchParams] = useSearchParams();

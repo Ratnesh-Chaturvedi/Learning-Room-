@@ -1,14 +1,7 @@
 import React, { useState } from 'react';
 import { useRoom } from '../../context/RoomContext';
 
-/**
- * ParticipantsModal Component
- * Real-time room participants roster displaying:
- * - Full list of all connected members in the live room
- * - Real-time media indicators (Mic, Camera, Hand Raise, Screen Share)
- * - Clear Host vs Participant badges
- * - Host-only participant moderation: "Kick / Remove from Room"
- */
+// Room participants roster and host moderation modal
 export default function ParticipantsModal() {
   const {
     isMembersOpen,

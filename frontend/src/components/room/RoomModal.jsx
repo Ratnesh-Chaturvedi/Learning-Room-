@@ -12,12 +12,7 @@ const CATEGORIES = [
   { value: 'CUSTOM', label: 'Custom Topic' },
 ];
 
-/**
- * RoomModal Component
- * Production-ready dialog connected to backend APIs for:
- * 1. Creating instant or scheduled rooms with category, privacy, and compiler tools.
- * 2. Joining rooms via room code or private invite URL.
- */
+// Modal for creating instant/scheduled rooms and joining rooms
 export default function RoomModal({ isOpen, onClose, mode = 'create', initialCode = '' }) {
   const navigate = useNavigate();
 

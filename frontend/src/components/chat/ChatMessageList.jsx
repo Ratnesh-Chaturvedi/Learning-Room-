@@ -1,10 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 
-/**
- * ChatMessageList Component
- * Renders scrollable conversation message bubbles, sender avatars,
- * timestamps, and dynamic typing indicator.
- */
+// Scrollable conversation message list component
 export default function ChatMessageList({
   messages,
   isTyping,

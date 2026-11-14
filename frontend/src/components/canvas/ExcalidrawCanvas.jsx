@@ -2,9 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 
-/**
- * Default sample elements for the landing page FloatingMockup preview
- */
+// Default sample elements for mockup preview
 const DEFAULT_PREVIEW_ELEMENTS = [
   {
     id: 'rect-1',
@@ -79,14 +77,7 @@ const DEFAULT_PREVIEW_ELEMENTS = [
   },
 ];
 
-/**
- * ExcalidrawCanvas Component
- * Robust Excalidraw integration with:
- * - Real-time multiplayer synchronization via Socket.io and BroadcastChannel
- * - LocalStorage room scene persistence
- * - Live collaborator cursor and user pointer sharing
- * - Reactive dark / light theme mode support
- */
+// Real-time collaborative Excalidraw canvas component
 export default function ExcalidrawCanvas({
   roomId = 'default',
   theme = 'light',

@@ -1,25 +1,17 @@
 import apiClient from './client';
 
 export const userApi = {
-  /**
-   * Fetch authenticated user's profile and stats.
-   */
+  // Fetch user profile and stats
   getProfile: async () => {
     return apiClient.get('/users/profile');
   },
 
-  /**
-   * Update authenticated user's profile information.
-   * Accepts plain object or FormData (for direct multipart avatar upload).
-   */
+  // Update profile details (name, avatar)
   updateProfile: async (updates) => {
     return apiClient.patch('/users/profile', updates);
   },
 
-  /**
-   * Upload user avatar directly to Cloudinary and update profile.
-   * @param {File | Blob | FormData} fileOrFormData
-   */
+  // Upload user avatar image
   uploadAvatar: async (fileOrFormData) => {
     let formData;
     if (fileOrFormData instanceof FormData) {
@@ -32,9 +24,7 @@ export const userApi = {
     return apiClient.post('/users/avatar', formData);
   },
 
-  /**
-   * Fetch rooms created and joined by the user.
-   */
+  // Fetch rooms created and joined by user
   getMyRooms: async (filter = 'all') => {
     return apiClient.get('/users/my-rooms', { params: { filter } });
   },

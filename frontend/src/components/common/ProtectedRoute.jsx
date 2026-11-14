@@ -3,10 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { learningRoomLogo } from '../../assets';
 
-/**
- * Route guard that requires user authentication.
- * If not authenticated, redirects to /login and saves current location in state.
- */
+// Route guard redirecting unauthenticated users to /login
 export default function ProtectedRoute({ children }) {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();

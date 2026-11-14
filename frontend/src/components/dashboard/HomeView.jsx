@@ -12,10 +12,7 @@ import { userApi } from '../../api/user.api';
 import { roomApi } from '../../api/room.api';
 import GoalsWidget from './GoalsWidget';
 
-/**
- * HomeView Component
- * Dynamic dashboard home connected to real user data and backend room APIs.
- */
+// Dashboard home view with user rooms, explore rooms, and quick actions
 export default function HomeView({
   onOpenJoin,
   onOpenCreate,
@@ -111,9 +108,7 @@ export default function HomeView({
 
   return (
     <main className="flex-1 p-4 sm:p-6 lg:p-7 grid grid-cols-1 xl:grid-cols-12 gap-6 max-w-[1560px] mx-auto w-full">
-      {/* ========================================================= */}
-      {/* 1. MAIN DASHBOARD AREA (8 Cols on XL)                     */}
-      {/* ========================================================= */}
+      {/* Main dashboard content area */}
       <div className="xl:col-span-8 flex flex-col gap-6">
         {/* HERO / WELCOME BANNER CARD */}
         <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#FFF5ED] via-[#F9F4FE] to-[#F1EAFF] dark:from-[#242129] dark:via-[#22212E] dark:to-[#1C1A2B] border border-[#EFE8DF] dark:border-[#353245] p-5 sm:p-6 md:p-8 flex flex-col lg:flex-row items-center justify-between gap-6 shadow-xs">
@@ -323,9 +318,7 @@ export default function HomeView({
         </div>
       </div>
 
-      {/* ========================================================= */}
-      {/* 2. RIGHT SIDEBAR / PROFILE COLUMN (4 Cols on XL)         */}
-      {/* ========================================================= */}
+      {/* Sidebar: profile & goals widget */}
       <div className="xl:col-span-4 flex flex-col gap-5">
         <div className="bg-white dark:bg-[#1C1E25] border border-[#EAE5DE] dark:border-[#2D303A] rounded-3xl p-6 text-center relative shadow-xs">
           {/* Avatar with Online Dot */}

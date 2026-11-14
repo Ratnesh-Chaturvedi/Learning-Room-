@@ -1,11 +1,7 @@
 import React from 'react';
 import { useTheme } from '../../context/ThemeContext';
 
-/**
- * ThemeToggle Component
- * Pill capsule dual-state theme toggle with moon and sun icons.
- * Consumes ThemeContext directly to avoid prop-drilling, with backwards-compatible props fallback.
- */
+// Theme toggle button supporting light and dark modes
 export default function ThemeToggle({ theme: propTheme, onToggleTheme: propToggle }) {
   const context = useTheme();
   const theme = propTheme || context?.theme || 'light';

@@ -3,21 +3,7 @@ import { useRoom } from '../../context/RoomContext';
 import { useTheme } from '../../context/ThemeContext';
 import { learningRoomLogo } from '../../assets';
 
-/**
- * RoomHeader Component
- * Immersive room top navigation bar with:
- * - Dashboard exit navigation
- * - Editable Room Title
- * - 1-click #roomId invite link copy
- * - Live meet audio indicator & call timer
- * - Dynamic connected collaborators presence (real peers & avatars)
- * - Mic, Camera, and Floating Video Gallery toggles
- * - Quick emoji reactions & hand raise
- * - Live chat toggle button with dynamic message count
- * - Dark / Light theme toggle
- * - Responsive mobile drawer menu for compact screens
- * - Host 'End Meeting' termination button & participant 'Leave' button
- */
+// Room top header with meeting controls and navigation
 export default function RoomHeader(props = {}) {
   const room = useRoom() || {};
   const themeContext = useTheme() || {};

@@ -1,12 +1,7 @@
 import React, { useState } from 'react';
 import { burstLines } from '../../assets';
 
-/**
- * ExploreSection Component
- * Recreates the "Find your people, and learn something new." Explore room showcase
- * exactly matching the reference design with large legible cursive typography,
- * properly proportioned (non-stretched) cards, and zero horizontal page overflow.
- */
+// Explore rooms showcase section
 export default function ExploreSection({ onJoinRoom, onStartRoom: _onStartRoom }) {
   const [activeCategory, setActiveCategory] = useState('All rooms');
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,9 +33,7 @@ export default function ExploreSection({ onJoinRoom, onStartRoom: _onStartRoom }
         aria-hidden="true"
       />
 
-      {/* ===================================================================
-          1. SECTION HEADER (Headline with Cursive, Radiating Burst & Sparkles)
-          =================================================================== */}
+      {/* Section header */}
       <div className="text-center max-w-3xl mx-auto mb-9 relative">
         {/* Main Headline with 45° anticlockwise burst on text border & sparkles */}
         <h2 className="font-heading text-3xl sm:text-4xl md:text-[44px] font-extrabold tracking-tight text-[var(--color-text-primary)] leading-[1.2] mb-3">
@@ -79,9 +72,7 @@ export default function ExploreSection({ onJoinRoom, onStartRoom: _onStartRoom }
         </p>
       </div>
 
-      {/* ===================================================================
-          2. SEARCH INPUT & CATEGORY FILTER PILLS
-          =================================================================== */}
+      {/* Search bar & category filter pills */}
       <div className="flex flex-col items-center gap-3.5 mb-14 w-full max-w-3xl mx-auto">
         {/* Search Bar */}
         <div className="w-full max-w-xl relative">
@@ -140,9 +131,7 @@ export default function ExploreSection({ onJoinRoom, onStartRoom: _onStartRoom }
         </div>
       </div>
 
-      {/* ===================================================================
-          3. PLAYFUL DOODLES (Large Cursive Text, Kept Contained Inside Bounds)
-          =================================================================== */}
+      {/* Decorative doodles */}
       <div className="relative pt-6 pb-12">
         {/* Top-Left: "come as you are ->" (Large cursive, snug over left card) */}
         <div
@@ -190,16 +179,9 @@ export default function ExploreSection({ onJoinRoom, onStartRoom: _onStartRoom }
           </div>
         </div>
 
-        {/* ===================================================================
-            4. BENTO ROOM CARDS GRID
-               Proportionally balanced so left & right cards are NOT stretched!
-            =================================================================== */}
+        {/* Bento room cards grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-          
-          {/* ---------------------------------------------------------------
-              CARD 1 (Left Column): Build in public club
-              Whiteboard centered horizontally, zero empty white space gap!
-              --------------------------------------------------------------- */}
+          {/* Card 1: Build in public club */}
           <div className="lg:col-span-3 max-w-sm sm:max-w-md lg:max-w-none mx-auto w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5 sm:p-4 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col h-full group">
             {/* Header Badge & Sketch Marks */}
             <div className="flex items-center justify-between mb-2.5 shrink-0">
@@ -319,10 +301,7 @@ export default function ExploreSection({ onJoinRoom, onStartRoom: _onStartRoom }
             </div>
           </div>
 
-          {/* ---------------------------------------------------------------
-              CENTER 2x2 BLOCK (Cols 4 to 9)
-              Compact visual heights ensuring zero awkward vertical stretch!
-              --------------------------------------------------------------- */}
+          {/* Center 2x2 cards block */}
           <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
             
             {/* CARD 2 (Center-Top Left): The 25-minute study table */}
@@ -614,10 +593,7 @@ export default function ExploreSection({ onJoinRoom, onStartRoom: _onStartRoom }
 
           </div>
 
-          {/* ---------------------------------------------------------------
-              CARD 6 (Right Column): Make it make sense
-              Moodboard centered horizontally, zero empty white space gap!
-              --------------------------------------------------------------- */}
+          {/* Card 6: Creative work room */}
           <div className="lg:col-span-3 max-w-sm sm:max-w-md lg:max-w-none mx-auto w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5 sm:p-4 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col h-full group">
             {/* Header Badge */}
             <div className="flex items-center justify-between mb-2.5 shrink-0">
@@ -731,11 +707,7 @@ export default function ExploreSection({ onJoinRoom, onStartRoom: _onStartRoom }
         </div>
       </div>
 
-      {/* ===================================================================
-          5. BOTTOM BANNER HEADLINE
-             "A little corner for every kind of curious ✦ ✦"
-             (with "curious" in large cursive script)
-          =================================================================== */}
+      {/* Bottom banner headline */}
       <div className="text-center max-w-2xl mx-auto mt-14 sm:mt-18 relative">
         <h3 className="font-heading text-2xl sm:text-3xl md:text-[38px] font-extrabold tracking-tight text-[var(--color-text-primary)] leading-[1.2] mb-3">
           <span>A little corner for every kind of </span>
