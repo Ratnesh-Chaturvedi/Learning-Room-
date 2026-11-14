@@ -54,6 +54,7 @@ export interface WaitingPeer {
   name: string;
   avatar?: string;
   requestedAt: string;
+  isRejoin?: boolean;
 }
 
 /**
@@ -139,4 +140,13 @@ export interface KickPeerPayload {
 export interface ToggleScreenSharePayload {
   roomId: string;
   isScreenSharing: boolean;
+}
+
+export interface MutePeerPayload {
+  roomId: string;
+  targetSocketId: string;
+}
+
+export interface MuteAllPayload {
+  roomId: string;
 }

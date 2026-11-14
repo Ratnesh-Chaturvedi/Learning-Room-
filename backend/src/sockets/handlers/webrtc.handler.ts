@@ -14,6 +14,8 @@ import type {
   WebRtcIceCandidatePayload,
   PeerUser,
   WaitingPeer,
+  MutePeerPayload,
+  MuteAllPayload,
 } from "../types/socket.types.ts";
 
 export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
@@ -244,10 +246,32 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
 
     // Check if user was previously kicked/banned from this room
     if (roomStateManager.isUserBanned(canonicalId, userId, socket.id)) {
-      socket.emit("room:kicked", {
+      const rejoinWaitingPeer: WaitingPeer = {
+        socketId: socket.id,
+        userId,
+        name,
+        avatar,
+        requestedAt: new Date().toISOString(),
+        isRejoin: true,
+      };
+
+      roomStateManager.addWaitingPeer(canonicalId, rejoinWaitingPeer);
+
+      socket.emit("room:waiting", {
         roomId,
-        reason: "You were removed from this meeting by the host and cannot rejoin.",
+        message: "You were previously removed from this meeting. A request has been sent to the host to allow you to rejoin.",
+        user: rejoinWaitingPeer,
+        isRejoin: true,
       });
+
+      // Notify the host across all room channels
+      io.to(canonicalId).emit("room:knock-request", rejoinWaitingPeer);
+      io.to(canonicalCode).emit("room:knock-request", rejoinWaitingPeer);
+      if (roomId !== canonicalId && roomId !== canonicalCode) {
+        io.to(roomId).emit("room:knock-request", rejoinWaitingPeer);
+      }
+
+      console.log(`[Rejoin Queue] Kicked user ${name} (${socket.id}) requested rejoin for room ${canonicalCode}`);
       return;
     }
 
@@ -367,6 +391,12 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
       joinedAt: new Date().toISOString(),
     };
 
+    // Clear any previous kick/ban records so the admitted participant can interact freely
+    roomStateManager.unbanUser(canonicalId, waitingPeer.userId, targetSocketId);
+    if (canonicalCode) {
+      roomStateManager.unbanUser(canonicalCode, waitingPeer.userId, targetSocketId);
+    }
+
     const existingPeers = roomStateManager.getRoomPeers(canonicalId);
     roomStateManager.addPeer(canonicalId, peer);
 
@@ -453,6 +483,11 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
     if (!targetSocketId || !sdp) return;
 
     const roomId = roomStateManager.getRoomIdBySocketId(socket.id);
+    const userId = socket.data?.userId || socket.data?.user?.id;
+    if (roomId && roomStateManager.isUserBanned(roomId, userId, socket.id)) {
+      return;
+    }
+
     const callerPeer = roomId ? roomStateManager.getPeer(roomId, socket.id) : null;
 
     io.to(targetSocketId).emit("webrtc:offer", {
@@ -469,6 +504,12 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
     const { targetSocketId, sdp } = payload;
     if (!targetSocketId || !sdp) return;
 
+    const roomId = roomStateManager.getRoomIdBySocketId(socket.id);
+    const userId = socket.data?.userId || socket.data?.user?.id;
+    if (roomId && roomStateManager.isUserBanned(roomId, userId, socket.id)) {
+      return;
+    }
+
     io.to(targetSocketId).emit("webrtc:answer", {
       responderSocketId: socket.id,
       sdp,
@@ -481,6 +522,12 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
   socket.on("webrtc:ice-candidate", (payload: WebRtcIceCandidatePayload) => {
     const { targetSocketId, candidate } = payload;
     if (!targetSocketId || !candidate) return;
+
+    const roomId = roomStateManager.getRoomIdBySocketId(socket.id);
+    const userId = socket.data?.userId || socket.data?.user?.id;
+    if (roomId && roomStateManager.isUserBanned(roomId, userId, socket.id)) {
+      return;
+    }
 
     io.to(targetSocketId).emit("webrtc:ice-candidate", {
       senderSocketId: socket.id,
@@ -688,14 +735,12 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
           targetSocket.leave(roomId);
         }
 
-        // Graceful disconnect of target socket after event delivery
-        setTimeout(() => {
-          try {
-            targetSocket.disconnect(true);
-          } catch {
-            // Ignore disconnect error
-          }
-        }, 500);
+        // Immediate disconnect of target socket so no further canvas/chat interaction is possible
+        try {
+          targetSocket.disconnect(true);
+        } catch {
+          // Ignore disconnect error
+        }
       }
 
       // 3. Remove peer from in-memory state manager
@@ -745,6 +790,105 @@ export const registerWebRtcHandlers = (io: Server, socket: Socket) => {
       );
     }
   );
+
+  /**
+   * 11. Host remotely mutes a participant's microphone.
+   */
+  socket.on("room:mute-peer", (payload: MutePeerPayload) => {
+    const { roomId, targetSocketId } = payload;
+    if (!roomId || !targetSocketId) return;
+
+    const canonicalId = socket.data?.canonicalId || roomStateManager.getCanonicalKey(roomId);
+    const meta = roomStateManager.getRoomMeta(canonicalId);
+    const canonicalCode = socket.data?.canonicalCode || meta?.roomCode || canonicalId;
+
+    const hostCreatorId = meta?.creatorId;
+    const senderUserId = socket.data?.userId || socket.data?.user?.id;
+    const isHost = Boolean(
+      hostCreatorId && senderUserId && hostCreatorId === senderUserId
+    );
+
+    if (!isHost) {
+      socket.emit("room:error", {
+        message: "Only the room host can mute participants.",
+      });
+      return;
+    }
+
+    const updated = roomStateManager.updatePeerMedia(canonicalId, targetSocketId, {
+      isAudioMuted: true,
+    });
+
+    const targetSocket = io.sockets.sockets.get(targetSocketId);
+    if (targetSocket) {
+      targetSocket.emit("media:force-mute", {
+        reason: "You were muted by the meeting host.",
+      });
+    }
+
+    const targetRooms = Array.from(
+      new Set([canonicalId, canonicalCode, roomId].filter(Boolean))
+    );
+
+    io.to(targetRooms).emit("media:audio-status-changed", {
+      socketId: targetSocketId,
+      userId: updated?.userId || targetSocketId,
+      isAudioMuted: true,
+    });
+
+    console.log(`[Host Moderation] Host muted peer ${targetSocketId} in room ${canonicalCode}`);
+  });
+
+  /**
+   * 12. Host remotely mutes all participants in the room.
+   */
+  socket.on("room:mute-all", (payload: MuteAllPayload) => {
+    const { roomId } = payload;
+    if (!roomId) return;
+
+    const canonicalId = socket.data?.canonicalId || roomStateManager.getCanonicalKey(roomId);
+    const meta = roomStateManager.getRoomMeta(canonicalId);
+    const canonicalCode = socket.data?.canonicalCode || meta?.roomCode || canonicalId;
+
+    const hostCreatorId = meta?.creatorId;
+    const senderUserId = socket.data?.userId || socket.data?.user?.id;
+    const isHost = Boolean(
+      hostCreatorId && senderUserId && hostCreatorId === senderUserId
+    );
+
+    if (!isHost) {
+      socket.emit("room:error", {
+        message: "Only the room host can mute all participants.",
+      });
+      return;
+    }
+
+    const allPeers = roomStateManager.getRoomPeers(canonicalId);
+    const targetRooms = Array.from(
+      new Set([canonicalId, canonicalCode, roomId].filter(Boolean))
+    );
+
+    allPeers.forEach((p) => {
+      if (p.socketId !== socket.id) {
+        roomStateManager.updatePeerMedia(canonicalId, p.socketId, {
+          isAudioMuted: true,
+        });
+        const peerSocket = io.sockets.sockets.get(p.socketId);
+        if (peerSocket) {
+          peerSocket.emit("media:force-mute", {
+            reason: "All participants have been muted by the host.",
+          });
+        }
+        io.to(targetRooms).emit("media:audio-status-changed", {
+          socketId: p.socketId,
+          userId: p.userId,
+          isAudioMuted: true,
+        });
+      }
+    });
+
+    console.log(`[Host Moderation] Host muted all participants in room ${canonicalCode}`);
+  });
 };
 
 export default registerWebRtcHandlers;

@@ -270,6 +270,10 @@ function RoomView() {
     isHost,
     peers,
     remoteStreams,
+    isJoinedRoom,
+    isKicked,
+    kickedReason,
+    handleRequestRejoin,
     isWaiting,
     waitingMessage,
     knockRequests,
@@ -430,6 +434,87 @@ function RoomView() {
     );
   }
 
+  // KICKED PARTICIPANT OVERLAY
+  if (isKicked) {
+    return (
+      <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-[var(--color-background)] text-center relative overflow-hidden select-none">
+        <div className="absolute w-96 h-96 rounded-full bg-rose-500/10 blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-md w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-8 shadow-2xl space-y-6 animate-in zoom-in-95 duration-200">
+          <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-inner">
+            <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+          </div>
+
+          <div className="space-y-2">
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40">
+              Removed from Meeting
+            </span>
+            <h2 className="font-heading font-extrabold text-xl text-[var(--color-text-primary)] pt-1">
+              You were removed
+            </h2>
+            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              {kickedReason || 'You were removed from this meeting by the host.'}
+            </p>
+            <p className="text-[11px] text-[var(--color-text-secondary)]/70">
+              You can ask the host to allow you back in, or return to your dashboard.
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col gap-2.5">
+            <button
+              type="button"
+              onClick={handleRequestRejoin}
+              className="w-full py-2.5 px-4 rounded-xl bg-[#543FE3] hover:bg-[#4330C8] text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>Ask Host to Rejoin</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard')}
+              className="w-full py-2.5 px-4 rounded-xl border border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] transition-all cursor-pointer"
+            >
+              Return to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // CONNECTING / PREPARING ROOM LOADER (Eliminates the premature room glimpse!)
+  if (!isJoinedRoom) {
+    return (
+      <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-[var(--color-background)] text-center relative overflow-hidden select-none">
+        <div className="absolute w-96 h-96 rounded-full bg-[#543FE3]/10 blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-sm w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-8 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200">
+          <div className="relative w-16 h-16 mx-auto flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full border-3 border-[#543FE3]/20 border-t-[#543FE3] animate-spin" />
+            <div className="w-3 h-3 rounded-full bg-[#543FE3] absolute" />
+          </div>
+
+          <div className="space-y-1.5">
+            <h3 className="font-heading font-extrabold text-base text-[var(--color-text-primary)]">
+              Joining Room #{roomId}
+            </h3>
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              Connecting to room and preparing workspace...
+            </p>
+          </div>
+
+          <div className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-[#543FE3]">
+            <span className="w-2 h-2 rounded-full bg-[#543FE3] animate-ping" />
+            <span>Establishing live session</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       data-theme={roomTheme}
@@ -468,7 +553,13 @@ function RoomView() {
                       {peer.name}
                     </p>
                     <p className="text-[10px] text-[var(--color-text-secondary)]">
-                      Asking to join call
+                      {peer.isRejoin ? (
+                        <span className="text-amber-600 dark:text-amber-400 font-bold">
+                          Rejoin Request (Removed)
+                        </span>
+                      ) : (
+                        'Asking to join call'
+                      )}
                     </p>
                   </div>
                 </div>

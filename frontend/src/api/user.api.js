@@ -13,11 +13,6 @@ export const userApi = {
    * Accepts plain object or FormData (for direct multipart avatar upload).
    */
   updateProfile: async (updates) => {
-    if (updates instanceof FormData) {
-      return apiClient.patch('/users/profile', updates, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-    }
     return apiClient.patch('/users/profile', updates);
   },
 
@@ -34,9 +29,7 @@ export const userApi = {
       formData.append('avatar', fileOrFormData);
     }
 
-    return apiClient.post('/users/avatar', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return apiClient.post('/users/avatar', formData);
   },
 
   /**

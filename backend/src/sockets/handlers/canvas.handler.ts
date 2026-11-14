@@ -28,6 +28,17 @@ export const registerCanvasHandlers = (_io: Server, socket: Socket) => {
     if (!roomId || !Array.isArray(elements)) return;
 
     const { canonicalId, canonicalCode, targetRooms } = roomStateManager.getRoomChannels(roomId, socket);
+    const userId = socket.data?.userId || socket.data?.user?.id;
+
+    // Security Gate: Reject updates from kicked/banned users immediately
+    if (roomStateManager.isUserBanned(canonicalId, userId, socket.id)) {
+      socket.emit("room:kicked", {
+        roomId: canonicalCode || canonicalId,
+        reason: "You were removed from this meeting by the host.",
+      });
+      socket.disconnect(true);
+      return;
+    }
 
     // Persist current scene elements and binary image files in room memory under canonical ID and code
     roomStateManager.setCanvasScene(canonicalId, elements, files);
@@ -71,7 +82,18 @@ export const registerCanvasHandlers = (_io: Server, socket: Socket) => {
     const { roomId, pointer, collaborator, button } = payload;
     if (!roomId || !pointer) return;
 
-    const { targetRooms } = roomStateManager.getRoomChannels(roomId, socket);
+    const { canonicalId, canonicalCode, targetRooms } = roomStateManager.getRoomChannels(roomId, socket);
+    const userId = socket.data?.userId || socket.data?.user?.id;
+
+    // Security Gate: Reject pointer updates from kicked/banned users immediately
+    if (roomStateManager.isUserBanned(canonicalId, userId, socket.id)) {
+      socket.emit("room:kicked", {
+        roomId: canonicalCode || canonicalId,
+        reason: "You were removed from this meeting by the host.",
+      });
+      socket.disconnect(true);
+      return;
+    }
 
     socket.to(targetRooms).emit("canvas:pointer", {
       collaborator: {

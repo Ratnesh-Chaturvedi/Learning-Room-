@@ -12,6 +12,12 @@ export const registerMediaHandlers = (io: Server, socket: Socket) => {
     if (!targetRoom) return;
 
     const { canonicalId, targetRooms } = roomStateManager.getRoomChannels(targetRoom, socket);
+    const userId = socket.data?.userId || socket.data?.user?.id;
+
+    if (roomStateManager.isUserBanned(canonicalId, userId, socket.id)) {
+      return;
+    }
+
     const updated = roomStateManager.updatePeerMedia(canonicalId, socket.id, updates);
 
     if (updated) {

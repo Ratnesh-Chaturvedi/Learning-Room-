@@ -230,10 +230,10 @@ export default function Dashboard({ theme: propTheme, onToggleTheme: propToggle 
       className="h-screen w-full bg-[#FAF8F5] dark:bg-[#121316] text-[#1E1F24] dark:text-[#EBEBF0] flex font-sans transition-colors duration-200 selection:bg-purple-200 overflow-hidden"
     >
       {/* ========================================================= */}
-      {/* MOBILE SIDEBAR DRAWER (SMOOTH SLIDE FROM LEFT)            */}
+      {/* MOBILE & TABLET SIDEBAR DRAWER (SMOOTH SLIDE FROM LEFT)   */}
       {/* ========================================================= */}
       <div
-        className={`fixed inset-0 z-50 md:hidden transition-visibility duration-300 ${
+        className={`fixed inset-0 z-50 lg:hidden transition-visibility duration-300 ${
           mobileMenuOpen ? 'pointer-events-auto visible' : 'pointer-events-none invisible'
         }`}
       >
@@ -290,7 +290,7 @@ export default function Dashboard({ theme: propTheme, onToggleTheme: propToggle 
       {/* ========================================================= */}
       {/* 1. LEFT SIDEBAR (STICKY & IMMOVABLE IN DESKTOP VIEWPORT)  */}
       {/* ========================================================= */}
-      <aside className="w-56 lg:w-64 flex-shrink-0 border-r border-[#EDE8E1] dark:border-[#26282E] p-5 lg:p-6 flex flex-col justify-between hidden md:flex h-screen sticky top-0 overflow-y-auto overflow-x-hidden select-none z-30 custom-scrollbar">
+      <aside className="w-56 lg:w-64 flex-shrink-0 border-r border-[#EDE8E1] dark:border-[#26282E] p-5 lg:p-6 flex flex-col justify-between hidden lg:flex h-screen sticky top-0 overflow-y-auto overflow-x-hidden select-none z-30 custom-scrollbar">
         <div className="space-y-6">
           {/* Brand Logo - Navigates to Dashboard Home Page */}
           <Link
@@ -330,7 +330,7 @@ export default function Dashboard({ theme: propTheme, onToggleTheme: propToggle 
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
-            className="md:hidden p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-[#EFECE6] dark:hover:bg-[#23252E] transition-colors flex-shrink-0 cursor-pointer"
+            className="lg:hidden p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-[#EFECE6] dark:hover:bg-[#23252E] transition-colors flex-shrink-0 cursor-pointer"
             aria-label="Toggle navigation menu"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">

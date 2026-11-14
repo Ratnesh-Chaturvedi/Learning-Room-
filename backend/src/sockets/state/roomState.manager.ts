@@ -470,6 +470,30 @@ class RoomStateManager {
   }
 
   /**
+   * Unbans / clears kick record for a user when the host explicitly re-approves them.
+   */
+  public unbanUser(roomId: string, ...userIdentifiers: (string | undefined)[]): void {
+    if (!roomId) return;
+    const canonicalKey = this.getCanonicalKey(roomId);
+    const meta = this.getRoomMeta(roomId);
+    const codeKey = meta?.roomCode ? meta.roomCode.toUpperCase() : undefined;
+
+    const validIdentifiers = userIdentifiers.filter(Boolean) as string[];
+
+    const banned = this.bannedUsers.get(canonicalKey);
+    if (banned) {
+      validIdentifiers.forEach((id) => banned.delete(id));
+    }
+
+    if (codeKey) {
+      const codeBanned = this.bannedUsers.get(codeKey);
+      if (codeBanned) {
+        validIdentifiers.forEach((id) => codeBanned.delete(id));
+      }
+    }
+  }
+
+  /**
    * Checks whether a user has been kicked from a room.
    */
   public isUserBanned(roomId: string, userId?: string, socketId?: string): boolean {

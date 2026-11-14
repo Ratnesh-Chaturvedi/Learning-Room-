@@ -164,16 +164,24 @@ async function runSocketVerification() {
   console.log(`✔ Host received kick confirmation for ${kickSuccess.name}`);
   console.log(`✔ Peer-left event broadcasted for ${peerLeft.name}`);
 
-  // Verify banned user cannot rejoin
-  const rejoinKickedPromise = new Promise<any>((resolve) => {
-    client2.once("room:kicked", resolve);
+  // Reconnect client2 (since kick disconnected it immediately)
+  client2.connect();
+  await new Promise<void>((resolve) => client2.once("connect", () => resolve()));
+
+  // Verify banned user rejoin requires host permission (routed to waiting room with isRejoin: true)
+  const rejoinWaitingPromise = new Promise<any>((resolve) => {
+    client2.once("room:waiting", resolve);
+  });
+  const hostKnockPromise = new Promise<any>((resolve) => {
+    client1.once("room:knock-request", resolve);
   });
   client2.emit("webrtc:join-room", {
     roomId: liveRoomCode,
     user: { id: "user-bob-2", name: "Bob" },
   });
-  const rejoinBlocked = await rejoinKickedPromise;
-  console.log(`✔ Banned participant rejoin blocked: "${rejoinBlocked.reason}"`);
+  const [rejoinWaiting, hostAlert] = await Promise.all([rejoinWaitingPromise, hostKnockPromise]);
+  console.log(`✔ Banned participant rejoin requires host request: "${rejoinWaiting.message}" (isRejoin: ${rejoinWaiting.isRejoin})`);
+  console.log(`✔ Host received rejoin knock alert for: ${hostAlert.name}`);
 
   // TEST 7: Empty room 5-minute auto-termination countdown
   scheduleEmptyRoomTermination("LR-EMPTY-TEST", 5000);

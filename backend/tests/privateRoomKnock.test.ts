@@ -61,7 +61,7 @@ async function runKnockVerification() {
 
   guestClient.emit("webrtc:join-room", {
     roomId,
-    user: { id: "guest-user-1", name: "Guest Maya" },
+    user: { id: "user-maya-1", name: "Guest Maya" },
   });
 
   const [waitingData, knockRequest] = await Promise.all([
