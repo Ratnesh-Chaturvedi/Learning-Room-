@@ -41,10 +41,19 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
 
   // Handle multipart file upload if present
   if (req.file) {
-    const uploadResult = await CloudinaryService.uploadImage(req.file, {
-      folder: "learning_room/avatars",
-    });
-    avatarValue = uploadResult.url;
+    try {
+      const uploadResult = await CloudinaryService.uploadImage(req.file, {
+        folder: "learning_room/avatars",
+      });
+      avatarValue = uploadResult.url;
+    } catch (cloudErr: any) {
+      console.warn(
+        "[Avatar Upload] Cloudinary upload unavailable, persisting base64 data URI directly:",
+        cloudErr?.message
+      );
+      const mime = req.file.mimetype || "image/png";
+      avatarValue = `data:${mime};base64,${req.file.buffer.toString("base64")}`;
+    }
   }
 
   const updatedUser = await UserService.updateProfile(req.user.id, {

@@ -72,21 +72,31 @@ export class UserService {
 
     if (data.avatar !== undefined) {
       if (data.avatar && data.avatar.startsWith("data:image/")) {
-        // Upload base64 Data URI to Cloudinary
-        const uploadResult = await CloudinaryService.uploadImage(data.avatar, {
-          folder: "learning_room/avatars",
-        });
+        let finalAvatar = data.avatar;
+        try {
+          // Upload base64 Data URI to Cloudinary
+          const uploadResult = await CloudinaryService.uploadImage(data.avatar, {
+            folder: "learning_room/avatars",
+          });
 
-        // Safely remove older Cloudinary avatar to avoid orphaned files
-        if (user.avatar && user.avatar.includes("cloudinary.com")) {
-          await CloudinaryService.deleteImage(user.avatar);
+          // Safely remove older Cloudinary avatar to avoid orphaned files
+          if (user.avatar && user.avatar.includes("cloudinary.com")) {
+            await CloudinaryService.deleteImage(user.avatar).catch(() => {});
+          }
+
+          finalAvatar = uploadResult.url;
+        } catch (cloudErr: any) {
+          console.warn(
+            "[UserService.updateProfile] Cloudinary unavailable, persisting data URI directly:",
+            cloudErr?.message
+          );
         }
 
-        updateData.avatar = uploadResult.url;
+        updateData.avatar = finalAvatar;
       } else if (data.avatar === null || data.avatar === "") {
         // Clearing avatar
         if (user.avatar && user.avatar.includes("cloudinary.com")) {
-          await CloudinaryService.deleteImage(user.avatar);
+          await CloudinaryService.deleteImage(user.avatar).catch(() => {});
         }
         updateData.avatar = null;
       } else {
@@ -120,17 +130,37 @@ export class UserService {
       throw new ApiError(404, "User not found.");
     }
 
-    const uploadResult = await CloudinaryService.uploadImage(imageSource, {
-      folder: "learning_room/avatars",
-    });
+    let finalAvatar: string;
+    try {
+      const uploadResult = await CloudinaryService.uploadImage(imageSource, {
+        folder: "learning_room/avatars",
+      });
 
-    if (user.avatar && user.avatar.includes("cloudinary.com")) {
-      await CloudinaryService.deleteImage(user.avatar);
+      if (user.avatar && user.avatar.includes("cloudinary.com")) {
+        await CloudinaryService.deleteImage(user.avatar).catch(() => {});
+      }
+
+      finalAvatar = uploadResult.url;
+    } catch (cloudErr: any) {
+      console.warn(
+        "[UserService.updateAvatar] Cloudinary unavailable, persisting base64 data URI directly:",
+        cloudErr?.message
+      );
+      if (typeof imageSource === "string") {
+        finalAvatar = imageSource;
+      } else if (Buffer.isBuffer(imageSource)) {
+        finalAvatar = `data:image/png;base64,${imageSource.toString("base64")}`;
+      } else if ((imageSource as Express.Multer.File)?.buffer) {
+        const file = imageSource as Express.Multer.File;
+        finalAvatar = `data:${file.mimetype || "image/png"};base64,${file.buffer.toString("base64")}`;
+      } else {
+        throw cloudErr;
+      }
     }
 
     return prisma.user.update({
       where: { id: userId },
-      data: { avatar: uploadResult.url },
+      data: { avatar: finalAvatar },
       select: {
         id: true,
         name: true,

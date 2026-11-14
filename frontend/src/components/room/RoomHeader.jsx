@@ -72,7 +72,7 @@ export default function RoomHeader(props = {}) {
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               <path d="m15 18-6-6 6-6" />
             </svg>
-            <span className="hidden md:inline">Dashboard</span>
+            <span className="hidden lg:inline">Dashboard</span>
           </button>
 
           <div className="h-4 w-px bg-[var(--color-border)] hidden sm:block shrink-0" />
@@ -356,7 +356,7 @@ export default function RoomHeader(props = {}) {
               <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-            <span className="hidden md:inline">Members</span>
+            <span className="hidden lg:inline">Members</span>
             <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
               isMembersOpen ? 'bg-white/20 text-white' : 'bg-[#543FE3]/15 text-[#543FE3]'
             }`}>
@@ -398,7 +398,7 @@ export default function RoomHeader(props = {}) {
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
-            <span className="hidden md:inline">Chat</span>
+            <span className="hidden lg:inline">Chat</span>
             {unreadChatCount > 0 && (
               <span className={`w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center ${isChatOpen ? 'bg-white text-[var(--color-brand)]' : 'bg-[var(--color-brand)] text-white'}`}>
                 {unreadChatCount}
@@ -433,7 +433,7 @@ export default function RoomHeader(props = {}) {
               className="hidden sm:flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
               title="End meeting for all participants"
             >
-              <span className="hidden sm:inline">End Meeting</span>
+              <span className="hidden lg:inline">End Meeting</span>
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
                 <rect width="14" height="14" x="5" y="5" rx="2" />
               </svg>
@@ -445,7 +445,7 @@ export default function RoomHeader(props = {}) {
               className="hidden sm:flex items-center gap-1 p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
               title="Leave room"
             >
-              <span className="hidden sm:inline">Leave</span>
+              <span className="hidden lg:inline">Leave</span>
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                 <polyline points="16 17 21 12 16 7" />

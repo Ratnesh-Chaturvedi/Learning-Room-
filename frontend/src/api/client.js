@@ -22,7 +22,7 @@ export const apiClient = axios.create({
   timeout: 15000,
 });
 
-// Request interceptor: Attach JWT token from localStorage
+// Request interceptor: Attach JWT token from localStorage and handle FormData Content-Type
 apiClient.interceptors.request.use(
   (config) => {
     try {
@@ -33,6 +33,12 @@ apiClient.interceptors.request.use(
     } catch {
       // Ignore localStorage access failures
     }
+
+    // When payload is FormData, delete Content-Type so browser/axios sets multipart/form-data with auto boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

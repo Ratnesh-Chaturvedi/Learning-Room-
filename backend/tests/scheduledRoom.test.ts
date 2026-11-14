@@ -63,7 +63,7 @@ async function runScheduledRoomTest() {
 
   clientGuest.emit("webrtc:join-room", {
     roomId: TEST_SCHEDULED_ROOM,
-    user: { id: "guest-bob", name: "Guest Bob" },
+    user: { id: "user-bob", name: "Guest Bob" },
   });
 
   const scheduledEvent = await guestScheduledPromise;
@@ -100,7 +100,7 @@ async function runScheduledRoomTest() {
 
   clientGuest.emit("webrtc:join-room", {
     roomId: TEST_SCHEDULED_ROOM,
-    user: { id: "guest-bob", name: "Guest Bob" },
+    user: { id: "user-bob", name: "Guest Bob" },
   });
 
   const admittedPayload = await guestAdmittedPromise;

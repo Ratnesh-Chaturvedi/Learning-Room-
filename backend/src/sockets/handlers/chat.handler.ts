@@ -15,9 +15,20 @@ export const registerChatHandlers = (io: Server, socket: Socket) => {
     const { roomId, text } = payload;
     if (!roomId || !text || !text.trim()) return;
 
-    const { canonicalId, targetRooms } = roomStateManager.getRoomChannels(roomId, socket);
+    const { canonicalId, canonicalCode, targetRooms } = roomStateManager.getRoomChannels(roomId, socket);
     const authUser = socket.data?.user;
     const peer = roomStateManager.getPeer(canonicalId, socket.id);
+    const userId = socket.data?.userId || authUser?.id || peer?.userId;
+
+    // Security Gate: Reject chat messages from kicked/banned users immediately
+    if (roomStateManager.isUserBanned(canonicalId, userId, socket.id)) {
+      socket.emit("room:kicked", {
+        roomId: canonicalCode || canonicalId,
+        reason: "You were removed from this meeting by the host.",
+      });
+      socket.disconnect(true);
+      return;
+    }
 
     const message: ChatMessage = {
       id: crypto.randomUUID(),
@@ -44,6 +55,11 @@ export const registerChatHandlers = (io: Server, socket: Socket) => {
 
     const { canonicalId, targetRooms } = roomStateManager.getRoomChannels(roomId, socket);
     const peer = roomStateManager.getPeer(canonicalId, socket.id);
+    const userId = socket.data?.userId || peer?.userId;
+
+    if (roomStateManager.isUserBanned(canonicalId, userId, socket.id)) {
+      return;
+    }
 
     socket.to(targetRooms).emit("chat:user-typing", {
       socketId: socket.id,
@@ -62,6 +78,11 @@ export const registerChatHandlers = (io: Server, socket: Socket) => {
 
     const { canonicalId, targetRooms } = roomStateManager.getRoomChannels(roomId, socket);
     const peer = roomStateManager.getPeer(canonicalId, socket.id);
+    const userId = socket.data?.userId || peer?.userId;
+
+    if (roomStateManager.isUserBanned(canonicalId, userId, socket.id)) {
+      return;
+    }
 
     io.to(targetRooms).emit("chat:emoji-reaction", {
       id: crypto.randomUUID(),

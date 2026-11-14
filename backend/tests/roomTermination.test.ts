@@ -38,7 +38,7 @@ async function runTerminationVerification() {
   const join2Promise = new Promise((resolve) => client2.on("webrtc:room-peers", resolve));
 
   client1.emit("webrtc:join-room", { roomId, user: { id: "host-1", name: "HostAlice" } });
-  client2.emit("webrtc:join-room", { roomId, user: { id: "guest-1", name: "GuestBob" } });
+  client2.emit("webrtc:join-room", { roomId, user: { id: "user-bob-1", name: "GuestBob" } });
 
   await Promise.all([join1Promise, join2Promise]);
   console.log("✔ Both clients joined room successfully");

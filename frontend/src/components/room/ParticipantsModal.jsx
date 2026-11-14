@@ -17,6 +17,8 @@ export default function ParticipantsModal() {
     currentUser,
     isHost,
     handleKickPeer,
+    handleMutePeer,
+    handleMuteAll,
     handleCopyInvite,
     copiedLink,
     isMuted,
@@ -72,14 +74,26 @@ export default function ParticipantsModal() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsMembersOpen(false)}
-            className="w-7 h-7 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-colors cursor-pointer"
-            title="Close members"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-2">
+            {isHost && peers.length > 0 && (
+              <button
+                type="button"
+                onClick={handleMuteAll}
+                className="px-2.5 py-1 rounded-lg bg-[var(--color-surface-secondary)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer"
+                title="Mute all participants' microphones"
+              >
+                Mute All
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsMembersOpen(false)}
+              className="w-7 h-7 rounded-full flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-colors cursor-pointer"
+              title="Close members"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Search Input (if more than 2 participants) */}
@@ -243,6 +257,25 @@ export default function ParticipantsModal() {
                       <line x1="12" y1="17" x2="12" y2="21" />
                     </svg>
                   </span>
+                )}
+
+                {/* Host Moderation: Mute Participant */}
+                {isHost && !peer.isAudioMuted && (
+                  <button
+                    type="button"
+                    onClick={() => handleMutePeer(peer.socketId)}
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--color-surface-secondary)] hover:bg-[var(--color-surface-hover)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-[11px] font-semibold border border-[var(--color-border)] transition-all cursor-pointer"
+                    title={`Mute ${peer.name}'s microphone`}
+                  >
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <line x1="2" y1="2" x2="22" y2="22" />
+                      <path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2" />
+                      <path d="M5 10v2a7 7 0 0 0 12 5" />
+                      <path d="M15 9.34V5a3 3 0 0 0-5.68-1.33" />
+                      <path d="M9 9v3a3 3 0 0 0 5.12 2.12" />
+                    </svg>
+                    <span>Mute</span>
+                  </button>
                 )}
 
                 {/* Host Moderation: Kick Participant */}
