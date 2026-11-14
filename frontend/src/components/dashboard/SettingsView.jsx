@@ -201,9 +201,7 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
 
   return (
     <div className="w-full max-w-[1560px] mx-auto space-y-6 animate-fade-in relative pb-10 font-sans select-none">
-      {/* ========================================================= */}
-      {/* 1. TOP HEADER SECTION                                     */}
-      {/* ========================================================= */}
+      {/* Header section */}
       <div className="pt-3 sm:pt-4 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1.5">
           {/* Title with radiating burst doodle */}
@@ -260,9 +258,7 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
         </button>
       </div>
 
-      {/* ========================================================= */}
-      {/* 2. MAIN SETTINGS CARDS GRID (RESPONSIVE)                  */}
-      {/* ========================================================= */}
+      {/* Settings grid */}
       <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
         {/* Floating handwritten doodle on the left */}
         <div className="hidden xl:block absolute -left-14 2xl:-left-20 top-24 pointer-events-none select-none z-10">
@@ -274,9 +270,7 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
           </svg>
         </div>
 
-        {/* --------------------------------------------------------- */}
-        {/* CARD 1: PROFILE INFORMATION & IMAGE UPLOAD                */}
-        {/* --------------------------------------------------------- */}
+        {/* Profile information card */}
         <div className="lg:col-span-5 xl:col-span-5 bg-white dark:bg-[#1E202B] border border-[#E9E4DB] dark:border-[#2F3140] rounded-2xl p-5 sm:p-6 shadow-2xs flex flex-col justify-between">
           <div>
             <h3 className="font-heading font-extrabold text-base sm:text-lg text-[#18191F] dark:text-[#F3F4F6] mb-5">
@@ -417,9 +411,7 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
           </div>
         </div>
 
-        {/* --------------------------------------------------------- */}
-        {/* CARD 2: APPEARANCE & WORKSPACE                            */}
-        {/* --------------------------------------------------------- */}
+        {/* Appearance & workspace card */}
         <div className="lg:col-span-4 xl:col-span-4 bg-white dark:bg-[#1E202B] border border-[#E9E4DB] dark:border-[#2F3140] rounded-2xl p-5 sm:p-6 shadow-2xs flex flex-col justify-between">
           <div>
             <h3 className="font-heading font-extrabold text-base sm:text-lg text-[#18191F] dark:text-[#F3F4F6] mb-1">
@@ -481,9 +473,7 @@ export default function SettingsView({ theme = 'light', onToggleTheme }) {
           </div>
         </div>
 
-        {/* --------------------------------------------------------- */}
-        {/* CARD 3: BUILT-IN STUDIO VIDEO, AUDIO & NOTIFICATIONS       */}
-        {/* --------------------------------------------------------- */}
+        {/* Studio video & audio settings card */}
         <div className="lg:col-span-3 xl:col-span-3 bg-white dark:bg-[#1E202B] border border-[#E9E4DB] dark:border-[#2F3140] rounded-2xl p-5 sm:p-6 shadow-2xs flex flex-col justify-between space-y-5">
           <div className="space-y-4">
             <h3 className="font-heading font-extrabold text-base sm:text-lg text-[#18191F] dark:text-[#F3F4F6] leading-snug">

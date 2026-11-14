@@ -1,10 +1,7 @@
 import React from 'react';
 import { ratneshAvatar } from '../../assets';
 
-/**
- * AvatarStack Component
- * Displays an overlapping cluster of user avatars with optional initials and +N badge.
- */
+// User avatar cluster with initials and count badge
 export default function AvatarStack({
   showLeadUser = true,
   leadAvatar = ratneshAvatar,

@@ -14,9 +14,7 @@ const roomInclude = {
 };
 
 export class RoomService {
-  /**
-   * Generates a unique room code, ensuring no collision in DB.
-   */
+  // Generate unique non-colliding room code
   private static async generateUniqueRoomCode(requestedCode?: string): Promise<string> {
     let roomCode = requestedCode?.trim().toUpperCase() || generateRoomCode();
     while (await prisma.room.findUnique({ where: { roomCode } })) {
@@ -25,18 +23,14 @@ export class RoomService {
     return roomCode;
   }
 
-  /**
-   * Normalizes category and customCategory.
-   */
+  // Normalize category and custom category
   private static resolveCategory(category?: RoomCategory, customCategory?: string) {
     const cat = category || RoomCategory.MEETING;
     const custom = cat === RoomCategory.CUSTOM ? customCategory?.trim() || null : null;
     return { category: cat, customCategory: custom };
   }
 
-  /**
-   * Creates an instant active collaborative room (Public or Private).
-   */
+  // Create instant active room
   public static async createInstantRoom(params: {
     userId: string;
     roomCode?: string;
@@ -73,9 +67,7 @@ export class RoomService {
     });
   }
 
-  /**
-   * Schedules a room for a future date/time (Public or Private).
-   */
+  // Schedule room for a future date/time
   public static async scheduleRoom(params: {
     userId: string;
     roomCode?: string;
@@ -114,9 +106,7 @@ export class RoomService {
     });
   }
 
-  /**
-   * Searches, filters, and paginates rooms by enum category, customCategory, keyword query, tool, and privacy.
-   */
+  // Search, filter, and paginate rooms
   public static async searchRooms(params: {
     category?: RoomCategory;
     customCategory?: string;
@@ -133,19 +123,19 @@ export class RoomService {
 
     const where: Prisma.RoomWhereInput = {};
 
-    // 1. Privacy filter (Public explore shows public rooms unless explicitly querying private)
+    // Privacy filter
     if (params.isPrivate !== undefined) {
       where.isPrivate = params.isPrivate;
     } else {
-      where.isPrivate = false; // By default, explore only indexes public rooms
+      where.isPrivate = false;
     }
 
-    // 2. Strict Enum Category filter
+    // Category filter
     if (params.category) {
       where.category = params.category;
     }
 
-    // 3. Custom category filter
+    // Custom category filter
     if (params.customCategory && params.customCategory.trim()) {
       where.customCategory = {
         contains: params.customCategory.trim(),
@@ -153,7 +143,7 @@ export class RoomService {
       };
     }
 
-    // 4. Keyword query
+    // Keyword search
     if (params.query && params.query.trim()) {
       const searchTerms = params.query.trim();
       where.OR = [
@@ -164,14 +154,14 @@ export class RoomService {
       ];
     }
 
-    // 5. Status filter
+    // Status filter
     if (params.status) {
       where.status = params.status;
     } else {
       where.status = { not: RoomStatus.ENDED };
     }
 
-    // 6. Tool filter
+    // Tool filter
     if (params.tool) {
       where.tools = {
         has: params.tool,
@@ -205,9 +195,7 @@ export class RoomService {
     };
   }
 
-  /**
-   * Retrieves standard RoomCategory enum values and distinct active custom categories from DB.
-   */
+  // Retrieve standard and active custom categories
   public static async getCategories(): Promise<{
     standardCategories: string[];
     customCategories: string[];
@@ -229,7 +217,7 @@ export class RoomService {
         .map((r: { customCategory: string | null }) => r.customCategory)
         .filter((c: string | null): c is string => Boolean(c));
     } catch {
-      // Fallback if DB is temporarily unreachable
+      // Fallback if DB is unreachable
     }
 
     return {
@@ -238,9 +226,7 @@ export class RoomService {
     };
   }
 
-  /**
-   * Helper to query room by either its UUID id or short roomCode.
-   */
+  // Find room by UUID id or short roomCode
   public static async findRoomByIdOrCode(identifier: string) {
     if (!identifier) return null;
     const clean = identifier.trim();
@@ -252,9 +238,7 @@ export class RoomService {
     });
   }
 
-  /**
-   * Finds a room by its shareable code or ID, auto-terminating if scheduledEndTime has passed.
-   */
+  // Find room by code with expiration and activation checks
   public static async getRoomByCode(roomCode: string) {
     const room = await this.findRoomByIdOrCode(roomCode);
 
@@ -320,9 +304,7 @@ export class RoomService {
     return room;
   }
 
-  /**
-   * Adds a user to the room's participant list with Private room access verification.
-   */
+  // Add user to room participants with access check
   public static async joinRoom(roomCode: string, userId: string, inviteToken?: string) {
     const room = await this.getRoomByCode(roomCode);
 
@@ -353,9 +335,7 @@ export class RoomService {
     });
   }
 
-  /**
-   * Removes a user from the room's active participants list.
-   */
+  // Remove user from room participants
   public static async leaveRoom(roomCode: string, userId: string) {
     const room = await this.getRoomByCode(roomCode);
 
@@ -376,9 +356,7 @@ export class RoomService {
     return updatedRoom;
   }
 
-  /**
-   * Starts a scheduled room early (Host only).
-   */
+  // Start scheduled room early (Host only)
   public static async startRoom(roomId: string, userId: string) {
     const room = await this.findRoomByIdOrCode(roomId);
 
@@ -408,9 +386,7 @@ export class RoomService {
     return updated;
   }
 
-  /**
-   * Ends an active room and records duration (Host only).
-   */
+  // End active room and record duration (Host only)
   public static async endRoom(roomId: string, userId: string) {
     const room = await this.findRoomByIdOrCode(roomId);
 
@@ -438,7 +414,7 @@ export class RoomService {
         status: RoomStatus.ENDED,
         endedAt,
         duration,
-        participants: { set: [] }, // Disconnects all participants from the room in DB
+        participants: { set: [] }, // Disconnect all participants from the room in DB
       },
       include: roomInclude,
     });
@@ -454,9 +430,7 @@ export class RoomService {
     return endedRoom;
   }
 
-  /**
-   * Modifies any room configuration (title, description, category, privacy, schedule, tools) (Host only).
-   */
+  // Update room settings (Host only)
   public static async updateRoom(
     roomId: string,
     userId: string,
@@ -521,9 +495,7 @@ export class RoomService {
     return updatedRoom;
   }
 
-  /**
-   * Regenerates a new private invite link token (Host only).
-   */
+  // Regenerate private invite link token (Host only)
   public static async regenerateInviteToken(roomId: string, userId: string) {
     const room = await this.findRoomByIdOrCode(roomId);
 
@@ -547,9 +519,7 @@ export class RoomService {
     });
   }
 
-  /**
-   * Deletes a room (Host only).
-   */
+  // Delete room (Host only)
   public static async deleteRoom(roomId: string, userId: string) {
     const room = await this.findRoomByIdOrCode(roomId);
 

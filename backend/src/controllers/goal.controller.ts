@@ -8,10 +8,7 @@ import {
   updateGoalSchema,
 } from "../validators/goal.validator.ts";
 
-/**
- * Retrieves all goals / to-dos for the authenticated user.
- * Route: GET /api/v1/goals?filter=all|active|completed
- */
+// GET /api/v1/goals - Get goals / to-dos for authenticated user
 export const getGoals = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) {
     throw new ApiError(401, "Unauthorized");
@@ -28,10 +25,7 @@ export const getGoals = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-/**
- * Creates a new personal goal or to-do item.
- * Route: POST /api/v1/goals
- */
+// POST /api/v1/goals - Create new goal or to-do item
 export const createGoal = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) {
     throw new ApiError(401, "Unauthorized");
@@ -49,10 +43,7 @@ export const createGoal = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-/**
- * Updates an existing goal or to-do item.
- * Route: PATCH /api/v1/goals/:id
- */
+// PATCH /api/v1/goals/:id - Update existing goal or to-do item
 export const updateGoal = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) {
     throw new ApiError(401, "Unauthorized");
@@ -75,10 +66,7 @@ export const updateGoal = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-/**
- * Quickly toggles a goal or to-do between done and pending.
- * Route: PATCH /api/v1/goals/:id/toggle
- */
+// PATCH /api/v1/goals/:id/toggle - Toggle goal completion
 export const toggleGoal = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) {
     throw new ApiError(401, "Unauthorized");
@@ -96,10 +84,7 @@ export const toggleGoal = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-/**
- * Deletes a goal or to-do task.
- * Route: DELETE /api/v1/goals/:id
- */
+// DELETE /api/v1/goals/:id - Delete goal or to-do task
 export const deleteGoal = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) {
     throw new ApiError(401, "Unauthorized");

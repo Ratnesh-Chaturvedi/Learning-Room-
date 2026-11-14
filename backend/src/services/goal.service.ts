@@ -20,9 +20,7 @@ export interface UpdateGoalInput {
 }
 
 export class GoalService {
-  /**
-   * Retrieves all goals and to-dos for a given user.
-   */
+  // Retrieve all goals and to-dos for a given user
   public static async getUserGoals(
     userId: string,
     filter: "all" | "active" | "completed" = "all"
@@ -38,15 +36,13 @@ export class GoalService {
     return prisma.goal.findMany({
       where: whereClause,
       orderBy: [
-        { completed: "asc" }, // Uncompleted tasks first
+        { completed: "asc" },
         { createdAt: "desc" },
       ],
     });
   }
 
-  /**
-   * Creates a new goal or to-do task for the user.
-   */
+  // Create new goal or to-do task
   public static async createGoal(userId: string, data: CreateGoalInput) {
     return prisma.goal.create({
       data: {
@@ -73,9 +69,7 @@ export class GoalService {
     return existing;
   }
 
-  /**
-   * Updates an existing goal or to-do task.
-   */
+  // Update existing goal or to-do task
   public static async updateGoal(
     userId: string,
     goalId: string,
@@ -112,9 +106,7 @@ export class GoalService {
     });
   }
 
-  /**
-   * Quick toggle between completed and uncompleted states.
-   */
+  // Toggle goal completion state
   public static async toggleGoal(userId: string, goalId: string) {
     const existing = await this.findUserGoal(goalId, userId);
 
@@ -132,9 +124,7 @@ export class GoalService {
     });
   }
 
-  /**
-   * Deletes a goal or to-do item.
-   */
+  // Delete goal or to-do item
   public static async deleteGoal(userId: string, goalId: string) {
     await this.findUserGoal(goalId, userId);
 

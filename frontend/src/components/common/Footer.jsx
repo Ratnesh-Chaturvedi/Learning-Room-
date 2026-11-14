@@ -52,9 +52,7 @@ export default function Footer({ onStartRoom }) {
 
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* ===================================================================
-            1. UPPER SECTION: NEWSLETTER & PINNED STICKY NOTE
-            =================================================================== */}
+        {/* Upper section: newsletter & pinned sticky note */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center mb-16 sm:mb-20">
           
           {/* Left Column: Headline, Subtitle & Curved Arrow */}
@@ -216,9 +214,7 @@ export default function Footer({ onStartRoom }) {
 
         </div>
 
-        {/* ===================================================================
-            2. MIDDLE SECTION: BRANDING, LINKS & DECORATIVE ILLUSTRATION
-            =================================================================== */}
+        {/* Middle section: branding, links, and illustrations */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-6 pt-10 border-t border-slate-200/80 dark:border-slate-800 mb-14">
           
           {/* Column 1: Brand & Socials (Cols 1 to 4) */}
@@ -483,9 +479,7 @@ export default function Footer({ onStartRoom }) {
 
         </div>
 
-        {/* ===================================================================
-            3. BOTTOM SECTION: PENCIL DRAWING WAVY LINE, COPYRIGHT & AIRPLANE
-            =================================================================== */}
+        {/* Bottom section: copyright and footer graphics */}
         <div className="relative w-full pt-8 pb-4">
           
           {/* Continuous Drawing Scene: Pencil -> Line starting directly at nib -> Plane */}

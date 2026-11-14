@@ -215,9 +215,7 @@ export default function ActivityView({ onOpenRoom, onOpenCreateRoom }) {
 
   return (
     <div className="w-full max-w-[1560px] mx-auto flex flex-col gap-6 select-none font-sans pb-4">
-      {/* ========================================================= */}
-      {/* 1. TOP HEADER & MOTTO ROW                                 */}
-      {/* ========================================================= */}
+      {/* Header row */}
       <div className="flex items-start justify-between relative pt-2 sm:pt-3">
         {/* Left: Radiating rays + Title + Subtitle */}
         <div className="relative inline-block">
@@ -251,13 +249,9 @@ export default function ActivityView({ onOpenRoom, onOpenCreateRoom }) {
         </div>
       </div>
 
-      {/* ========================================================= */}
-      {/* 2. MAIN 2-COLUMN SPLIT (LEFT 8 COLS, RIGHT 4 COLS)       */}
-      {/* ========================================================= */}
+      {/* Main 2-column layout */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-        {/* ------------------------------------------------------- */}
-        {/* LEFT AREA: BANNER + (ACTIVITY FEED & STATS SUB-GRID)    */}
-        {/* ------------------------------------------------------- */}
+        {/* Left column: activity banner, feed, and stats */}
         <div className="xl:col-span-8 flex flex-col gap-6">
           {/* WELCOME TO YOUR ACTIVITY HUB BANNER */}
           <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#FFF4EB] via-[#FDF7F2] to-[#F5EFFE] dark:from-[#26222C] dark:via-[#23202E] dark:to-[#1E1B2D] border border-[#FDE5D2] dark:border-[#383348] p-5 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-5 shadow-xs">
@@ -308,11 +302,9 @@ export default function ActivityView({ onOpenRoom, onOpenCreateRoom }) {
             </div>
           </div>
 
-          {/* SUB-GRID: ACTIVITY FEED (LEFT) + MY STATS & JOURNEY (RIGHT) */}
+          {/* Sub-grid: Activity feed & Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-            {/* --------------------------------------------------- */}
-            {/* SUB-COLUMN 1: REAL ACTIVITY FEED                    */}
-            {/* --------------------------------------------------- */}
+            {/* Activity feed list */}
             <div className="flex flex-col gap-3">
               {/* Heading */}
               <div className="flex items-center justify-between">
@@ -448,9 +440,7 @@ export default function ActivityView({ onOpenRoom, onOpenCreateRoom }) {
               </div>
             </div>
 
-            {/* --------------------------------------------------- */}
-            {/* SUB-COLUMN 2: MY STATS & JOURNEY                    */}
-            {/* --------------------------------------------------- */}
+            {/* Stats and journey panel */}
             <div className="flex flex-col gap-3">
               {/* Heading */}
               <div className="relative inline-block">
@@ -612,9 +602,7 @@ export default function ActivityView({ onOpenRoom, onOpenCreateRoom }) {
           </div>
         </div>
 
-        {/* ------------------------------------------------------- */}
-        {/* RIGHT AREA: MILESTONES & GOALS + UPCOMING (4 COLS)     */}
-        {/* ------------------------------------------------------- */}
+        {/* Right column: milestones & upcoming sessions */}
         <div className="xl:col-span-4 flex flex-col gap-5">
           {/* USER CUSTOM MILESTONES & GOALS WIDGET */}
           <GoalsWidget variant="milestones" onOpenCreateRoom={onOpenCreateRoom} />

@@ -73,14 +73,16 @@ async function runSocketVerification() {
 
   // Setup an authorized room in roomStateManager
   const liveRoomCode = "LR-LIVE-ROOM";
-  roomStateManager.setRoomMeta(liveRoomCode, {
+  const liveRoomMeta = {
     id: "live-room-id-123",
     roomCode: liveRoomCode,
     isPrivate: false,
     creatorId: "user-alice-1",
     inviteToken: null,
-    status: "ACTIVE",
-  });
+    status: "ACTIVE" as const,
+  };
+  roomStateManager.setRoomMeta(liveRoomCode, liveRoomMeta);
+  roomStateManager.setRoomMeta("live-room-id-123", liveRoomMeta);
 
   // TEST 3: Authenticated Host (Alice) joins valid room
   const c1JoinPromise = new Promise<any>((resolve) => {

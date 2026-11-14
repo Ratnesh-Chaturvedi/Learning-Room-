@@ -1,10 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useRoom } from '../../context/RoomContext';
 
-/**
- * Single Video Tile Component managing stream binding, video/audio playback,
- * screen-sharing indicators, and camera-off avatar fallbacks.
- */
+// Video tile for local or remote participant
 function PeerVideoTile({
   peer,
   stream,
@@ -162,12 +159,7 @@ function PeerVideoTile({
   );
 }
 
-/**
- * VideoGalleryModal
- * Floating or Fullscreen real-time video gallery popup displaying faces, live camera streams,
- * screen shares, and audio status of all participants in the meeting room.
- * Responsive across mobile phones, tablets, and desktop displays.
- */
+// Video gallery modal supporting grid and screen share spotlight views
 export default function VideoGalleryModal(props = {}) {
   const room = useRoom() || {};
 
@@ -177,6 +169,7 @@ export default function VideoGalleryModal(props = {}) {
   const peers = props.peers ?? room.peers ?? [];
   const localStream = props.localStream ?? room.localStream;
   const remoteStreams = props.remoteStreams ?? room.remoteStreams ?? {};
+  const remoteScreenStreams = props.remoteScreenStreams ?? room.remoteScreenStreams ?? {};
   const isMuted = props.isMuted ?? room.isMuted;
   const onToggleMute = props.onToggleMute ?? room.handleToggleMute;
   const isVideoOn = props.isVideoOn ?? room.isVideoOn;
@@ -215,7 +208,7 @@ export default function VideoGalleryModal(props = {}) {
     ? {
         isLocal: false,
         peer: remoteScreenSharer,
-        stream: remoteStreams[remoteScreenSharer.socketId],
+        stream: remoteScreenStreams[remoteScreenSharer.socketId] || remoteStreams[remoteScreenSharer.socketId],
       }
     : null;
 
@@ -490,10 +483,10 @@ export default function VideoGalleryModal(props = {}) {
                     name: currentUser?.name || 'You',
                     avatar: currentUser?.avatar,
                   }}
-                  stream={isScreenSharing && screenStream ? screenStream : localStream}
+                  stream={localStream}
                   isAudioMuted={isMuted}
-                  isVideoOff={isScreenSharing ? false : !isVideoOn}
-                  isScreenSharing={isScreenSharing}
+                  isVideoOff={!isVideoOn}
+                  isScreenSharing={false}
                 />
 
                 {/* 2. Remote Peer Video Tiles */}
@@ -504,8 +497,8 @@ export default function VideoGalleryModal(props = {}) {
                     peer={peer}
                     stream={remoteStreams[peer.socketId]}
                     isAudioMuted={peer.isAudioMuted}
-                    isVideoOff={peer.isScreenSharing ? false : peer.isVideoOff}
-                    isScreenSharing={Boolean(peer.isScreenSharing)}
+                    isVideoOff={peer.isVideoOff}
+                    isScreenSharing={false}
                   />
                 ))}
               </div>

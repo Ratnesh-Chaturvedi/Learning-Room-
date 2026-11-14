@@ -17,11 +17,7 @@ const getInitialTheme = () => {
   }
 };
 
-/**
- * ThemeProvider
- * Centralizes theme state management, synchronizes HTML document classes,
- * and eliminates prop-drilling across the frontend component tree.
- */
+// Global theme provider for light/dark mode
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(getInitialTheme);
 

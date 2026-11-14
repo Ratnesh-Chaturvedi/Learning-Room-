@@ -3,13 +3,7 @@ import { useRoom } from '../../context/RoomContext';
 import ChatMessageList from './ChatMessageList';
 import ChatInputForm from './ChatInputForm';
 
-/**
- * SideChat Component
- * Real-time room chat supporting 3 adaptive display modes:
- * 1. Mobile Bottom Sheet Mode (< 640px): Centered, visible bottom modal with backdrop.
- * 2. Desktop Floating Popup Mode (>= 640px, floating=true): 120fps GPU translate3d draggable window.
- * 3. Docked Mode (floating=false): Pinned sidebar inside mockups and panels.
- */
+// Real-time room chat panel
 export default function SideChat(props = {}) {
   const room = useRoom() || {};
 

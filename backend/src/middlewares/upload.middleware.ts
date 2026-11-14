@@ -41,9 +41,7 @@ export const upload = multer({
   },
 });
 
-/**
- * Express middleware for single image upload with user-friendly error wrapping.
- */
+// Single image upload middleware with error handling
 export const uploadSingleImage = (fieldName: string = "avatar") => {
   const singleUploader = upload.single(fieldName);
 

@@ -1,11 +1,7 @@
 import React from 'react';
 import { burstLines } from '../../assets';
 
-/**
- * FeaturesSection Component
- * 6 tactile feature showcase cards, each with its own bespoke background gradient,
- * cursive "Keep Learning" heading, enlarged legible floating text, and responsive grid.
- */
+// Landing page features showcase section
 export default function FeaturesSection() {
   return (
     <section
@@ -67,9 +63,7 @@ export default function FeaturesSection() {
       {/* 6 Feature Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
         
-        {/* ===================================================================
-            CARD 1: Shared Whiteboard Canvas (Lavender & Purple Glow)
-            =================================================================== */}
+        {/* Card 1: Shared Whiteboard Canvas */}
         <div className="relative group rounded-2xl bg-gradient-to-br from-[#f8f6ff] via-[#ffffff] to-[#ede9fe]/50 dark:from-[#232042] dark:via-[#1e1e24] dark:to-[#171720] border border-purple-200/70 dark:border-purple-900/40 hover:border-purple-300 dark:hover:border-purple-700/60 p-5 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-visible">
           {/* Subtle Ambient Radial Wash */}
           <div className="absolute -top-10 -left-10 w-36 h-36 bg-purple-300/20 dark:bg-purple-600/15 rounded-full blur-2xl pointer-events-none" />
@@ -171,9 +165,7 @@ export default function FeaturesSection() {
           </div>
         </div>
 
-        {/* ===================================================================
-            CARD 2: Real-Time Group Chat (Sky & Cyan Glow)
-            =================================================================== */}
+        {/* Card 2: Real-Time Group Chat */}
         <div className="relative group rounded-2xl bg-gradient-to-br from-[#f0f9ff] via-[#ffffff] to-[#e0f2fe]/50 dark:from-[#172554] dark:via-[#1a202c] dark:to-[#121824] border border-sky-200/70 dark:border-sky-900/40 hover:border-sky-300 dark:hover:border-sky-700/60 p-5 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-visible">
           {/* Subtle Ambient Radial Wash */}
           <div className="absolute -top-10 -right-10 w-36 h-36 bg-sky-300/20 dark:bg-sky-600/15 rounded-full blur-2xl pointer-events-none" />
@@ -246,9 +238,7 @@ export default function FeaturesSection() {
           </div>
         </div>
 
-        {/* ===================================================================
-            CARD 3: Integrated Video & Voice Calls (Emerald & Mint Glow)
-            =================================================================== */}
+        {/* Card 3: Integrated Video & Voice Calls */}
         <div className="relative group rounded-2xl bg-gradient-to-br from-[#ecfdf5] via-[#ffffff] to-[#d1fae5]/50 dark:from-[#064e3b]/70 dark:via-[#18231c] dark:to-[#121c16] border border-emerald-200/70 dark:border-emerald-900/40 hover:border-emerald-300 dark:hover:border-emerald-700/60 p-5 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-visible">
           {/* Subtle Ambient Radial Wash */}
           <div className="absolute -top-10 -right-10 w-36 h-36 bg-emerald-300/20 dark:bg-emerald-600/15 rounded-full blur-2xl pointer-events-none" />
@@ -324,9 +314,7 @@ export default function FeaturesSection() {
           </div>
         </div>
 
-        {/* ===================================================================
-            CARD 4: Saved Canvas & History (Amber & Warm Honey Glow)
-            =================================================================== */}
+        {/* Card 4: Saved Canvas & History */}
         <div className="relative group rounded-2xl bg-gradient-to-br from-[#fffbeb] via-[#ffffff] to-[#fef3c7]/50 dark:from-[#451a03]/60 dark:via-[#231e1a] dark:to-[#171513] border border-amber-200/70 dark:border-amber-900/40 hover:border-amber-300 dark:hover:border-amber-700/60 p-5 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-visible">
           {/* Subtle Ambient Radial Wash */}
           <div className="absolute -bottom-10 -left-10 w-36 h-36 bg-amber-300/20 dark:bg-amber-600/15 rounded-full blur-2xl pointer-events-none" />
@@ -392,9 +380,7 @@ export default function FeaturesSection() {
           </div>
         </div>
 
-        {/* ===================================================================
-            CARD 5: Online & Offline Status (Rose & Peach Glow)
-            =================================================================== */}
+        {/* Card 5: Online & Offline Status */}
         <div className="relative group rounded-2xl bg-gradient-to-br from-[#fff1f2] via-[#ffffff] to-[#ffe4e6]/50 dark:from-[#4c0519]/60 dark:via-[#251c20] dark:to-[#181215] border border-rose-200/70 dark:border-rose-900/40 hover:border-rose-300 dark:hover:border-rose-700/60 p-5 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-visible">
           {/* Subtle Ambient Radial Wash */}
           <div className="absolute -top-10 -right-10 w-36 h-36 bg-rose-300/20 dark:bg-rose-600/15 rounded-full blur-2xl pointer-events-none" />
@@ -421,7 +407,7 @@ export default function FeaturesSection() {
                   <div className="relative">
                     <img
                       src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=96&h=96&fit=crop&crop=faces&q=80"
-                      alt="Maya user"
+                      alt="Collaborator avatar"
                       className="w-7 h-7 rounded-full object-cover"
                     />
                     <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
@@ -463,15 +449,13 @@ export default function FeaturesSection() {
             </div>
           </div>
 
-          {/* Bottom doodle: "Live status" (floating, enlarged) */}
+          {/* Bottom doodle */}
           <div className="flex items-center justify-center gap-1.5 font-handwriting font-bold text-base sm:text-lg text-rose-900 dark:text-rose-200 mt-3.5 animate-float-slow">
             <span className="drop-shadow-2xs">✨ Real-time member heartbeat</span>
           </div>
         </div>
 
-        {/* ===================================================================
-            CARD 6: Interactive Collaboration (Fuchsia & Violet Glow)
-            =================================================================== */}
+        {/* Card 6: Interactive Collaboration */}
         <div className="relative group rounded-2xl bg-gradient-to-br from-[#faf5ff] via-[#ffffff] to-[#f3e8ff]/60 dark:from-[#3b0764]/60 dark:via-[#211a28] dark:to-[#15121c] border border-fuchsia-200/70 dark:border-fuchsia-900/40 hover:border-fuchsia-300 dark:hover:border-fuchsia-700/60 p-5 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-visible">
           {/* Subtle Ambient Radial Wash */}
           <div className="absolute -top-10 -right-10 w-36 h-36 bg-fuchsia-300/20 dark:bg-fuchsia-600/15 rounded-full blur-2xl pointer-events-none" />

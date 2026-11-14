@@ -1,9 +1,6 @@
 import type { PeerUser, WaitingPeer, ChatMessage, RoomMeta } from "../types/socket.types.ts";
 
-/**
- * Scalable in-memory state manager for live room peer connections, media status,
- * private waiting rooms (knock queue), and ephemeral chat.
- */
+// In-memory state manager for live room peer connections, media, knock queue, and chat
 class RoomStateManager {
   // Map of canonicalRoomId -> Map of socketId -> PeerUser (admitted active peers)
   private rooms: Map<string, Map<string, PeerUser>> = new Map();
@@ -32,9 +29,7 @@ class RoomStateManager {
   // Map of canonicalRoomId -> Set of kicked/banned user identifiers (userId or socketId)
   private bannedUsers: Map<string, Set<string>> = new Map();
 
-  /**
-   * Sets room metadata into in-memory cache.
-   */
+  // Cache room metadata
   public setRoomMeta(key: string, meta: RoomMeta): void {
     if (!key) return;
     this.roomMetaCache.set(key, meta);
@@ -94,9 +89,7 @@ class RoomStateManager {
     }
   }
 
-  /**
-   * Gets cached room metadata.
-   */
+  // Get cached room metadata
   public getRoomMeta(roomIdOrCode: string): RoomMeta | undefined {
     if (!roomIdOrCode) return undefined;
     const clean = roomIdOrCode.trim();
@@ -106,9 +99,7 @@ class RoomStateManager {
     );
   }
 
-  /**
-   * Resolves a room UUID or code to the canonical room ID.
-   */
+  // Resolve room UUID or code to canonical room ID
   public getCanonicalKey(roomIdOrCode: string): string {
     if (!roomIdOrCode) return roomIdOrCode;
     const clean = roomIdOrCode.trim();
@@ -116,9 +107,7 @@ class RoomStateManager {
     return meta?.id || clean.toUpperCase();
   }
 
-  /**
-   * Marks a room as ended in cache and cleans up all active peers and waiting queues.
-   */
+  // Mark room as ended and clean up active peers and waiting queues
   public markRoomEnded(roomIdOrCode: string): void {
     if (!roomIdOrCode) return;
     const cleanKey = roomIdOrCode.trim();
@@ -166,9 +155,7 @@ class RoomStateManager {
     }
   }
 
-  /**
-   * Checks whether a room has already been terminated.
-   */
+  // Check whether a room has ended
   public isRoomEnded(roomIdOrCode: string): boolean {
     if (!roomIdOrCode) return false;
     const cleanKey = roomIdOrCode.trim();
@@ -179,9 +166,7 @@ class RoomStateManager {
     return meta?.status === "ENDED";
   }
 
-  /**
-   * Adds or updates an active peer inside a room.
-   */
+  // Add or update active peer inside room
   public addPeer(roomId: string, peer: PeerUser): PeerUser[] {
     const key = this.getCanonicalKey(roomId);
     const meta = this.getRoomMeta(roomId);
@@ -223,9 +208,7 @@ class RoomStateManager {
     return Array.from(roomPeers.values());
   }
 
-  /**
-   * Helper to retrieve the active peers map for a canonical room ID or alias.
-   */
+  // Helper to retrieve active peers map for canonical room ID or alias
   private getPeersMap(roomId: string): Map<string, PeerUser> | undefined {
     const key = this.getCanonicalKey(roomId);
     let map = this.rooms.get(key);
@@ -240,9 +223,7 @@ class RoomStateManager {
     return map;
   }
 
-  /**
-   * Resolves canonical keys and all channel aliases for multi-room event broadcasts.
-   */
+  // Resolve canonical keys and channel aliases for multi-room event broadcasts
   public getRoomChannels(roomId?: string, socket?: { id: string; data?: { canonicalId?: string; canonicalCode?: string } }): {
     canonicalId: string;
     canonicalCode?: string;
@@ -268,9 +249,7 @@ class RoomStateManager {
     return { canonicalId, canonicalCode, targetRooms };
   }
 
-  /**
-   * Gets a specific active peer in a room.
-   */
+  // Get specific active peer in a room
   public getPeer(roomId: string, socketId: string): PeerUser | undefined {
     let peer = this.getPeersMap(roomId)?.get(socketId);
     if (!peer) {
@@ -280,17 +259,13 @@ class RoomStateManager {
     return peer;
   }
 
-  /**
-   * Gets all active peers in a room.
-   */
+  // Get all active peers in a room
   public getRoomPeers(roomId: string): PeerUser[] {
     const peers = this.getPeersMap(roomId);
     return peers ? Array.from(peers.values()) : [];
   }
 
-  /**
-   * Updates audio, video, hand-raise, or screen share media flags of an active peer.
-   */
+  // Update media flags (audio, video, hand-raise, screen share) of an active peer
   public updatePeerMedia(
     roomId: string,
     socketId: string,
@@ -302,9 +277,7 @@ class RoomStateManager {
     return peer;
   }
 
-  /**
-   * Adds a user to the private room waiting queue (knock queue).
-   */
+  // Add user to private room waiting queue (knock queue)
   public addWaitingPeer(roomId: string, peer: WaitingPeer): void {
     const key = this.getCanonicalKey(roomId);
     if (!this.waitingRooms.has(key)) {
@@ -314,9 +287,7 @@ class RoomStateManager {
     this.socketToRoom.set(peer.socketId, key);
   }
 
-  /**
-   * Removes a user from the waiting queue.
-   */
+  // Remove user from waiting queue
   public removeWaitingPeer(roomId: string, socketId: string): WaitingPeer | null {
     const key = this.getCanonicalKey(roomId);
     const waiting = this.waitingRooms.get(key);
@@ -332,9 +303,7 @@ class RoomStateManager {
     return peer;
   }
 
-  /**
-   * Retrieves all users currently waiting in the knock queue for host approval.
-   */
+  // Get all users waiting in knock queue
   public getWaitingPeers(roomId: string): WaitingPeer[] {
     const key = this.getCanonicalKey(roomId);
     const waiting = this.waitingRooms.get(key);
@@ -342,17 +311,13 @@ class RoomStateManager {
     return Array.from(waiting.values());
   }
 
-  /**
-   * Checks if a socket is in the waiting queue.
-   */
+  // Check if socket is in waiting queue
   public isWaiting(roomId: string, socketId: string): boolean {
     const key = this.getCanonicalKey(roomId);
     return Boolean(this.waitingRooms.get(key)?.has(socketId));
   }
 
-  /**
-   * Removes a peer on disconnect or leave (cleans up active and waiting queues).
-   */
+  // Remove peer on disconnect or leave (cleans active and waiting queues)
   public removePeer(socketId: string): {
     roomId: string | null;
     removedPeer: PeerUser | null;
@@ -389,16 +354,12 @@ class RoomStateManager {
     return { roomId, removedPeer, wasWaiting: false, remainingPeers };
   }
 
-  /**
-   * Returns the roomId associated with a socket.
-   */
+  // Return roomId associated with socket
   public getRoomIdBySocketId(socketId: string): string | undefined {
     return this.socketToRoom.get(socketId);
   }
 
-  /**
-   * Stores a chat message in memory for current room participants.
-   */
+  // Store chat message in room memory
   public addChatMessage(roomId: string, message: ChatMessage): void {
     const key = this.getCanonicalKey(roomId);
     if (!this.chatHistories.has(key)) {
@@ -413,17 +374,13 @@ class RoomStateManager {
     }
   }
 
-  /**
-   * Returns recent chat messages for a room.
-   */
+  // Return recent room chat messages
   public getChatHistory(roomId: string): ChatMessage[] {
     const key = this.getCanonicalKey(roomId);
     return this.chatHistories.get(key) || [];
   }
 
-  /**
-   * Stores the latest Excalidraw canvas scene elements and optional binary files for a room.
-   */
+  // Store latest Excalidraw scene elements and optional binary files
   public setCanvasScene(roomId: string, elements: unknown[], files?: Record<string, unknown>): void {
     const key = this.getCanonicalKey(roomId);
     this.canvasScenes.set(key, elements);
@@ -433,25 +390,19 @@ class RoomStateManager {
     }
   }
 
-  /**
-   * Retrieves the current Excalidraw canvas scene elements for a room.
-   */
+  // Retrieve current Excalidraw canvas scene elements
   public getCanvasScene(roomId: string): unknown[] {
     const key = this.getCanonicalKey(roomId);
     return this.canvasScenes.get(key) || [];
   }
 
-  /**
-   * Retrieves the current Excalidraw canvas binary files for a room.
-   */
+  // Retrieve current Excalidraw canvas binary files
   public getCanvasFiles(roomId: string): Record<string, unknown> {
     const key = this.getCanonicalKey(roomId);
     return this.canvasFiles.get(key) || {};
   }
 
-  /**
-   * Records a banned/kicked user for a room to prevent them from rejoining.
-   */
+  // Record kicked/banned user to prevent rejoining
   public banUser(roomId: string, userIdentifier: string): void {
     if (!roomId || !userIdentifier) return;
     const canonicalKey = this.getCanonicalKey(roomId);
@@ -469,9 +420,7 @@ class RoomStateManager {
     }
   }
 
-  /**
-   * Unbans / clears kick record for a user when the host explicitly re-approves them.
-   */
+  // Clear kick record for user when host re-approves
   public unbanUser(roomId: string, ...userIdentifiers: (string | undefined)[]): void {
     if (!roomId) return;
     const canonicalKey = this.getCanonicalKey(roomId);
@@ -493,9 +442,7 @@ class RoomStateManager {
     }
   }
 
-  /**
-   * Checks whether a user has been kicked from a room.
-   */
+  // Check whether user has been kicked from room
   public isUserBanned(roomId: string, userId?: string, socketId?: string): boolean {
     if (!roomId) return false;
     const canonicalKey = this.getCanonicalKey(roomId);

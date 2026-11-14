@@ -64,9 +64,7 @@ export default function ExploreView({ onOpenRoom, onOpenCreateRoom }) {
 
   return (
     <div className="w-full max-w-[1560px] mx-auto flex flex-col gap-6 select-none font-sans pb-4">
-      {/* ========================================================= */}
-      {/* 1. HERO BANNER: DISCOVER ROOMS, EXPLORE IDEAS             */}
-      {/* ========================================================= */}
+      {/* Hero banner: discover rooms, explore ideas */}
       <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#FFF5ED] via-[#FBF4FC] to-[#F1EAFF] dark:from-[#242129] dark:via-[#22212E] dark:to-[#1C1A2B] border border-[#EFE8DF] dark:border-[#353245] p-5 sm:p-6 md:p-8 flex flex-col gap-6 shadow-xs">
         {/* Soft Ambient Glow */}
         <div className="absolute top-0 right-1/4 w-80 h-80 rounded-full bg-gradient-to-br from-amber-200/30 to-purple-300/30 dark:from-purple-900/20 dark:to-indigo-900/20 blur-3xl pointer-events-none" />
@@ -149,9 +147,7 @@ export default function ExploreView({ onOpenRoom, onOpenCreateRoom }) {
         </div>
       </div>
 
-      {/* ========================================================= */}
-      {/* 2. CREATE YOUR OWN ROOM CARD                              */}
-      {/* ========================================================= */}
+      {/* Create room CTA card */}
       <div className="bg-[#F3EEFE] dark:bg-[#252238] border border-[#E7DDFD] dark:border-[#3A3358] rounded-3xl p-5 sm:p-6 shadow-xs flex items-center justify-between gap-4 relative overflow-hidden">
         <div className="space-y-2 z-10">
           <h3 className="font-heading font-extrabold text-xl text-[#18191F] dark:text-white leading-tight">
@@ -179,9 +175,7 @@ export default function ExploreView({ onOpenRoom, onOpenCreateRoom }) {
         </div>
       </div>
 
-      {/* ========================================================= */}
-      {/* 3. LIVE EXPLORE ROOMS LISTING                             */}
-      {/* ========================================================= */}
+      {/* Active rooms list */}
       <div className="space-y-4 pt-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

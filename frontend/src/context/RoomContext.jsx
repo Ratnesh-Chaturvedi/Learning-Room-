@@ -39,11 +39,7 @@ function getSocketUrl() {
     : 'https://learning-room-backend.onrender.com';
 }
 
-/**
- * RoomProvider
- * Centralizes real-time state management, WebRTC media streams, socket signaling,
- * knock approval queue, live chat, and room theming for the active collaboration room.
- */
+// Room state provider for WebRTC media, sockets, and moderation
 export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
@@ -284,6 +280,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
   const {
     localStream,
     remoteStreams,
+    remoteScreenStreams,
     isScreenSharing,
     screenStream,
     toggleScreenShare,
@@ -297,6 +294,8 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     isVideoOn,
     isEnabled: isJoinedRoom && !isRoomScheduled && !isRoomTerminated && !isRoomNotFound && !isKicked && Boolean(currentUser?.id),
   });
+
+  const isKickedRef = useRef(false);
 
   // Keep refs to latest stream values so socket event handlers
   // can stop tracks on room termination without stale closure bugs.
@@ -428,7 +427,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     if (!socket) return;
 
     const emitJoinRoom = () => {
-      if (isRoomNotFound || isRoomTerminated || !currentUser?.id) return;
+      if (isKickedRef.current || isRoomNotFound || isRoomTerminated || !currentUser?.id) return;
       socket.emit('webrtc:join-room', {
         roomId,
         inviteToken,
@@ -450,35 +449,35 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     }
     socket.on('connect', emitJoinRoom);
 
-    // 🔍 ROOM NOT FOUND (e.g. user entered random LR-1002 that doesn't exist)
+    // Room not found
     const handleRoomNotFound = (data) => {
       setIsJoinedRoom(false);
       setIsRoomNotFound(true);
       setNotFoundMessage(data?.message || `The room '${roomId}' does not exist.`);
     };
 
-    // 📋 ROOM META (Host info & canonical identifiers)
+    // Room metadata
     const handleRoomMeta = (meta) => {
       if (meta) {
         setRoomMeta(meta);
       }
     };
 
-    // 🎯 KICK SUCCESS (Host confirmed kick)
+    // Kick confirmed
     const handleKickSuccess = (data) => {
       if (data?.targetSocketId) {
         setPeers((prev) => prev.filter((p) => p.socketId !== data.targetSocketId));
       }
     };
 
-    // 🔒 WAITING ROOM: Intercepted because room is private
+    // Private waiting room
     const handleWaiting = (data) => {
       setIsJoinedRoom(false);
       setIsWaiting(true);
       setWaitingMessage(data.message || 'Waiting for the host to let you in...');
     };
 
-    // 🚪 KNOCK APPROVED: Host admitted user
+    // Knock approved
     const handleKnockApproved = (data) => {
       setIsWaiting(false);
       setIsKicked(false);
@@ -486,10 +485,9 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       setPeers(data.peers || []);
     };
 
-    // 🚫 KNOCK DENIED: Host rejected admission
+    // Knock denied
     const handleKnockDenied = (data) => {
       setIsJoinedRoom(false);
-      // Use non-blocking notification then navigate
       setTerminationInfo({
         reason: data.message || 'The host has denied your request to join this meeting.',
         endedAt: new Date().toISOString(),
@@ -498,7 +496,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       setTimeout(() => navigate('/dashboard'), 2500);
     };
 
-    // 🔔 HOST ALERT: Incoming knock request from a waiting guest
+    // Knock request
     const handleKnockRequest = (knockPeer) => {
       setKnockRequests((prev) => {
         if (prev.some((p) => p.socketId === knockPeer.socketId)) return prev;
@@ -506,12 +504,11 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       });
     };
 
-    // 👥 PEER DISCOVERY & SYNCHRONIZATION
+    // Peer discovery
     const handleRoomPeers = (data) => {
       setIsWaiting(false);
       setIsKicked(false);
       setIsJoinedRoom(true);
-      // Filter out self by socket ID and by user ID (prevents ghost self tile on reconnect/refresh)
       const myId = currentUser?.id;
       const filtered = (data?.peers || []).filter(
         (p) => p.socketId !== socket.id && (!myId || p.userId !== myId)
@@ -522,7 +519,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
     const handlePeerJoined = (newPeer) => {
       if (!newPeer || newPeer.socketId === socket.id) return;
       const myId = currentUser?.id;
-      if (myId && newPeer.userId === myId) return; // Prevent ghost self duplicate
+      if (myId && newPeer.userId === myId) return;
       setPeers((prev) => {
         if (prev.some((p) => p.socketId === newPeer.socketId || (myId && p.userId === newPeer.userId))) return prev;
         return [...prev, newPeer];
@@ -537,14 +534,14 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       }
     };
 
-    // 🎙️ PEER MEDIA STATUS CHANGED
+    // Audio status changed
     const handleAudioStatus = ({ socketId, isAudioMuted }) => {
       setPeers((prev) =>
         prev.map((p) => (p.socketId === socketId ? { ...p, isAudioMuted } : p))
       );
     };
 
-    // 🔇 HOST REMOTELY MUTED OUR MICROPHONE
+    // Remotely muted by host
     const handleForceMute = (data) => {
       setIsMuted(true);
       try {
@@ -571,15 +568,26 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       );
     };
 
-    // 🖥️ PEER SCREEN SHARE STATUS
+    // Screen share status changed
     const handleScreenShareStatus = ({ socketId, isScreenSharing }) => {
       setPeers((prev) =>
         prev.map((p) => (p.socketId === socketId ? { ...p, isScreenSharing } : p))
       );
+      if (isScreenSharing) {
+        setIsVideoGalleryOpen(true);
+      }
     };
 
-    // 🚪 KICKED BY HOST
+    // Evicted by host
     const handleKicked = (data) => {
+      // Check if this kick event targets this specific socket or user
+      const isMySocket = !data?.targetSocketId || data.targetSocketId === socket?.id;
+      const isMyUserId = data?.targetUserId && currentUser?.id && data.targetUserId === currentUser.id;
+      if (!isMySocket && !isMyUserId) {
+        return;
+      }
+
+      isKickedRef.current = true;
       setIsJoinedRoom(false);
       setIsKicked(true);
       setKickedReason(data?.reason || 'You were removed from this meeting by the host.');
@@ -597,7 +605,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       }
     };
 
-    // 💬 REAL-TIME CHAT: Map real sender names and dynamic avatars
+    // Chat history
     const handleChatHistory = (history) => {
       if (!Array.isArray(history)) return;
       const formatted = history.map((msg) => ({
@@ -631,12 +639,12 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       ]);
     };
 
-    // 🎉 FLOATING EMOJI REACTIONS
+    // Emoji reaction
     const handleEmojiReaction = (data) => {
       triggerReaction(data.emoji, false);
     };
 
-    // 🛑 ROOM TERMINATED (Instant reactive termination, no blocking alert)
+    // Room terminated
     const handleRoomTerminated = (data) => {
       console.log('[Room] Meeting terminated by host:', data);
       setIsJoinedRoom(false);
@@ -646,7 +654,6 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
         endedAt: data?.endedAt || new Date().toISOString(),
       });
       setPeers([]);
-      // Use refs to get current stream values — the socket handler closes over mount-time values
       try {
         localStreamRef.current?.getTracks().forEach((t) => t.stop());
         screenStreamRef.current?.getTracks().forEach((t) => t.stop());
@@ -660,7 +667,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       }
     };
 
-    // 📅 SCHEDULED ROOM: Not started yet
+    // Scheduled room
     const handleRoomScheduled = (data) => {
       setIsJoinedRoom(false);
       setIsRoomScheduled(true);
@@ -672,7 +679,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       });
     };
 
-    // 🔄 ROOM UPDATED: e.g. Host started room early
+    // Room updated
     const handleRoomUpdated = (data) => {
       if (data?.status === 'ACTIVE') {
         setIsRoomScheduled(false);
@@ -693,7 +700,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       }
     };
 
-    // ⚠️ ROOM ERROR
+    // Room error
     const handleRoomError = (data) => {
       if (data?.code === 'AUTH_REQUIRED') {
         navigate('/login', {
@@ -927,6 +934,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
 
   // Request to rejoin room after kick
   const handleRequestRejoin = useCallback(() => {
+    isKickedRef.current = false;
     setIsKicked(false);
     setIsWaiting(true);
     setWaitingMessage('Requesting to rejoin the room. Waiting for host approval...');
@@ -1017,6 +1025,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       peers,
       localStream,
       remoteStreams,
+      remoteScreenStreams,
       isMuted,
       setIsMuted,
       handleToggleMute,
@@ -1083,6 +1092,7 @@ export function RoomProvider({ roomId: rawRoomId, inviteToken = '', children }) 
       peers,
       localStream,
       remoteStreams,
+      remoteScreenStreams,
       isMuted,
       handleToggleMute,
       isVideoOn,

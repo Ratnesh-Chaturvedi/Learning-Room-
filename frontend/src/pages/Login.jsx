@@ -44,7 +44,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen w-full flex flex-col justify-between bg-[var(--color-background)] transition-colors duration-200">
-      {/* Top Bar with Logo & Theme Toggle */}
+      {/* Top bar */}
       <header className="w-full px-6 py-4 flex items-center justify-between border-b border-[var(--color-border)]/60">
         <Link
           to="/"
@@ -63,9 +63,9 @@ export default function Login() {
         <ThemeToggle />
       </header>
 
-      {/* Main Login Card */}
+      {/* Login card */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 relative">
-        {/* Soft Ambient Background Glow */}
+        {/* Background glow */}
         <div className="absolute w-96 h-96 rounded-full bg-indigo-500/10 dark:bg-purple-900/20 blur-3xl pointer-events-none" />
 
         <div className="relative w-full max-w-md rounded-3xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-xl p-7 sm:p-9 space-y-6">

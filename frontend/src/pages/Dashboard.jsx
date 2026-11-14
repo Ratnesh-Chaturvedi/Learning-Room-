@@ -14,13 +14,7 @@ import SettingsView from '../components/dashboard/SettingsView';
 import ThemeToggle from '../components/common/ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
 
-/**
- * Dashboard Component
- * Clean and maintainable layout with:
- * - Sub-routes for Home, Explore, My Rooms, Activity, and Settings
- * - Smooth slide-over drawer from the left on mobile devices
- * - Brand logo click showing the dashboard home
- */
+// Main dashboard layout with views and navigation
 export default function Dashboard({ theme: propTheme, onToggleTheme: propToggle } = {}) {
   const { theme: contextTheme, toggleTheme: contextToggle } = useTheme();
   const theme = propTheme || contextTheme;
@@ -229,15 +223,13 @@ export default function Dashboard({ theme: propTheme, onToggleTheme: propToggle 
       data-lenis-prevent
       className="h-screen w-full bg-[#FAF8F5] dark:bg-[#121316] text-[#1E1F24] dark:text-[#EBEBF0] flex font-sans transition-colors duration-200 selection:bg-purple-200 overflow-hidden"
     >
-      {/* ========================================================= */}
-      {/* MOBILE & TABLET SIDEBAR DRAWER (SMOOTH SLIDE FROM LEFT)   */}
-      {/* ========================================================= */}
+      {/* Mobile sidebar drawer */}
       <div
         className={`fixed inset-0 z-50 lg:hidden transition-visibility duration-300 ${
           mobileMenuOpen ? 'pointer-events-auto visible' : 'pointer-events-none invisible'
         }`}
       >
-        {/* Backdrop with smooth fade */}
+        {/* Backdrop */}
         <div
           className={`fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity duration-300 ease-in-out ${
             mobileMenuOpen ? 'opacity-100' : 'opacity-0'
@@ -245,7 +237,7 @@ export default function Dashboard({ theme: propTheme, onToggleTheme: propToggle 
           onClick={() => setMobileMenuOpen(false)}
         />
 
-        {/* Sidebar panel smoothly sliding from the left */}
+        {/* Sidebar panel */}
         <aside
           data-lenis-prevent
           className={`fixed top-0 bottom-0 left-0 w-72 max-w-[85vw] bg-[#FAF8F5] dark:bg-[#121316] h-full p-5 flex flex-col justify-between z-10 shadow-2xl border-r border-[#EDE8E1] dark:border-[#26282E] overflow-y-auto overflow-x-hidden select-none transform transition-transform duration-300 ease-in-out ${
@@ -254,7 +246,7 @@ export default function Dashboard({ theme: propTheme, onToggleTheme: propToggle 
         >
           <div>
             <div className="flex items-center justify-between mb-8">
-              {/* Brand Logo - Navigates to Dashboard Home Page */}
+              {/* Brand logo */}
               <Link
                 to="/dashboard"
                 onClick={() => setMobileMenuOpen(false)}
@@ -287,12 +279,10 @@ export default function Dashboard({ theme: propTheme, onToggleTheme: propToggle 
         </aside>
       </div>
 
-      {/* ========================================================= */}
-      {/* 1. LEFT SIDEBAR (STICKY & IMMOVABLE IN DESKTOP VIEWPORT)  */}
-      {/* ========================================================= */}
+      {/* Desktop sidebar */}
       <aside className="w-56 lg:w-64 flex-shrink-0 border-r border-[#EDE8E1] dark:border-[#26282E] p-5 lg:p-6 flex flex-col justify-between hidden lg:flex h-screen sticky top-0 overflow-y-auto overflow-x-hidden select-none z-30 custom-scrollbar">
         <div className="space-y-6">
-          {/* Brand Logo - Navigates to Dashboard Home Page */}
+          {/* Brand logo */}
           <Link
             to="/dashboard"
             className="flex items-center gap-2.5 cursor-pointer group"
@@ -308,23 +298,20 @@ export default function Dashboard({ theme: propTheme, onToggleTheme: propToggle 
             </div>
           </Link>
 
-          {/* Navigation Items List */}
           {renderNavList()}
         </div>
 
-        {/* Bottom Left Doodle Decor with footerPencil */}
         {renderPencilDoodle()}
       </aside>
 
-      {/* ========================================================= */}
-      {/* 2. MAIN SCROLLABLE CONTENT AREA (INDEPENDENT SCROLL)     */}
+      {/* Main scrollable content */}
       <div
         ref={mainScrollRef}
         id="dashboard-main-scroll"
         data-lenis-prevent
         className="flex-1 flex flex-col h-screen overflow-y-auto overflow-x-hidden min-w-0 relative custom-scrollbar overscroll-contain"
       >
-        {/* STICKY TOP NAVBAR */}
+        {/* Sticky top navbar */}
         <header className="px-5 sm:px-6 py-3.5 flex items-center justify-between gap-3 sm:gap-4 border-b border-[#EDE8E1] dark:border-[#26282E]/50 sticky top-0 bg-[#FAF8F5]/90 dark:bg-[#121316]/90 backdrop-blur-md z-30 flex-shrink-0">
           {/* Mobile Menu Hamburger */}
           <button

@@ -3,11 +3,7 @@ import ExcalidrawCanvas from '../canvas/ExcalidrawCanvas';
 import SideChat from '../chat/SideChat';
 import TactileStationery from './TactileStationery';
 
-/**
- * FloatingMockup Component
- * macOS window housing the interactive whiteboard, meet status, and chat panel,
- * accented with an ambient pastel aura and surrounding desk stationery.
- */
+// Interactive floating room mockup window for landing page
 export default function FloatingMockup({ theme = 'light' }) {
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [activeLeftTab, setActiveLeftTab] = useState('canvas');

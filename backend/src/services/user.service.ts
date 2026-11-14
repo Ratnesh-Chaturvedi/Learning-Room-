@@ -4,9 +4,7 @@ import { RoomStatus, type Prisma } from "@prisma/client";
 import { CloudinaryService } from "./cloudinary.service.ts";
 
 export class UserService {
-  /**
-   * Retrieves user profile details and activity statistics.
-   */
+  // Get user profile details and activity statistics
   public static async getProfileWithStats(userId: string) {
     try {
       const user = await prisma.user.findUnique({
@@ -51,9 +49,7 @@ export class UserService {
     };
   }
 
-  /**
-   * Updates user name or avatar. Automatically uploads Data URIs to Cloudinary.
-   */
+  // Update user name or avatar with Cloudinary upload
   public static async updateProfile(
     userId: string,
     data: { name?: string; avatar?: string | null }
@@ -117,9 +113,7 @@ export class UserService {
     });
   }
 
-  /**
-   * Directly uploads a new avatar file or image source to Cloudinary and saves URL.
-   */
+  // Upload new avatar image to Cloudinary and update profile
   public static async updateAvatar(
     userId: string,
     imageSource: Express.Multer.File | Buffer | string
@@ -171,9 +165,7 @@ export class UserService {
     });
   }
 
-  /**
-   * Retrieves rooms filtered by user involvement: 'all' | 'hosted' | 'joined' | 'scheduled' | 'archived'.
-   */
+  // Retrieve user rooms filtered by involvement ('all' | 'hosted' | 'joined' | 'scheduled' | 'archived')
   public static async getMyRooms(
     userId: string,
     filter: "all" | "hosted" | "joined" | "scheduled" | "archived" = "all"
